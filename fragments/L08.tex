@@ -1,0 +1,117 @@
+%%%% FORMULA
+\begin{fsblock}{slate}{Lecture 8 \textperiodcentered{} jailbreaks and the geometry of activations}
+\fsrow{LoRA}{W'=W+\tfrac{\alpha}{r}BA,\ \ B\in\R^{m\times r},\ A\in\R^{r\times n}}
+\fsrow{LoRA size}{r(m+n)\ \text{instead of}\ mn;\ \ d\times d:\ 2r/d}
+\fsrow{shell of the ball}{\Pr(\norm X>1-\eps)=1-(1-\eps)^d\ge1-e^{-\eps d}}
+\fsrow{two directions}{T=\ip UV:\ \E T=0,\ \E T^2=\tfrac1d,\ T^2\sim\mathrm{Beta}\big(\tfrac12,\tfrac{d-1}2\big)}
+\fsrow{density}{c_d(1-t^2)^{\frac{d-3}2},\ \ c_d=\tfrac{\Gamma(d/2)}{\sqrt\pi\,\Gamma(\frac{d-1}2)}}
+\fsrow{sub-Gaussian}{\Pr(T\ge t)\le e^{-dt^2/2}}
+\fsrow{smallest angle}{\Pr(\Theta_{\min}>\theta)\approx\exp\!\big(-\tbinom N2p_d(\theta)\big)}
+\fsrow{lecture's example (exact median)}{N=2\cdot10^5,\ d=2000:\ \Theta_{\min}\approx81.7^\circ}
+\fsrow{effective dimension}{\E\ip XY^2=\operatorname{tr}M^2=\tfrac1{d_{\mathrm{eff}}},\ \ M=\E XX^{\!\top}}
+\fsrow{packing}{N<e^{d\eps^2/4}\Rightarrow\exists\,N\ \text{unit vectors},\ |\ip{v_i}{v_j}|\le\eps}
+\fsrow{Welch bound}{\max_{i\ne j}|\ip{v_i}{v_j}|\ge\sqrt{\tfrac{N-d}{d(N-1)}}}
+\fsrow{staged search}{\text{cost }\tfrac Kp,\ \rho=p^K;\ \ \min_p=e\ln\tfrac1\rho\ \ (p=\tfrac1e)}
+\end{fsblock}
+%%%% NOTATION
+$W,\ A,\ B,\ r,\ \alpha$ & LoRA: frozen weight, the two factors of the low-rank update, its rank, a scale; $W'=W+\frac{\alpha}{r}BA$ & L8\\
+$T=\ip UV$ & cosine of the angle between independent uniform unit vectors in $\R^d$; $T^2\sim\mathrm{Beta}(\frac12,\frac{d-1}2)$ & L8\\
+$c_d$ & normalizing constant $\Gamma(d/2)/(\sqrt\pi\,\Gamma(\frac{d-1}2))$ of the density of $T$ & L8\\
+$I_x(a,b)$ & regularized incomplete beta function; $\Pr(T\ge t)=\frac12I_{1-t^2}(\frac{d-1}2,\frac12)$ for $t\ge0$ & L8\\
+$p_d(\theta)$ & probability that the angle between two random directions in $\R^d$ is at most $\theta$ & L8\\
+$\Theta_{\min}$ & smallest pairwise angle among $N$ independent random directions & L8\\
+$M,\ d_{\mathrm{eff}}$ & second-moment matrix $\E XX^{\!\top}$ of unit vectors and effective dimension $1/\operatorname{tr}(M^2)$ & L8\\
+$\rho,\ p,\ K$ & density of a target set, pass probability per level, number of levels (staged search) & L8\\
+%%%% GLOSSARY
+  \item[Jailbreak] A way of writing the prompt so that a model does what its developers want it not to do; a concept recognized rather than defined. (L8)
+  \item[Universal jailbreak] One string (for example a prefix) that works for many different harmful requests, not only for the one it was found with. (L8)
+  \item[Prompt injection] An attack in which text that is meant as data (a web page, a file, an image) is interpreted by the model as an instruction; \emph{indirect} when the text reaches the model through content it retrieves. (L8)
+  \item[System prompt, prompt leaking] The hidden instructions an application gives its model; extracting them is prompt leaking. (L8)
+  \item[Input / output classifier] A separate, usually smaller model that flags a request before the main model sees it, or the answer after the main model has written it. (L8)
+  \item[Activation probe] A simple (often linear) classifier that reads the internal activations of a model to detect, for example, harmful requests. (L8)
+  \item[Boundary point jailbreaking] A black-box attack that sees only whether an input is flagged: it corrupts the harmful question, searches for a prefix at the flag/no-flag boundary and lowers the corruption step by step. (L8)
+  \item[Attack success rate] The fraction of attack prompts for which a judge (human, classifier or rubric) accepts the model's response as a violation; relative to the judge. (L8)
+  \item[LoRA] Low-rank adaptation: fine-tuning by training a low-rank correction $\frac{\alpha}{r}BA$ added to a frozen weight matrix. (L8)
+  \item[Mixture of experts] A transformer whose layers contain several MLP blocks (experts), of which a router uses a few for each token. (L8)
+  \item[Concentration of measure] In high dimension a random point of the sphere or ball is, with overwhelming probability, near the equator of any given direction and near the boundary of the ball. (L8)
+  \item[Effective dimension] For unit vectors with second-moment matrix $M$, the number $1/\operatorname{tr}(M^2)\le d$ so that $1/\sqrt{d_{\mathrm{eff}}}$ is the root-mean-square cosine of two independent random vectors (their standard deviation when the mean cosine is $0$). (L8)
+  \item[Welch bound] A lower bound $\sqrt{(N-d)/(d(N-1))}$ on $\max_{i\neq j}|\langle v_i,v_j\rangle|$ for $N>d$ unit vectors in $\R^d$. (L8)
+%%%% VIDEOINDEX
+\begin{vidtable}{Lecture 8 \textperiodcentered{} jailbreaks, prompt injection, activation geometry}{jKj-pJKit_E}
+\vrow{8.1}{Hands-on: replicating emergent misalignment}{0:00}
+\vrow{8.2}{Jailbreaking}{10:00}
+\vsub{8.2.1}{A flagged question, and what a jailbreak is}{10:00}
+\vsub{8.2.2}{A gallery of attacks}{12:30}
+\vsub{8.2.3}{A game: extracting a system prompt}{18:00}
+\vrow{8.3}{Agents and prompt injection}{27:00}
+\vrow{8.4}{Layers of defense, and a black-box attack}{30:00}
+\vsub{8.4.1}{How the security is organized}{30:00}
+\vsub{8.4.2}{Boundary point jailbreaking}{31:30}
+\vsub{8.4.3}{Results, and the defense}{38:00}
+\vrow{8.5}{The moral: offense, defense, and the missing theory}{42:30}
+\vrow{8.6}{The geometry of activations: first steps}{46:30}
+\vsub{8.6.1}{Which spaces?}{47:30}
+\vsub{8.6.2}{Two observations about high dimensions}{50:30}
+\end{vidtable}
+%%%% HINTS
+\paragraph{Lecture 8.}
+\textbf{1.} $\Pr(\norm X\le r)=r^d$ (volume scales like $r^d$). $\eps_{50}=1-2^{-1/2000}\approx3.5\cdot10^{-4}$, $\eps_{90}=1-0.1^{1/2000}\approx1.15\cdot10^{-3}$; the median radius is $2^{-1/2000}\approx0.99965$. \quad
+\textbf{2.} Reflecting one coordinate shows $\E u_iu_j=0$ for $i\ne j$, and $\sum_iu_i^2=1$ gives $\E u_i^2=1/d$; so $\E\ip uv^2=\sum_i\E u_i^2\,\E v_i^2=1/d$. The standard deviation of the angle is about $1/\sqrt d$ radians: $5.73^\circ$, $1.28^\circ$, $0.523^\circ$; it is below $1^\circ$ iff $d>(180/\pi)^2\approx3283$. \quad
+\textbf{3.} $T^2\sim\mathrm{Beta}(\frac12,\frac{d-1}2)$ gives $\E T^{2k}=\prod_{j<k}\frac{2j+1}{d+2j}\le(2k-1)!!/d^k$, hence $\E e^{\lambda T}\le e^{\lambda^2/2d}$ and, with $\lambda=dt$, $\Pr(T\ge t)\le e^{-dt^2/2}$. Union bound: $\frac{N^2}2e^{-dc^2/2}\le0.01$ gives $c=\sqrt{2\ln(N^2/0.02)/d}=0.168$, so all angles exceed $80.31^\circ$ with probability $\ge99\%$; with the exact tail ($\binom N2p_d(\theta)=0.01$) it is $80.88^\circ$. \quad
+\textbf{4.} Given vector: $(N-1)p_d(\theta)=\ln2$ gives $84.24^\circ$; all pairs: $\binom N2p_d(\theta)=\ln2$ gives $81.66^\circ$; there are about $N/2$ times more pairs, and $p_d$ shrinks by a factor of about $150$ per degree of decrease near $82^\circ$ (about $86$ per degree on average between $81.7^\circ$ and $84.2^\circ$). \quad
+\textbf{5.} Union bound over pairs with $\Pr(|T|>\eps)\le2e^{-d\eps^2/2}$, $\eps=\cos80^\circ=0.1736$: all $|\cos|\le\eps$ is possible when $N^2e^{-d\eps^2/2}\le1$, i.e.\ $N\le e^{d\eps^2/4}=3.5\cdot10^6$. Welch: $\sqrt{(N-d)/(d(N-1))}=0.02225$: some pair has $|\cos|\ge0.02225$, i.e.\ an angle outside $(88.7^\circ,91.3^\circ)$ (the bound concerns $|\langle v_i,v_j\rangle|$: the regular simplex with $N=d+1$ has all inner products $-1/d$). \quad
+\textbf{6.} $\E\ip XY^2=\E[Y^{\!\top}MY]=\operatorname{tr}(M\,\E YY^{\!\top})=\operatorname{tr}M^2$; $\operatorname{tr}M=1$ and Cauchy--Schwarz on the $d$ eigenvalues give $\operatorname{tr}M^2\ge1/d$. $d_{\mathrm{eff}}=1/0.0388^2\approx664$. \quad
+\textbf{7.} $\operatorname{rank}(BA)\le\min(\operatorname{rank}B,\operatorname{rank}A)\le r$. Per layer: $q$ and $o$: $16\cdot4096=65{,}536$ each; $k$ and $v$: $16\cdot(2048+512)=40{,}960$ each; gate, up, down: $16\cdot(2048+8192)=163{,}840$ each; total $704{,}512$, times $16$ layers $=11{,}272{,}192$, i.e.\ $0.912\%$. \quad
+\textbf{8.} $\frac{10^{-4}\cdot0.99}{10^{-4}\cdot0.99+0.9999\cdot10^{-3}}\approx9.0\%$ (ten false alarms per detection); precision $\frac12$ needs a false-positive rate $\pi\cdot0.99/(1-\pi)\approx9.9\cdot10^{-5}$. \quad
+\textbf{9.} A geometric waiting time has mean $1/\rho=10^{12}$. With $K=\ln(1/\rho)/\ln(1/p)$ levels, each a geometric time of mean $1/p$, the cost is $\ln(1/\rho)/(p\ln(1/p))$; $p\ln(1/p)$ is maximal at $p=1/e$, giving $e\ln(10^{12})\approx75$ queries. At least $330000/5=66000$ accounts.
+%%%% READING
+\textbf{Lecture 8:} \citet{turner2025} (the replication of the lecture) and \citet{betley2025}; \citet{hu2021lora} for LoRA; \citet{wei2023jailbroken} for why safety training fails, then \citet{zou2023}, \citet{anil2024} and \citet{hughes2024} for attacks that scale with queries or context; \citet{sharma2025} and \citet{cunningham2026} for classifier defenses, and \citet{aisi2026bpj} for the attack of the lecture; \citet{greshake2023} and \citet{debenedetti2025} for prompt injection and a defense by design; \citet{nasr2025} on evaluating defenses against adaptive attackers; \citet{ball1997} and \citet{cai2013} for the geometry of the sphere; \citet{elhage2022} for superposition.
+%%%% PROJECTS
+  \item \textbf{Query complexity of attacks against monitors (L8).} Formalize a monitor that returns one bit per query and keeps a flag budget per account; prove lower bounds on the number of flagged queries needed to find a universal prefix under explicit structural assumptions (for instance the nested family of the curriculum model of Section~\ref{sec:L8-results}), and find monitors that minimize the false-positive cost to honest users for a given bound on the attacker's success.
+  \item \textbf{A null model for activation geometry (L8).} Measure the effective dimension, the norm distribution and the tail of pairwise angles of token and layer-wise activation vectors in open-weight models, fit a null made of a shared direction, a low-rank part and isotropic noise, and ask which pairs exceed it (Section~\ref{sec:L8-geometry}, box on real embedding matrices).
+  \item \textbf{Packing and superposition (L8).} How many almost orthogonal feature directions does a trained network actually use in $\R^d$, as a function of the sparsity of the features, compared with the random-code count $e^{d\eps^2/4}$ and the Welch bound (Section~\ref{sec:L8-geometry}, box on packing)?
+  \item \textbf{Instructions and data by design (L8).} Describe an agent architecture with separate, typed channels for trusted instructions and untrusted data, state which information-flow guarantees follow, and measure what the separation costs in capability.
+%%%% REFS
+\bibitem[Aghajanyan et~al.(2021)]{aghajanyan2021} A.~Aghajanyan, L.~Zettlemoyer, S.~Gupta. Intrinsic dimensionality explains the effectiveness of language model fine-tuning. \emph{ACL} 2021, 7319--7328; arXiv:2012.13255.
+\bibitem[Anil et~al.(2024)]{anil2024} C.~Anil, E.~Durmus, N.~Panickssery, M.~Sharma, J.~Benton, S.~Kundu, J.~Batson et al. Many-shot jailbreaking. \emph{NeurIPS} 2024 (Advances in Neural Information Processing Systems 37).
+\bibitem[Ball(1997)]{ball1997} K.~Ball. An elementary introduction to modern convex geometry. In \emph{Flavors of Geometry}, MSRI Publications 31, pp.~1--58. Cambridge University Press, 1997.
+\bibitem[Bazinska et~al.(2025)]{bazinska2025} J.~Bazinska, M.~Mathys, F.~Casucci, M.~Rojas-Carulla, X.~Davies, A.~Souly, N.~Pfister. Breaking agent backbones: evaluating the security of backbone LLMs in AI agents. arXiv:2510.22620, 2025.
+\bibitem[Betley et~al.(2025)]{betley2025} J.~Betley, D.~Tan, N.~Warncke, A.~Sztyber-Betley, X.~Bao, M.~Soto, N.~Labenz, O.~Evans. Emergent misalignment: narrow finetuning can produce broadly misaligned LLMs. \emph{ICML} 2025; arXiv:2502.17424.
+\bibitem[Brunner et~al.(2026)]{brunner2026} T.~Brunner, Y.-H. Liu, M.~Pande. AI threats in the wild: the current state of prompt injections on the web. Google Security Blog, 23 April 2026. \url{https://blog.google/security/prompt-injections-web/}
+\bibitem[Cai et~al.(2013)]{cai2013} T.~Cai, J.~Fan, T.~Jiang. Distributions of angles in random packing on spheres. \emph{Journal of Machine Learning Research} 14:1837--1864, 2013.
+\bibitem[Chismon(2025)]{chismon2025} D.~Chismon. Prompt injection is not SQL injection (it may be worse). UK National Cyber Security Centre, blog post, 8 December 2025. \url{https://www.ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection}
+\bibitem[Cunningham et~al.(2026)]{cunningham2026} H.~Cunningham, J.~Wei, Z.~Wang et al.\ (29 authors). Constitutional classifiers++: efficient production-grade defenses against universal jailbreaks. arXiv:2601.04603, 2026.
+\bibitem[Dasgupta and Gupta(2003)]{dasgupta2003} S.~Dasgupta, A.~Gupta. An elementary proof of a theorem of Johnson and Lindenstrauss. \emph{Random Structures \& Algorithms} 22(1):60--65, 2003.
+\bibitem[Davies et~al.(2026)]{aisi2026bpj} X.~Davies, G.~Giglemiani, E.~Lau, E.~Winsor, G.~Irving, Y.~Gal. Boundary point jailbreaking of black-box LLMs. UK AI Security Institute and OATML (Oxford), arXiv:2602.15001, 16 February 2026.
+\bibitem[Debenedetti et~al.(2025)]{debenedetti2025} E.~Debenedetti, I.~Shumailov, T.~Fan, J.~Hayes, N.~Carlini, D.~Fabian, C.~Kern, C.~Shi, A.~Terzis, F.~Tram\`er. Defeating prompt injections by design. arXiv:2503.18813, 2025.
+\bibitem[Elhage et~al.(2022)]{elhage2022} N.~Elhage, T.~Hume, C.~Olsson et al.\ (16 authors). Toy models of superposition. arXiv:2209.10652, 2022.
+\bibitem[Ethayarajh(2019)]{ethayarajh2019} K.~Ethayarajh. How contextual are contextualized word representations? Comparing the geometry of BERT, ELMo, and GPT-2 embeddings. \emph{EMNLP} 2019; arXiv:1909.00512.
+\bibitem[Greshake et~al.(2023)]{greshake2023} K.~Greshake, S.~Abdelnabi, S.~Mishra, C.~Endres, T.~Holz, M.~Fritz. Not what you've signed up for: compromising real-world LLM-integrated applications with indirect prompt injection. \emph{16th ACM Workshop on Artificial Intelligence and Security (AISec '23)}, 2023; arXiv:2302.12173.
+\bibitem[Hu et~al.(2022)]{hu2021lora} E.~J. Hu, Y.~Shen, P.~Wallis, Z.~Allen-Zhu, Y.~Li, S.~Wang, L.~Wang, W.~Chen. LoRA: low-rank adaptation of large language models. \emph{ICLR} 2022; arXiv:2106.09685 (2021).
+\bibitem[Hughes et~al.(2024)]{hughes2024} J.~Hughes, S.~Price, A.~Lynch, R.~Schaeffer, F.~Barez, S.~Koyejo, H.~Sleight, E.~Jones, E.~Perez, M.~Sharma. Best-of-N jailbreaking. arXiv:2412.03556, 2024.
+\bibitem[Kalajdzievski(2023)]{kalajdzievski2023} D.~Kalajdzievski. A rank stabilization scaling factor for fine-tuning with LoRA. arXiv:2312.03732, 2023.
+\bibitem[Khodayari et~al.(2026)]{khodayari2026} S.~Khodayari, X.~Zhang, B.~Acharya, G.~Pellegrino. Indirect prompt injection in the wild: an empirical study of prevalence, techniques, and objectives. arXiv:2604.27202, 2026.
+\bibitem[Kumar et~al.(2023)]{kumar2023} A.~Kumar, C.~Agarwal, S.~Srinivas, A.~J. Li, S.~Feizi, H.~Lakkaraju. Certifying LLM safety against adversarial prompting. arXiv:2309.02705, 2023 (\emph{COLM} 2024).
+\bibitem[Li et~al.(2023)]{li2023deepinception} X.~Li, Z.~Zhou, J.~Zhu, J.~Yao, T.~Liu, B.~Han. DeepInception: hypnotize large language model to be jailbreaker. arXiv:2311.03191, 2023.
+\bibitem[Moonshot AI(2026)]{moonshot2026} Moonshot AI. Kimi K3. Hugging Face model card, July 2026. \url{https://huggingface.co/moonshotai/Kimi-K3}
+\bibitem[Nasr et~al.(2025)]{nasr2025} M.~Nasr, N.~Carlini, C.~Sitawarin et al.\ (14 authors). The attacker moves second: stronger adaptive attacks bypass defenses against LLM jailbreaks and prompt injections. arXiv:2510.09023, 2025.
+\bibitem[OpenAI(2025)]{openai2025oss} OpenAI. gpt-oss-120b \& gpt-oss-20b model card. arXiv:2508.10925, 2025.
+\bibitem[OpenAI(2026e)]{openai2026math} OpenAI. Sharing AI progress in mathematics. 6 October 2026; repository \url{https://github.com/openai/math}
+\bibitem[OWASP(2025)]{owasp2025} OWASP GenAI Security Project. LLM01:2025 prompt injection. In \emph{OWASP Top 10 for LLM Applications 2025}. \url{https://genai.owasp.org/llmrisk/llm01-prompt-injection/}
+\bibitem[Perez and Ribeiro(2022)]{perez2022} F.~Perez, I.~Ribeiro. Ignore previous prompt: attack techniques for language models. \emph{NeurIPS 2022 ML Safety Workshop}; arXiv:2211.09527.
+\bibitem[Rehberger(2023)]{rehberger2023} J.~Rehberger. Image to prompt injection with Google Bard. Embrace The Red (blog), 14 July 2023. \url{https://embracethered.com/blog/posts/2023/google-bard-image-to-prompt-injection/}
+\bibitem[Robey et~al.(2023)]{robey2023} A.~Robey, E.~Wong, H.~Hassani, G.~J. Pappas. SmoothLLM: defending large language models against jailbreaking attacks. arXiv:2310.03684, 2023.
+\bibitem[Sewani(2026)]{sewani2026} M.~Sewani. 10 indirect prompt injection payloads caught in the wild. Forcepoint X-Labs, 22 April 2026. \url{https://www.forcepoint.com/blog/x-labs/10-indirect-prompt-injection-payloads-caught-wild}
+\bibitem[Sharma et~al.(2025)]{sharma2025} M.~Sharma, M.~Tong, J.~Mu et al.\ (43 authors). Constitutional classifiers: defending against universal jailbreaks across thousands of hours of red teaming. arXiv:2501.18837, 2025.
+\bibitem[Shen et~al.(2024)]{shen2024dan} X.~Shen, Z.~Chen, M.~Backes, Y.~Shen, Y.~Zhang. ``Do anything now'': characterizing and evaluating in-the-wild jailbreak prompts on large language models. \emph{ACM CCS} 2024, 1671--1685; arXiv:2308.03825.
+\bibitem[Turner et~al.(2025)]{turner2025} E.~Turner, A.~Soligo, M.~Taylor, S.~Rajamanoharan, N.~Nanda. Model organisms for emergent misalignment. arXiv:2506.11613, 2025.
+\bibitem[Vassilev et~al.(2025)]{vassilev2025} A.~Vassilev, A.~Oprea, A.~Fordyce, H.~Anderson, X.~Davies, M.~Hamin. Adversarial machine learning: a taxonomy and terminology of attacks and mitigations. NIST AI 100-2e2025, March 2025; doi:10.6028/NIST.AI.100-2e2025.
+\bibitem[Wallace et~al.(2024)]{wallace2024} E.~Wallace, K.~Xiao, R.~Leike, L.~Weng, J.~Heidecke, A.~Beutel. The instruction hierarchy: training LLMs to prioritize privileged instructions. arXiv:2404.13208, 2024.
+\bibitem[Wei et~al.(2023)]{wei2023jailbroken} A.~Wei, N.~Haghtalab, J.~Steinhardt. Jailbroken: how does LLM safety training fail? \emph{NeurIPS} 2023; arXiv:2307.02483.
+\bibitem[Welch(1974)]{welch1974} L.~R. Welch. Lower bounds on the maximum cross correlation of signals. \emph{IEEE Transactions on Information Theory} 20(3):397--399, 1974.
+\bibitem[Willison(2023)]{willison2023} S.~Willison. Multi-modal prompt injection image attacks against GPT-4V. Blog post, 14 October 2023. \url{https://simonwillison.net/2023/Oct/14/multi-modal-prompt-injection/}
+\bibitem[Zou et~al.(2023)]{zou2023} A.~Zou, Z.~Wang, N.~Carlini, M.~Nasr, J.~Z. Kolter, M.~Fredrikson. Universal and transferable adversarial attacks on aligned language models. arXiv:2307.15043, 2023.
+%%%% SUMMARY
+\textbf{Lecture 8} (7 October 2026) begins with a hands-on tutorial for replicating emergent misalignment on a small model with LoRA, and then turns to attacks: what a jailbreak is (a concept recognized rather than defined), the obscure-alphabet, persona and nested-fiction examples, a classroom game on extracting a hidden system prompt, and prompt injection into agents whose only channel is text. The defenses (refusal training, input and output classifiers, probes on activations) are tested by boundary point jailbreaking, a black-box attack that sees only ``flagged / not flagged''; the remedy is to judge many prompts together. The last ten minutes begin the geometry of activations: in dimension $2000$ a random point of the ball is almost on the boundary, random directions are $90^\circ\pm1.3^\circ$ apart, and among $2\cdot10^5$ of them the smallest angle is still about $81^\circ$.
+%%%% CARD
+Jailbreaks and geometry | prompt injection, high dimensions | slate

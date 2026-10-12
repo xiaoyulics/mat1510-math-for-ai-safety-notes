@@ -1,0 +1,101 @@
+%%%% FORMULA
+\begin{fsblock}{amber}{Lecture 5 \textperiodcentered{} Bayes, SGD and grokking}
+\fsrow{evidence, posterior}{Z_n=\Pbayes(D_n),\ \ \pi_n=\tfrac{\pi\prod_ip_\theta(x_i)}{Z_n},\ \ \Pbayes(x_{n+1}|D_n)=\tfrac{Z_{n+1}}{Z_n}}
+\fsrow{Gaussian regret}{R_n=\tfrac d2\ln(n+1)+\tfrac n{2(n+1)}\big(|\theta^*|^2-d\big)}
+\fsrow{prior $N(0,s^2I)$}{R_n-\tfrac d2\ln n\to d\ln s+\tfrac{|\theta^*|^2}{2s^2}-\tfrac d2}
+\fsrow{oracle bound}{R_n\le\tfrac n2|\tilde\theta-\theta^*|^2+\Kc(\tilde\theta)\ln2,\ \ \delta^*=n^{-1/2}}
+\fsrow{Boltzmann, MAP}{\pi_n=\tfrac{e^{-U}}{Z_n},\ \ U=-\sum_i\log p_\theta(x_i)-\log\pi,\ \ \hat\theta_{\mathrm{MAP}}=\argmin U}
+\fsrow{Langevin}{\dd\theta=-\nabla U\,\dd t+\sqrt2\,\dd W,\ \ \partial_t\rho=\nabla\!\cdot(\rho\nabla U+\nabla\rho)}
+\fsrow{Euler--Maruyama}{U=\tfrac a2\theta^2:\ \ \mathrm{Var}=\tfrac1{a(1-\varepsilon a/2)}}
+\fsrow{SGLD}{\Delta\theta=\tfrac{\varepsilon_t}2\big(\nabla\log\pi+\tfrac Nn\sum_{i\le n}\nabla\log p_\theta(x_{t_i})\big)+\eta_t,\ \eta_t\sim N(0,\varepsilon_t)}
+\fsrow{accuracy vs.\ loss}{-\ln0.51=0.67,\ \ -\ln0.99=0.010,\ \ \text{loss}<\ln p}
+\fsrow{Fourier delta}{\tfrac1p\sum_{k=1}^{p-1}\cos\tfrac{2\pi kt}p=[\,t\equiv0\ (p)\,]-\tfrac1p}
+\fsrow{square network}{h_i=\big(u_i(m)+v_i(n)\big)^2,\ \ f_j=\sum_ia_{ji}h_i;\ \ 4(p-1)\text{ units suffice}}
+\end{fsblock}
+%%%% NOTATION
+$\pi_n,\ \Pbayes(x_{n+1}\mid D_n)$ & posterior density and predictive distribution of the Bayes mixture; the predictive is $Z_{n+1}/Z_n$ & L5\\
+$U(\theta)$ & energy $-\sum_i\log p_\theta(x_i)-\log\pi(\theta)$, so that $\pi_n=e^{-U}/Z_n$ & L5\\
+$\hat\theta_{\mathrm{MAP}},\ \mathcal R$ & maximum a posteriori estimate; regularizer $\mathcal R=-\log\pi$ & L5\\
+$\theta^*,\ \tilde\theta,\ \delta$ & true parameter; its computable (grid) approximation; mesh of the grid & L5\\
+$s,\ a$ & scale of a Gaussian prior $N(0,s^2I)$; curvature of a quadratic $U=\frac a2\theta^2$ & L5\\
+$\varepsilon,\ W_t,\ \rho_t$ & step size; Brownian motion; density of $\theta_t$ in Langevin dynamics & L5\\
+$p,\ \omega$ & prime modulus; $\omega=e^{2\pi i/p}$ & L5\\
+$x,\ h_i,\ f_j$ & two-hot input in $\R^{2p}$; hidden activation $(w_i\!\cdot\!x)^2$; output (logit) $j$ & L5\\
+$u_i,\ v_i,\ A$ & the two halves $w_i=(u_i,v_i)$ of a first-layer row; output weights $A=(a_{ji})$ & L5\\
+$y_j(m,n)$ & zero-sum target $[\,j\equiv m+n\,]-\frac1p$ & L5\\
+%%%% GLOSSARY
+  \item[Posterior, evidence] The posterior $\pi_n\propto\pi\prod_ip_\theta(x_i)$ reweights the parameters by how well they predicted the data; its normalizer $Z_n$, the evidence, is also the probability that the Bayes mixture gives to the data. (L5)
+  \item[Predictive distribution] The posterior average of the model's prediction of the next point; it equals $Z_{n+1}/Z_n$. (L5)
+  \item[Maximum a posteriori (MAP)] The single parameter that maximizes the posterior, i.e.\ minimizes the negative log-likelihood plus $-\log\pi$; for a Gaussian prior the extra term is a squared norm. (L5)
+  \item[Weight decay] A penalty on the squared norm of the weights, or a multiplicative shrinkage of the weights at every step; for plain gradient descent it is MAP with a Gaussian prior, for AdamW only loosely. (L5)
+  \item[Langevin dynamics] The stochastic differential equation $\dd\theta=-\nabla U\,\dd t+\sqrt2\,\dd W$, whose stationary density is $\propto e^{-U}$, the posterior. (L5)
+  \item[SGLD] Stochastic gradient Langevin dynamics (Welling and Teh): minibatch gradient steps plus injected Gaussian noise, with step sizes tending to zero; it samples the posterior. (L5)
+  \item[One-hot encoding] The representation of an element of $\{0,\dots,p-1\}$ by the vector of $\R^p$ with a $1$ in its slot and zeros elsewhere. (L5)
+  \item[Fourier mode] The function $m\mapsto\omega^{km}$ on $\mathbb Z_p$ of frequency $k$; the modes diagonalize addition modulo $p$, since $\omega^{k(m+n)}=\omega^{km}\omega^{kn}$. (L5)
+  \item[Accuracy versus loss] Accuracy counts correct top answers; the cross-entropy loss is $-\log$ of the probability of the correct answer and can remain large at $100\%$ accuracy. (L5)
+  \item[Square activation] The nonlinearity $z\mapsto z^2$; a hidden unit $(u(m)+v(n))^2$ contains the product $2u(m)v(n)$. (L5)
+  \item[Adaptive (deterministic) kernel] In the theory of Rubin, Seroussi and Ringel, the kernel obtained by averaging over the weight distribution of the neurons, a distribution that itself depends on the kernel, so that it is determined self-consistently. (L5)
+  \item[First-order phase transition] A transition at which two minima of the effective action coexist and exchange dominance, with a mixed phase in between; for grokking, the appearance of Fourier weights in the neurons. (L5)
+%%%% VIDEOINDEX
+\begin{vidtable}{Lecture 5 \textperiodcentered{} Bayes, SGD and grokking}{xRYdgd_G-j0}
+\vrow{5.1}{Announcements and project directions}{0:00}
+\vrow{5.2}{Bayesian learning: the mixture}{11:50}
+\vrow{5.3}{Code length, regret, and a recap of Lecture 3}{24:45}
+\vsub{5.3.1}{The Solomonoff bound at the board}{34:28}
+\vrow{5.4}{A Gaussian example: two Bayesian predictors}{42:38}
+\vsub{5.4.1}{Class 2: the parametric class with a Gaussian prior}{42:38}
+\vsub{5.4.2}{Class 1: a Solomonoff-style discretization}{50:46}
+\vsub{5.4.3}{The lesson}{1:05:18}
+\vrow{5.5}{From Bayes to training: MAP, Langevin dynamics and SGLD}{1:11:42}
+\vsub{5.5.1}{The posterior as a Boltzmann weight}{1:11:42}
+\vsub{5.5.2}{Maximum a posteriori}{1:13:55}
+\vsub{5.5.3}{Sampling the posterior: Langevin dynamics}{1:17:13}
+\vsub{5.5.4}{SGLD: SGD plus noise}{1:20:56}
+\vsub{5.5.5}{Is SGD a Bayesian sampler?}{1:26:22}
+\vrow{5.6}{Grokking}{1:27:24}
+\vsub{5.6.1}{Modular addition as a learning problem}{1:27:24}
+\vsub{5.6.2}{Two ways to measure: accuracy and loss}{1:30:38}
+\vsub{5.6.3}{The grokking observation}{1:33:46}
+\vrow{5.7}{A theory of grokking}{1:38:34}
+\vsub{5.7.1}{The network}{1:39:06}
+\vsub{5.7.2}{The guess: Fourier multiplication}{1:44:59}
+\vsub{5.7.3}{The method, and where the lecture stops}{1:48:08}
+\vsub{5.7.4}{Questions}{1:50:15}
+\end{vidtable}
+%%%% HINTS
+\paragraph{Lecture 5.}
+\textbf{1.} Expand $\sum_i|x_i-\theta|^2=\sum_i|x_i|^2-2n\,\theta\!\cdot\!\bar x+n|\theta|^2$ and complete the square in $\theta$ (quadratic coefficient $n+1$); the Gaussian integral gives $(2\pi/(n+1))^{d/2}$. The posterior is $N\big(\frac n{n+1}\bar x,\frac1{n+1}I_d\big)$. \quad
+\textbf{2.} Divide the evidence by $q(D_n)$ and use $\E[\theta^*\!\cdot\!\bar x]=|\theta^*|^2$, $\E|\bar x|^2=|\theta^*|^2+d/n$. $R_{10}=\frac12\ln11+\frac{10\cdot3}{22}=2.5626$ ($d=1$, $|\theta^*|=2$); $R_{100}=\frac32\ln101+\frac{100\cdot22}{202}=17.814$ ($d=3$, $|\theta^*|=5$). The difference from the Clarke--Barron value is $-(|\theta^*|^2-2d)/(2n)+O(n^{-2})\to0$. \quad
+\textbf{3.} The cross term $-e\cdot\sum_i(x_i-\theta^*)$ has mean zero. In the mixture keep only the term of $\tilde\theta$ (weight $2^{-\Kc(\tilde\theta)}$): $\log\frac q{\Pbayes}\le\log\frac q{p_{\tilde\theta}}+\Kc(\tilde\theta)\ln2$ pointwise; then take expectations. \quad
+\textbf{4.} $f'(\delta)=nd\,\delta-d/\delta=0$ gives $\delta=n^{-1/2}$ and $f=\frac d2+d\ln c+\frac d2\ln n$; for $n=100$, $d=1$, $c=3$: $\delta=0.1$, $f=\frac12+\ln3+\ln10=3.901$. \quad
+\textbf{5.} The same computation with $n+s^{-2}$ in place of $n+1$; for large $n$ the charge is $d\ln s+\frac{|\theta^*|^2}{2s^2}-\frac d2$, minimal at $s^2=|\theta^*|^2/d$ with value $\frac d2\ln\frac{|\theta^*|^2}d$. For $d=1$, $|\theta^*|=10$: $49.5$ ($s=1$), $6.15$ ($s=3$), $2.30$ ($s=10$, the best). \quad
+\textbf{6.} The gradient of $\frac12\sum_i|x_i-\theta|^2+\frac12|\theta|^2$ vanishes at $\frac n{n+1}\bar x$. The estimate $\hat\theta_{t-1}=\frac{t-1}t\bar x_{t-1}$ has bias $\theta^*/t$ and variance $(t-1)d/t^2$, and $\E[\frac12|x_t-\hat\theta|^2-\frac12|x_t-\theta^*|^2]=\frac12\E|\theta^*-\hat\theta|^2$ because $x_t$ is independent of $\hat\theta$; $\sum_{t\le n}\frac1t=\ln n+O(1)$ and $\sum\frac1{t^2}$ converges. The difference from the Bayes regret tends to $-0.034\,d+0.322\,|\theta^*|^2$. \quad
+\textbf{7.} For $\rho=e^{-U}/Z$, $J=-\rho U'-\rho'=0$. The recursion $v\mapsto(1-\varepsilon a)^2v+2\varepsilon$ has the fixed point $\frac1{a(1-\varepsilon a/2)}$; for $a=21$, $\varepsilon=0.01$ it is $0.05321$ against $1/21=0.04762$ ($+11.7\%$); a $1\%$ excess needs $\varepsilon=\frac2{21}\cdot\frac{0.01}{1.01}=9.4\cdot10^{-4}$. \quad
+\textbf{8.} $-\ln0.51=0.673$, $-\ln0.99=0.0101$ (however the rest is spread); uniform prediction $\ln97=4.575$. At perfect accuracy the correct class has probability $>1/97$, so the loss is $<\ln97$, and it can be as close to $\ln97$ as one likes. \quad
+\textbf{9.} Geometric sum. For $p=7$: frequencies $k=1,2,3$, eight units each, $24$ in all. With $c_m=\cos\frac{2\pi km}7$ and $s_m=\sin\frac{2\pi km}7$ the units are $(u,v)=(c_m,\pm c_n),\,(s_m,\pm s_n),\,(s_m,\pm c_n),\,(c_m,\pm s_n)$, i.e.\ $h=(c_m\pm c_n)^2$ and so on, and the output weights are $\pm\frac27\cdot\frac14\cos\frac{2\pi kj}7$ for the first two kinds (with an extra minus for $(s_m,\pm s_n)$) and $\pm\frac27\cdot\frac14\sin\frac{2\pi kj}7$ for the last two, the sign being that of the $\pm$ in $v$. \quad
+\textbf{10.} Take the discrete Fourier transforms of $u_i$ and $v_i$, fold $k$ and $p-k$, drop $k=0$, and report the fraction of units with the same dominant frequency against the fraction expected if the two were independent with the same marginals (re-pair the units at random). In my run: $0.363$ at the first fit of the training set and $0.859$ at the end, against $0.022$ early and $0.023$ at the end (largest of $5000$ re-pairings $0.07$). A positive result does not show that units are pure single-frequency, that the network equals the idealized algorithm, or that the alignment is causal.
+%%%% READING
+\textbf{Lecture 5:} \citet{welling2011} (SGLD) and \citet{mandt2017} (SGD with a constant step as a sampler); \citet{mingard2021} (is SGD a Bayesian sampler?); \citet{neal1996}; \citet{power2022} (grokking), \citet{nanda2023} (the Fourier algorithm in transformers) and \citet{gromov2023} (an analytic solution); \citet{rubin2024} for the theory of Section~5.7 and \citet{ringel2025} for the field-theory background; \citet{hutter2005} for the agent of the sixth project direction.
+%%%% PROJECTS
+  \item \textbf{The instructor's directions (L5).} Section~\ref{sec:L5-announce} lists eight directions: many interacting agents, NTK spectra and sparse-autoencoder features, asymptotic regimes and interchanges of limits, phase transitions in small models, and more. The instructor calls them ``mostly hard or very hard'' and invites students to choose their own; the Gaussian toy computations of Lecture~5 (exact regret, Langevin bias) are a template for how to start on such a problem.
+  \item \textbf{A progress measure for grokking from held-out logits (L5).} Section~\ref{sec:L5-theory} splits the logits on held-out pairs into an \emph{offset profile} (the part that depends only on $m+n-j$, which is all that the Fourier-multiplication algorithm produces) and a remainder, and follows the share and the signal-to-noise ratio of the profile during training. Does this measure predict the time of the jump across widths, weight decays, training fractions and groups (the Friday talk), and what is the remainder made of?
+  \item \textbf{When does SGD sample the posterior? (L5).} For small networks whose posterior can be sampled by SGLD or Hamiltonian Monte Carlo, compare the stationary law of constant-step SGD with real, parameter-dependent minibatch noise with the posterior at a fitted temperature, and relate the second-order differences of Mingard et al.\ to batch size and learning rate; the quadratic computation of Section~\ref{sec:L5-sgld} is the baseline.
+%%%% REFS
+\bibitem[Barron and Cover(1991)]{barron1991} A.~R. Barron, T.~M. Cover. Minimum complexity density estimation. \emph{IEEE Transactions on Information Theory} 37(4):1034--1054, 1991.
+\bibitem[Gromov(2023)]{gromov2023} A.~Gromov. Grokking modular arithmetic. arXiv:2301.02679, 2023.
+\bibitem[Gr\"unwald and de~Rooij(2005)]{grunwald2005} P.~Gr\"unwald, S.~de~Rooij. Asymptotic log-loss of prequential maximum likelihood codes. arXiv:cs/0502004, 2005.
+\bibitem[Hutter(2005)]{hutter2005} M.~Hutter. \emph{Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability}. Springer, Berlin, 2005.
+\bibitem[Lin(2025)]{lin2025} J.~Lin. Feature identification via the empirical NTK. arXiv:2510.00468, 2025 (latest version May 2026).
+\bibitem[Loshchilov and Hutter(2019)]{loshchilov2019} I.~Loshchilov, F.~Hutter. Decoupled weight decay regularization. \emph{ICLR} 2019; arXiv:1711.05101.
+\bibitem[Mandt et~al.(2017)]{mandt2017} S.~Mandt, M.~D. Hoffman, D.~M. Blei. Stochastic gradient descent as approximate Bayesian inference. \emph{Journal of Machine Learning Research} 18(134):1--35, 2017.
+\bibitem[Marchetti et~al.(2026)]{marchetti2026} G.~L. Marchetti, D.~Kunin, A.~Myers, F.~Acosta, N.~Miolane. Sequential group composition: a window into the mechanics of deep learning. \emph{ICML} 2026; arXiv:2602.03655.
+\bibitem[Mingard et~al.(2021)]{mingard2021} C.~Mingard, G.~Valle-P\'erez, J.~Skalse, A.~A. Louis. Is SGD a Bayesian sampler? Well, almost. \emph{Journal of Machine Learning Research} 22(79):1--64, 2021; arXiv:2006.15191.
+\bibitem[Nanda et~al.(2023)]{nanda2023} N.~Nanda, L.~Chan, T.~Lieberum, J.~Smith, J.~Steinhardt. Progress measures for grokking via mechanistic interpretability. \emph{ICLR} 2023; arXiv:2301.05217.
+\bibitem[Ringel et~al.(2025)]{ringel2025} Z.~Ringel, N.~Rubin, E.~Mor, M.~Helias, I.~Seroussi. Applications of statistical field theory in deep learning. arXiv:2502.18553, 2025.
+\bibitem[Rubin et~al.(2024)]{rubin2024} N.~Rubin, I.~Seroussi, Z.~Ringel. Grokking as a first order phase transition in two layer networks. \emph{ICLR} 2024; arXiv:2310.03789.
+\bibitem[Seroussi et~al.(2023)]{seroussi2023} I.~Seroussi, G.~Naveh, Z.~Ringel. Separation of scales and a thermodynamic description of feature learning in some CNNs. \emph{Nature Communications} 14:908, 2023.
+\bibitem[Welling and Teh(2011)]{welling2011} M.~Welling, Y.~W. Teh. Bayesian learning via stochastic gradient Langevin dynamics. \emph{Proceedings of the 28th International Conference on Machine Learning (ICML)}, 681--688, 2011.
+%%%% SUMMARY
+\textbf{Lecture 5} continues the theory of deep learning. After announcements about the course projects it reviews Bayesian learning (the evidence $Z_n$ is both the probability of the data and the normalizer of the posterior, and the predictive distribution is $Z_{n+1}/Z_n$), restates the regret bounds of Lecture~3, and works one Gaussian example in two ways: exactly, with a Gaussian prior, and by a Solomonoff-style discretization. The lesson is that complexity, here the norm of the parameter, must be penalized. The lecture then connects Bayes with training (MAP is regularized fitting; Langevin dynamics and SGLD sample the posterior; SGD behaves similarly to it) and ends with grokking on modular addition and the start of a Bayesian theory of it, in which, the instructor guesses, a one-hidden-layer network computes in the Fourier basis; the lecture stops before the main insight.
+%%%% CARD
+Bayes, SGD and grokking | posterior, Langevin, Fourier | amber

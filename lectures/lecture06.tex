@@ -1,0 +1,196 @@
+% =====================================================================================
+%  Lecture 6  —  30 September 2026   (video -cqba5tE6aQ, 1 h 10 min)
+% =====================================================================================
+\chapter{How a language model is built and trained}\label{ch:L6}
+\setlecturevideo{-cqba5tE6aQ}
+\lectureinfo{30 September 2026}{1 h 10 min}{-cqba5tE6aQ}{LLM architecture, deployment and training stages}
+
+% macros local to this chapter
+\newcommand{\Lpiref}{\pi_{\mathrm{ref}}}
+\newcommand{\Lrelu}{\mathrm{ReLU}}
+\newcommand{\Lcal}{\mathcal{L}}
+
+\begin{glance}
+\begin{itemize}
+  \item \textbf{What an LLM is.} A neural network seen as a chain of vector spaces; the \emph{transformer}: tokens $\to$ embeddings $\to$ $L$ layers of causal attention and MLP, all of one width $\to$ unembedding and \emph{softmax with temperature} $\to$ a sampled token that is appended to the text; and the loop repeats.
+  \item \textbf{What really goes in; agents.} A hidden \emph{system prompt}, the conversation so far, and \emph{reasoning tokens} between a hard-coded ``think'' token and a learned end token, hidden or summarized for a safety reason and a commercial one. An agent is an LLM plus a \emph{harness}; four layers of monitoring.
+  \item \textbf{Training.} Pre-training (next-token log-loss), mid-training, post-training (SFT, RLHF/RLAIF, RL with verifiable rewards); compute shifting towards RL; data and Chinchilla; why the next-token loss is \emph{not} shallow statistics (Kraft--Shannon again).
+  \item \textbf{Post-training mathematics.} The SFT loss mask; $\Pr(w\succ l)=\sig\big(r(w)-r(l)\big)$; reward minus a KL penalty; DPO.
+  \item \textbf{Safety.} RLHF does not scale and breeds sycophancy; Claude's Constitution versus OpenAI's Model Spec and deliberative alignment; how they are trained in; the evidence; a slide clarified.
+\end{itemize}
+\end{glance}
+
+\begin{caution}[About the source for this lecture]
+The recording (the session was held online) has English auto-captions only, and the slides (the speaker mentions ``slide~25'') are not visible, so every figure I describe comes from his words. The captions garble technical terms (\emph{unembedding} appears as ``unicetted'', RLHF as ``RHF'', mid-training as ``midra mid-training''), product names (Claude is often ``cloth'' or ``clot'') and several numbers; I corrected what I could identify with confidence and marked the rest\flag. Students are not named. The lecture is a descriptive tour (``feel free to correct me if I'm saying something wrong \ldots{} I am myself somewhat new to the area''); where a statement is loose, and for all checks of numbers and of real-world claims, see the ``Beyond the lecture'' boxes. In the course outline this lecture opens the week on \emph{LLM training stages}.
+\end{caution}
+
+\begin{figure}[tb]
+\centering
+\mapbar{4248}{600}{%
+  \mapseg{0}{510}{slate}\mapseg{510}{945}{teal}\mapseg{945}{1670}{accent}\mapseg{1670}{2115}{amber}
+  \mapseg{2115}{2670}{crimson}\mapseg{2670}{2870}{plum}\mapseg{2870}{3215}{moss}\mapseg{3215}{4248}{ink}
+  \mapin{255}{6.1}\mapin{727}{6.2}\mapin{1307}{6.3}\mapin{1892}{6.4}\mapin{2392}{6.5}\mapin{2770}{6.6}\mapin{3042}{6.7}\mapin{3731}{6.8 \ Safety side}
+  \maplabel{0}{Neural nets}{3.2}{south west}
+  \maplabel{510}{Softmax, temperature}{7.2}{south west}
+  \maplabel{945}{System prompt, CoT}{3.2}{south west}
+  \maplabel{1670}{Agents, monitors}{7.2}{south west}
+  \maplabel{2115}{Training stages}{3.2}{south west}
+  \maplabel{2670}{Compression}{7.2}{south west}
+  \maplabel{2870}{RLHF, DPO}{3.2}{south west}
+  \maplabel{3215}{Constitution, Model Spec}{7.2}{south west}
+}
+\caption{\textbf{Lecture map} (1\,h\,10\,min, to scale). The first half describes the \emph{machine} (6.1--6.4: architecture, output, what goes in, agents), the second its \emph{training} (6.5--6.7) and the safety-motivated documents (6.8).}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{What a language model is made of}\label{sec:L6-arch}
+\tsm{0:00}
+After several weeks of talking about AI and LLMs, the instructor says, it is worth asking what an LLM actually \emph{is}. The lecture goes through the basics of the architecture and of the training, partly for those who have not met them, and partly so that those who have can pick out the parts of this very large system that matter most for safety. He is himself somewhat new to the area and asks to be corrected.
+
+\subsection{Neural networks: graphs and chains of vector spaces}\label{sec:L6-nn}\tsm{1:10}
+A large language model is a neural network, and a neural network can be pictured in two ways. As a \emph{graph}: neurons are nodes joined by edges, and each edge carries a weight, the strength of the connection between two neurons. Or as a \emph{chain of vector spaces and maps}: the neurons are organized into layers, the activations $h_1,h_2,\dots$ of a layer are the components of a vector, and the connections between consecutive layers form a matrix. Passing from one layer to the next, the signal is multiplied by the matrix, a \emph{bias vector} is added, and a nonlinear function is applied to every component.
+
+\begin{defn}[A layer of a network]\label{def:L6-layer}
+With activations $h^{(\ell)}\in\R^{n_\ell}$, a weight matrix $W^{(\ell)}\in\R^{n_{\ell+1}\times n_\ell}$ and a bias vector $b^{(\ell)}\in\R^{n_{\ell+1}}$,
+\[
+  h^{(\ell+1)}\;=\;\varphi\big(W^{(\ell)}h^{(\ell)}+b^{(\ell)}\big),\qquad \varphi=\Lrelu,\ \ \Lrelu(s)=\max(s,0),
+\]
+with $\varphi$ applied to each component.
+\end{defn}
+\noindent The widely used nonlinearity is the \term{ReLU}: zero for negative input, the identity for positive input (the captions say ``zero at zero''). A neuron with negative input is not activated; with positive input it is activated, with a strength equal to the signal received. Some nonlinearity is essential, for otherwise the whole network would only produce linear maps from input to output, and ``the world is much more complicated than the linear maps''; this is in some ways the simplest way for a nonlinearity to enter, and it turns out to be enough to describe arbitrarily complicated functions.
+
+A particular kind of network is the \term{multilayer perceptron} (MLP): the first model of a neuron was historically called the perceptron, and many layers of them make an MLP, also called a \term{fully connected} network because the weights connect every neuron of a layer to every neuron of the next. It is a sequence of transformations from one vector space to the next: a matrix, a pointwise nonlinearity, a matrix, a pointwise nonlinearity, and so on.
+
+\subsection{The transformer}\label{sec:L6-transformer}\tsm{4:55}
+The architecture used in LLMs is a more complicated one, the \term{transformer}: each layer contains an MLP, but also other operations. Here is how it works (Figure~\ref{fig:L6-pipeline}). The input is a sentence, or any text. It is broken into little pieces, words or parts of words, called \term{tokens}; punctuation and a line break can be tokens too. The tokens are \term{embedded}: each token is associated with a vector in the first vector space. The \term{vocabulary}, the set of all tokens, typically has around $100$ to $200$ thousand tokens, and the vector space has a dimension typically between a thousand and perhaps ten thousand, so there are one or two orders of magnitude more tokens than dimensions. The embedding starts out random and is learned, in the training, so as to be as good as possible.
+
+The vectors then pass through the layers. The operations applied to them are MLPs and \term{attention}. Attention, the speaker says, is multiplication by matrices, ``so it is a purely linear operation'' (a loose description; see the box below), and it gives the vector of each token information about the vectors of the \emph{previous} tokens. It is \term{causal}: the information always goes from earlier tokens to later ones, and a token receives nothing from the future. This is supposed to help the model understand how the vector of a token was determined by what happened before it. The output of a layer is again a vector in the same space, so all layers have the same dimension; one can think of what happens inside an LLM as a collection of vector spaces and operations between them. Each piece is not too hard to understand, he says, even though what happens as a whole is very complicated, and he urges the class to watch the videos on attention linked from the reading material.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm, >={Latex[length=2mm,width=1.4mm]},
+    blk/.style={card=#1, minimum height=1.55cm, text width=2.2cm, inner sep=3pt},
+    lab/.style={font=\sffamily\fontsize{6.6}{7.4}\selectfont, text=slate, align=center}]
+  % ---------------- row 1: from text to the block stack
+  \node[blk=slate] (tok) at (2.05,0.55) {\textbf{tokens}\\[-1pt]{\scriptsize text $\mapsto t_1,\dots,t_n$\\ $V\approx10^5$--$2\!\cdot\!10^5$ tokens}};
+  \node[blk=teal] (emb) at (5.05,0.55) {\textbf{embeddings}\\[-1pt]{\scriptsize $x_i^{(0)}=E[t_i]\in\R^{d}$\\ $d\approx10^3$--$10^4$}};
+  \node[draw=accent, fill=accent!6, rounded corners=2pt, line width=0.7pt, minimum width=5.1cm, minimum height=3.7cm, anchor=west] (stack) at (7.1,-0.2) {};
+  \node[font=\sffamily\scriptsize\bfseries, text=accent, anchor=south west] at ([xshift=2mm,yshift=1.2mm]stack.south west) {$L$ layers, one width $d$};
+  \node[card=accent, minimum width=1.9cm, minimum height=0.95cm] (att) at (8.4,0.55) {causal\\attention};
+  \node[circle, draw=slate, fill=white, inner sep=0.4pt, font=\sffamily\scriptsize] (p1) at (9.7,0.55) {$+$};
+  \node[card=teal, minimum width=1.4cm, minimum height=0.95cm] (mlp) at (10.7,0.55) {MLP};
+  \node[circle, draw=slate, fill=white, inner sep=0.4pt, font=\sffamily\scriptsize] (p2) at (11.75,0.55) {$+$};
+  \draw[->, accent, line width=0.9pt] (att.east) -- (p1.west);
+  \draw[->, accent, line width=0.9pt] (p1.east) -- (mlp.west);
+  \draw[->, teal, line width=0.9pt] (mlp.east) -- (p2.west);
+  \draw[->, slate, line width=0.55pt] (7.3,0.55) |- (9.7,1.25) -- (p1.north);
+  \draw[->, slate, line width=0.55pt] (9.84,0.55) |- (11.75,1.45) -- (p2.north);
+  % the causal mask icon
+  \begin{scope}[shift={(7.4,-0.5)}, x=0.17cm, y=0.17cm]
+    \foreach \i in {0,...,4} \foreach \j in {0,...,4} {
+      \ifnum\j>\i \else \fill[accent!55] (\j,-\i) rectangle ++(0.92,-0.92); \fi
+      \draw[ink!30, line width=0.2pt] (\j,-\i) rectangle ++(0.92,-0.92);}
+  \end{scope}
+  \node[lab, anchor=west, text width=3.5cm, align=left] at (8.45,-0.95) {mask $M$: token $i$ attends to tokens $j\le i$ only};
+  \draw[->, line width=1pt, ink] (tok.east) -- (emb.west);
+  \draw[->, line width=1pt, ink] (emb.east) -- (emb.east -| stack.west);
+  % ---------------- row 2: from the last vector back to the text
+  \node[blk=moss] (hh) at (11.35,-4.2) {\textbf{last vector}\\[-1pt]{\scriptsize $h=x^{(L)}_n\in\R^{d}$}};
+  \node[blk=amber] (unemb) at (8.35,-4.2) {\textbf{unembedding}\\[-1pt]{\scriptsize $z=Uh+b\in\R^{V}$\\ rows $u_v$: one per token}};
+  \node[blk=plum] (sm) at (5.35,-4.2) {\textbf{softmax}\\[-1pt]{\scriptsize $\Pr(v)\propto e^{z_v/\tau}$\\ temperature $\tau$}};
+  \node[blk=crimson] (samp) at (2.35,-4.2) {\textbf{sample}\\[-1pt]{\scriptsize next token $t_{n+1}$}};
+  \draw[->, line width=1pt, ink] (hh.north |- stack.south) -- (hh.north);
+  \draw[->, line width=1pt, ink] (hh.west) -- (unemb.east);
+  \draw[->, line width=1pt, ink] (unemb.west) -- (sm.east);
+  \draw[->, line width=1pt, ink] (sm.west) -- (samp.east);
+  \draw[->, line width=1.2pt, crimson] (samp.west) -- ++(-0.65,0) |- node[lab, pos=0.25, anchor=east, rotate=90, yshift=1.5mm] {append, repeat} (tok.west);
+  \node[lab, text width=3.4cm] at (2.2,-1.6) {the loop of Section~\ref{sec:L6-loop}: one pass per new token};
+\end{tikzpicture}
+\caption{\textbf{A decoder-only transformer at a glance} (schematic; sizes as quoted in the lecture). A text is cut into tokens, each token becomes a vector of dimension $d$, and the vectors pass through $L$ layers, each a causal-attention step and an MLP step whose outputs are added to the running vector (the circled plus signs: the ``residual'' connections; see the box \emph{The transformer block in formulas}). The vector of the \emph{last} position is turned into one score per vocabulary token, then into probabilities; a token is sampled and appended, and the process repeats.}
+\label{fig:L6-pipeline}
+\end{figure}
+
+\begin{beyond}[The transformer block in formulas, and what the lecture glossed over]\label{box:L6-block}
+\emph{Notation} (local to this chapter): $n$ tokens, vocabulary size $V$, width $d$, $L$ layers, $H$ heads of width $d_k=d/H$. The embedding matrix $E\in\R^{V\times d}$ gives $x_i^{(0)}\in\R^d$ (plus position information, Section~\ref{sec:L6-loop}), and layer $\ell$ of a standard decoder-only transformer (in the pre-normalization form of most current models; the original \citep{vaswani2017} is an encoder--decoder with post-normalization) \emph{adds} its output to a running vector, the \term{residual stream}:
+\[
+  u^{(\ell)}=x^{(\ell-1)}+\mathrm{MHA}_\ell\big(\mathrm{LN}(x^{(\ell-1)})\big),\qquad
+  x^{(\ell)}=u^{(\ell)}+\mathrm{MLP}_\ell\big(\mathrm{LN}(u^{(\ell)})\big).
+\]
+Here $\mathrm{LN}$ is a normalization and one attention head, acting on the rows of its input $X\in\R^{n\times d}$, is
+\[
+  \mathrm{head}(X)=\softmax\!\Big(\frac{QK^{\top}}{\sqrt{d_k}}+M\Big)\,XW_{v},\qquad Q=XW_q,\quad K=XW_k,
+\]
+the softmax acting on each row, with the causal mask $M_{ij}=0$ for $j\le i$ and $M_{ij}=-\infty$ for $j>i$. $\mathrm{MHA}$ concatenates the heads and multiplies by $W_o$, and $\mathrm{MLP}(x)=W_2\,\varphi(W_1x+b_1)+b_2$ with hidden width $4d$. The mask $M$ is the causality of the lecture; at the end the scores are $z=U\,\mathrm{LN}(x^{(L)}_n)+b$ (Definition~\ref{def:L6-softmax}).
+
+\emph{Parameters and compute.} A layer has $4d^2$ weights in attention and $8d^2$ in the MLP, so $N\approx12\,Ld^2+Vd$. For GPT-3 175B ($L=96$, $d=12288$, $2048$ positions; \citealp{brown2020}), with $V=50257$, the GPT-2 vocabulary (my assumption, with which the count is consistent), the layers give $1.7395\times10^{11}$ and, with the embeddings, $1.746\times10^{11}$: the $174.6$ billion of their Table~D.1. In a forward pass each weight is used once per token (a multiplication and an addition, $2$ FLOP) and backpropagation costs about twice that, hence $C\approx6ND$ (equation~\eqref{eq:C6ND}); the attention scores add a fraction $n/(6d)\approx3\%$ at $n=2048$. So $6\times1.746\times10^{11}\times3\times10^{11}=3.14\times10^{23}$ FLOP, the figure of \citet{brown2020}.
+
+\emph{Attention is not ``purely linear''.} For \emph{fixed} attention weights $A=\softmax(QK^{\top}/\sqrt{d_k}+M)$ the output $AXW_vW_o$ is linear in the values $XW_v$. But $A$ is computed from the same input: $QK^{\top}$ is quadratic in $X$ and the softmax is nonlinear, so $X\mapsto\mathrm{head}(X)$ is neither additive nor homogeneous. In a small numpy model ($d=16$, $4$ heads) the output is linear in the values to $10^{-12}$ when $A$ is frozen, whereas $\mathrm{head}(X_1{+}X_2)-\mathrm{head}(X_1)-\mathrm{head}(X_2)$ and $\mathrm{head}(2X)-2\,\mathrm{head}(X)$ are of order one: that the mixing coefficients depend on the content is the point of attention. The same model confirms causality (changing token $m$ changes nothing at positions $<m$) and the count $12Ld^2+2Vd$ (script \kbd{figures/gen\_data\_L6.py}).
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{From the last layer to the next token}\label{sec:L6-output}
+\tsm{8:30}
+\subsection{Softmax over dot products, and the temperature}\label{sec:L6-softmax}\tsm{8:35}
+What does one do with the output? The vector that comes out of the last layer is multiplied by a certain matrix, the \term{unembedding matrix} (the captions have ``unicetted''), a constant (a bias) is added, and a \term{softmax}, an exponential followed by a normalization, is applied; the result is a probability distribution over the possible next tokens. The speaker's running example: a sentence is broken into four tokens, the tokens are embedded, the four vectors go through the blocks of the transformer and the output is a vector. The unembedding matrix has one row for each token of the vocabulary, a direction in a space of the same dimension as the output, and one takes the dot product of the output with the vector of each token. If the output vector is very close to the vector of a certain token, that token has a large probability. The tokens are a discrete set, whereas the output vector is a continuous object that can point anywhere; one wants the closest token vector, which would be the most probable token, and the softmax assigns probabilities according to how close they are geometrically (how small the angle is).
+
+\begin{defn}[Unembedding, softmax and temperature]\label{def:L6-softmax}
+Let $h\in\R^d$ be the output vector of the last layer, $u_1,\dots,u_V\in\R^d$ the rows of the unembedding matrix and $b\in\R^V$ the bias. The next token $v$ has probability
+\[
+  \Pr(v)\;=\;\frac{\exp(z_v/\tau)}{\sum_{w=1}^{V}\exp(z_w/\tau)},\qquad z_v=\ip{u_v}{h}+b_v ,
+\]
+where $\tau>0$ is the \term{temperature}. As $\tau\to0$ this becomes the maximum function: the token with the largest score $z_v$ is picked (the speaker says: the one whose vector is closest to the output vector; item~(ii) of the box below says when the two agree). In practice $\tau\neq0$, so the generation is random.
+\end{defn}
+\noindent (The order in which the speaker mentions the softmax and the matrix is garbled in the captions; the formula above is the standard form that his description matches.)
+
+\subsection{The loop: sample, append, repeat}\label{sec:L6-loop}\tsm{11:35}
+The next token is then \emph{sampled} from this distribution and appended: it becomes, in the example, a fifth token; the five tokens are embedded and go through the transformer again, which yields a sixth, and so on. This looks very inefficient, but most of the computation is repeated: kept cleverly, one does not need to recompute everything for all the earlier tokens, only for the last one, provided one remembers what was done before (the key--value cache of the box below).
+
+\begin{discussion}[Questions from the class]
+\emph{How is the position of a token encoded?} In the original transformer paper (\say{Attention is all you need}) it is put into the initial embedding; there are now various modifications, depending on the architecture. As far as the speaker knows there is, in many modern LLMs, no explicit extra dimension for position; a student suggests that the causality of the attention takes care of it, and the speaker agrees, ``at least as far as I know''\flag.
+\emph{Is ``transformer'' just a fancy name for a multilayer network; are the blocks of the diagram its layers?} Yes: a particular kind of multilayer network, in which what happens between the layers is the specific attention and MLP operations. \emph{What is $b_V$ on the slide?} A bias vector, useful to remove some ``off-centering'' at the end.
+\emph{Is the temperature fixed? Even for $2+2$ the probability of $5$ is not strictly zero.} Typically it is not zero, and it is fixed for an LLM as far as the speaker knows; he knows of no architecture in which it varies with the answer. The case of $2+2$ is handled by a very high probability for $4$ and a very low one for $5$. A student adds that \emph{dynamic-temperature samplers} exist for those with API access.
+\end{discussion}
+
+\begin{beyond}[Temperature, ``angle'', the cache and positions]\label{box:L6-temp}
+\textbf{(i) Temperature and entropy.} Write $\lambda=1/\tau$, $Z(\lambda)=\sum_ve^{\lambda z_v}$, $p_\lambda(v)=e^{\lambda z_v}/Z(\lambda)$. Then $(\log Z)'=\E_{\lambda}z$, $(\log Z)''=\Var_\lambda(z)$, and the entropy is $H(\lambda)=\log Z-\lambda(\log Z)'$, whence
+\[
+  \frac{\dd H}{\dd\lambda}=-\lambda\,\Var_{\lambda}(z)\le0 ,
+\]
+so the entropy is non-decreasing in $\tau$, strictly increasing unless all logits are equal. As $\tau\to0^+$ the distribution tends to the uniform distribution on the set of maximal logits ($H\to\log$ of its size, $0$ without ties); as $\tau\to\infty$ it tends to the uniform distribution on all $V$ tokens ($H\to\log V$). Moreover $p_\tau$ is the unique maximizer over distributions $\pi$ of $\ip{\pi}{z}+\tau H(\pi)$, with value $\tau\log Z(1/\tau)-\tau\KL(\pi\,\|\,p_\tau)$ at $\pi$ (Gibbs' variational principle): temperature sampling solves a regularized maximization of the same form as the RLHF objective of Section~\ref{sec:L6-kl}, with a uniform reference. All of this was checked numerically (Figure~\ref{fig:L6-temp}). Other samplers truncate the tail instead of rescaling it, e.g.\ nucleus sampling \citep{holtzman2020}.
+
+\textbf{(ii) Logit versus angle.} Since $z_v=\norm{u_v}\norm h\cos\theta_v+b_v$, the probabilities depend only on the angles $\theta_v$ if all $\norm{u_v}$ and $b_v$ are equal; then their order is the order of the cosines and $\norm h$ is an inverse temperature, $\Pr(v)\propto\exp(\norm h\norm u\cos\theta_v/\tau)$. In general the norms differ and the nearest direction need not be the most probable token: for $h=(1,0)$, $u_1=(0.5,0.2)$, $u_2=(2,2)$ the angles are $21.8^\circ$ and $45^\circ$ but the probabilities $0.18$ and $0.82$. ``Close'' means ``large inner product'', not ``small angle''.
+
+\textbf{(iii) The cache.} Because of causality, the keys and values of earlier tokens at every layer do not depend on later tokens and can be stored; in my numpy transformer incremental decoding with a cache reproduces the full pass to $3\times10^{-15}$. The price is memory, $2Ld$ numbers per token with full multi-head attention: $4.7$ MB per token for a GPT-3-shaped model in 16-bit numbers, $472$ GB for $10^5$ tokens, one reason why recent models share keys and values between groups of heads \citep{ainslie2023}. The saving: for $P$ prompt tokens and $T$ generated ones (the last generated token is not fed back), $P+T-1$ positions are processed with the cache and $PT+T(T-1)/2$ without ($1499$ against $624{,}750$ for $P=1000$, $T=500$; one more pass for the last token gives $1500$ against $626{,}250$).
+
+\textbf{(iv) Positions.} Apart from the mask, attention does not see order, so position must enter somewhere: the original transformer added fixed position vectors to the embeddings; many current models use \emph{rotary} embeddings (RoPE, \citealp{su2021}), which rotate queries and keys by an angle proportional to position, so that a score depends only on the distance of two tokens (checked: shifting all positions changes no score by more than $10^{-10}$) and nothing is added to the embedding, as the speaker recalls. \citet{kazemnejad2023} show that decoder-only transformers with no position encoding at all can represent both absolute and relative encodings and, trained by SGD, mostly resemble a relative one.
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=12mm}, width=0.52\linewidth, height=0.40\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}, unbounded coords=jump, table/col sep=space]
+\nextgroupplot[title={(a) next-token probabilities}, ybar, bar width=2.3pt, xmin=-0.7, xmax=7.7, ymin=0, ymax=1, xtick={0,1,2,3,4,5,6,7},
+   xticklabels={Paris,the,a,located,Lyon,known,France,Rome}, x tick label style={rotate=60, anchor=east, font=\sffamily\fontsize{6}{7}\selectfont},
+   ylabel={probability},
+   legend style={font=\sffamily\fontsize{6.2}{7}\selectfont, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.98,0.98)}, anchor=north east}]
+  \addplot[fill=accent, draw=none] table[x=idx, y=p_tau05] {figures/data/L6_temp_bars.dat};  \addlegendentry{$\tau=0.5$}
+  \addplot[fill=amber, draw=none] table[x=idx, y=p_tau10] {figures/data/L6_temp_bars.dat};   \addlegendentry{$\tau=1$}
+  \addplot[fill=crimson, draw=none] table[x=idx, y=p_tau20] {figures/data/L6_temp_bars.dat}; \addlegendentry{$\tau=2$}
+\nextgroupplot[title={(b) entropy of the distribution}, xmode=log, xmin=0.03, xmax=40, ymin=0, ymax=2.3, xlabel={temperature $\tau$}, ylabel={entropy (nats)}]
+  \addplot[ink, line width=1.5pt] table[x=tau, y=H] {figures/data/L6_temp_entropy.dat};
+  \draw[slate, dashed, line width=0.7pt] (axis cs:0.03,2.0794) -- (axis cs:40,2.0794);
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=slate, anchor=south east] at (axis cs:38,2.1) {$\log V=\log 8$};
+  \fill[accent] (axis cs:0.5,0.3294) circle (2pt);
+  \fill[amber] (axis cs:1,1.124) circle (2pt);
+  \fill[crimson] (axis cs:2,1.7718) circle (2pt);
+\end{groupplot}
+\end{tikzpicture}
+\caption{Softmax with temperature on eight made-up logits $z=(4.0,\,2.6,\,1.9,\,1.3,\,0.6,\,0.2,\,-0.3,\,-1.0)$ (the tokens are invented for illustration; no real model was queried). \textbf{(a)} The distribution at $\tau=0.5,1,2$: lowering the temperature sharpens it towards the maximum, raising it flattens it. \textbf{(b)} The entropy rises monotonically with $\tau$ (see the box \emph{Temperature, ``angle'', the cache and positions}), from $0$ towards $\log V$ (dashed). Computed by \kbd{figures/gen\_data\_L6.py}.}
+\label{fig:L6-temp}
+\end{figure}
+
+\input{lectures/lecture06b}

@@ -1,0 +1,147 @@
+% =====================================================================================
+%  Lecture 2  —  16 September 2026
+% =====================================================================================
+\chapter{Scaling laws and a solvable model of training}\label{ch:L2}
+\setlecturevideo{-XmDvvHqfLI}
+\lectureinfo{16 September 2026}{58 min}{-XmDvvHqfLI}{scaling laws, gradient flow, the neural tangent kernel}
+
+\begin{glance}
+\begin{itemize}
+  \item A story about Oppenheimer and the atmosphere, used to ask what it would take to \emph{calculate} whether AI is dangerous, and why advocacy and research both matter.
+  \item \textbf{Scaling laws:} loss falls as a power law in compute, data and parameters. What they say, how they are used, and what is not understood.
+  \item A first \emph{solvable} model: gradient flow on a squared loss becomes a linear equation $\partial_t g=-Tg$ driven by the \emph{neural tangent kernel}.
+  \item The spectral theorem turns it into independent modes: a power-law spectrum gives a \textbf{power-law loss curve} $L(t)\asymp t^{-\beta}$.
+\end{itemize}
+\end{glance}
+
+\begin{figure}[tb]
+\centering
+\mapbar{3509}{600}{%
+  \mapseg{0}{304}{accent}\mapseg{304}{621}{slate}\mapseg{621}{1080}{amber}\mapseg{1080}{2320}{teal}\mapseg{2320}{3509}{crimson}
+  \mapin{152}{2.1}\mapin{462}{2.2}\mapin{850}{2.3}\mapin{1700}{2.4 \ From gradient flow to the NTK}\mapin{2915}{2.5 \ Spectral solution}
+  \maplabel{152}{Oppenheimer}{3.2}{south west}
+  \maplabel{462}{Coordination}{7.2}{south west}
+  \maplabel{850}{Scaling laws}{3.2}{south west}
+}
+\caption{\textbf{Lecture map} (58 min, to scale). The lecture is a blackboard talk; the derivation is reconstructed in \S\S2.4--2.5 from partly inaudible recordings.}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{Oppenheimer and the atmosphere}\label{sec:L2-oppenheimer}
+\tsm{1:01}
+The lecture opens with ``a little more philosophy before a little math'', prompted by questions from the first lecture. In the film \emph{Oppenheimer} there is a scene in which Edward Teller
+points out, in 1942, that the first nuclear test might start a chain reaction in the nitrogen of the atmosphere and \emph{set the atmosphere on fire}. In the film Oppenheimer goes to Einstein, who answers that if it can really happen one must not do it; one should even tell the Nazis, so that they do not do it either; and
+that Oppenheimer should go to another physicist who understands the mathematics and \emph{sit down and check carefully}. The conversation with Einstein is invented for the film; the rest happened. Teller did raise the possibility, and Oppenheimer
+took a train from Berkeley to Michigan to see Arthur Compton. The two spent a whole day calculating and convinced themselves that there would be no chain reaction that sets the atmosphere on fire and destroys life on Earth.
+Compton later wrote in his memoirs, the lecturer recounts, that they were genuinely worried and that, had the risk been real, they would have had to go as far as collaborating with the Nazis not to run it.
+
+\begin{beyond}[The calculation did exist]
+The calculation was written up as a Los Alamos report, \emph{Ignition of the atmosphere with nuclear bombs} (LA-602), by Konopinski, Marvin and Teller\,\citep{konopinski1946}. It argues that the energy losses of a hot plasma (in particular radiation) prevent a self-sustaining reaction by a wide margin.
+The point for us is that nuclear physics supplied a \emph{theory in which such a question could be posed and answered}.
+\end{beyond}
+
+\paragraph{The moral.}\tsm{3:05}
+Several people in the first lecture raised the question of advocacy versus research. The analogy is that a number of AI scientists now tell us there is a very large risk from developing AI, and we would
+\emph{like to take a train to someone, sit down, and calculate} whether the risk is large, whether nobody should do it, or whether it can be done in some safe way. Unfortunately we cannot, because \emph{we have no scientific theory of intelligence or of neural networks} comparable to the theory of nuclear physics. That is the central difference between the two episodes, and it is the reason this course exists.
+
+%% ------------------------------------------------------------------------------------
+\section{Research, regulation and coordination}\label{sec:L2-coordination}
+\tsm{4:08}
+Within the AI-safety community there is a big debate between working on \emph{policy} and working on \emph{technical safety}. The instructor says he has no answer, and gives his current view in four points.
+\begin{enumerate}
+  \item Advancing AI regulation is very important for reducing catastrophic risk. There are small things everyone can do: write to your member of parliament, talk to friends, try to understand the issues.
+  \item Even very good regulation probably only \emph{buys time}; eventually we need clarity.
+  \item Even without good regulation there is a huge amount of uncertainty and likely \emph{some} time before the worst catastrophes, so research is needed.
+  \item Progress in understanding the systems is itself the best input to regulation.
+\end{enumerate}
+Everyone should decide for themselves how to contribute, but any way of \emph{reducing uncertainty} helps. Scientists in particular should be honest: not make claims in order to steer society in a direction we prefer, but describe things as we understand them. The instructor believes this is the more effective strategy in the long term, and notes that the present uncertainty is so large that it is hard to give good policy prescriptions at all.
+
+\paragraph{A purely scientific excitement.}\tsm{6:43}
+Setting risk aside, this is also a thrilling moment. It resembles the beginning of the twentieth century: the Michelson--Morley experiments, black-body radiation, many interesting new observations before the theories existed. Now there are rich empirical observations about intelligence and language,
+questions people have thought about for hundreds of years, and we may be near resolving them because of the new experimental information.
+
+\begin{discussion}[Why not just stop?]
+A student asks: given a risk comparable to the Oppenheimer one, would it not be wise to stop training these models and fund science only? What is the companies' argument against? The reply: \emph{the difficulty is coordination}. ``It would be great if everyone stopped, but we do not believe the others will, so we might as well continue.''
+Hence the importance of international agreements. Some people think the risks are exaggerated; but a large fraction of employees at AI companies, apparently including some chief executives, think we should stop. The \emph{AI~2040} plan of the first lecture is precisely about making coordination possible when the US and China do not trust each other:
+monitors in the hardware, groups monitoring each other. It is logistically complicated.
+\end{discussion}
+
+\begin{beyond}[Coordination as a game]
+A caricature makes the structure plain. Two developers each choose \emph{pause} or \emph{race}; the entries are (my payoff, their payoff).
+\begin{center}\small
+\begin{tabular}{@{}c|cc@{}}
+  & other pauses & other races\\\hline
+  I pause & $(3,3)$ & $(0,4)$\\
+  I race  & $(4,0)$ & $(1,1)$
+\end{tabular}
+\end{center}
+This is a prisoner's dilemma: racing is the best reply to either move although $(3,3)$ beats $(1,1)$. Changing the \emph{payoffs}, for instance by verification and enforcement mechanisms (hardware monitors, mutual inspection), is what the proposals aim at. Real incentives are of course richer (many players, uncertainty about capability, repeated interaction); these themes return in the weeks on game theory.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{Scaling laws}\label{sec:L2-scaling}
+\tsm{10:31}
+The first of the remarkable empirical observations about language models is the \emph{scaling law}, most prominently in the 2020 results of OpenAI\,\citep{kaplan2020} and in follow-ups. The instructor tells of a classmate who then worked at OpenAI and said that seeing the scaling laws convinced him that
+scaling is the way to go: performance of language models can be \emph{predictably} improved by increasing compute and data, so one just needs to pour money into it. It is a result for which, even now, we do not have a complete explanation of the \emph{exponents}.
+
+\paragraph{The setup.}\tsm{11:37}
+A sentence is broken into \term{tokens}: whole words, parts of words, commas, spaces. The model is given a stretch of tokens and outputs a probability distribution over the \emph{next} token, which is compared with the one that actually follows. The model is parametrized by a very high-dimensional vector $\theta$ (all the weights of the network). The \term{loss}
+is the average \emph{negative log-probability} the model gave to the true tokens in the training data $S$:
+\[
+  L(\theta)\;=\;-\frac1{|S|}\sum_{\text{tokens }x\in S}\log p_\theta(x_{\text{next}}\mid x_{\text{context}}),
+\]
+so training maximizes the probability that the model assigns to the data. Three quantities govern what one gets (\emph{the big knobs}):
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+$N$ & the number of parameters (model size);\\
+$D$ & the number of training tokens;\\
+$C$ & the number of floating-point operations used in training (compute).
+\end{tabular}
+\end{center}
+If one uses each token once (one gradient update per token), these are tied together: a forward pass costs a few operations per parameter per token and the gradient computation by backpropagation costs a few more, and one finds
+\begin{equation}\label{eq:C6ND}
+  C\;\approx\;6\,N\,D\qquad(\text{two operations per parameter and token forward, four backward}).
+\end{equation}
+The question of the day: with a fixed budget $C$, how should one split it between model size and data? Bigger model and less data, or smaller model and more data?
+
+\paragraph{The observation.}\tsm{14:49}
+Plotting the loss against one of these quantities, with the others large enough not to be the bottleneck, one sees on a log--log plot a \emph{straight line}: a power law, for instance $L\propto D^{-\alpha_D}$ with a positive exponent. It held across architectures and scaling regimes, which suggests an underlying reason.
+It is also \emph{useful}: one can train small models on little data, fit the line, and predict where larger runs will land. The original empirical laws were later refined by the \emph{Chinchilla} paper\,\citep{hoffmann2022}, which found, by training bigger models in a different way (stopping at a different time), a \emph{better} slope and more accurate predictions of the compute-optimal split; the general phenomenon has been replicated by many groups.
+
+\begin{beyond}[Numbers and the compute frontier]
+In \citet{kaplan2020} the fitted exponents are roughly $\alpha_N\approx0.076$ (loss against non-embedding parameters) and $\alpha_D\approx0.095$ (loss against tokens), valid when the other resource is not limiting. \citet{hoffmann2022} fit a joint law
+\begin{equation}\label{eq:chinchilla}
+  L(N,D)\;=\;E+\frac{A}{N^{a}}+\frac{B}{D^{b}},
+\end{equation}
+with the published values $E\approx1.69$, $A\approx406$, $B\approx411$, $a\approx0.34$, $b\approx0.28$. Here $E$ plays the role of an irreducible loss (the entropy of the text, if the fit is taken at face value), the second term is the penalty for finite model size and the third for finite data. Note that once $E$ is included it is the \emph{reducible} loss $L-E$ that follows power laws (Kaplan et al.\ fitted pure power laws to $L$ in regimes where $E$ is negligible next to the terms they vary). Under $C=6ND$, minimizing \eqref{eq:chinchilla} over $N$
+gives the \emph{compute-optimal} size and data,
+\[
+  N^*\propto C^{\,b/(a+b)},\qquad D^*\propto C^{\,a/(a+b)},
+\]
+roughly $C^{0.45}$ and $C^{0.55}$ with these rounded values (the paper reports exponents close to $\tfrac12$ for each of its three ways of estimating them): model size and data should grow together, whereas \citeauthor{kaplan2020} had advocated putting most of the extra compute into model size. The exponents are sensitive to the fitted constants, and replication attempts have refitted them. Along the frontier one finds exactly $L^*-E\propto C^{-ab/(a+b)}$, an exponent of about $0.15$, while the total loss $L^*$ bends toward $E$. Figure~\ref{fig:L2-frontier} uses \eqref{eq:chinchilla} purely as an illustration.
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[notes, width=0.92\linewidth, height=0.62\linewidth, xlabel={training compute $C=6ND$ (FLOPs)}, ylabel={reducible loss $L(N,D)-E$},
+    xmin=1e16, xmax=1e26, ymin=0.08, ymax=6, xtick={1e16,1e18,1e20,1e22,1e24,1e26}, ytick={0.1,0.3,1,3}, yticklabels={0.1,0.3,1,3}, minor tick num=0,
+    legend columns=2, legend style={at={(0.98,0.97)}, anchor=north east, font=\sffamily\fontsize{6}{7}\selectfont}]
+  \addplot[accent!35, line width=1.0pt] table[x=C, y=N7] {figures/data/chinchilla_curves.dat};   \addlegendentry{$N=10^{7}$}
+  \addplot[accent!50, line width=1.0pt] table[x=C, y=N8] {figures/data/chinchilla_curves.dat};   \addlegendentry{$10^{8}$}
+  \addplot[accent!70, line width=1.0pt] table[x=C, y=N9] {figures/data/chinchilla_curves.dat};   \addlegendentry{$10^{9}$}
+  \addplot[accent!85, line width=1.0pt] table[x=C, y=N10] {figures/data/chinchilla_curves.dat};  \addlegendentry{$10^{10}$}
+  \addplot[accent!100!black, line width=1.0pt] table[x=C, y=N11] {figures/data/chinchilla_curves.dat}; \addlegendentry{$10^{11}$}
+  \addplot[amber, line width=2.0pt, dashed] table[x=C, y=Lstar] {figures/data/chinchilla_curves.dat}; \addlegendentry{compute-optimal}
+  \node[font=\sffamily\scriptsize, text=amber!70!black, anchor=south west, align=left] at (axis cs:2e16,0.11) {slope of the frontier:\\$-\frac{ab}{a+b}\approx-0.15$};
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{\textbf{The compute frontier} (illustration; the parametric form \eqref{eq:chinchilla} with the constants quoted above, computed in \kbd{figures/gen\_data.py}). Each blue curve is a fixed model size trained on more and more tokens ($D=C/6N$); the dashed envelope is the best reducible loss reachable at each budget and is an exact straight line on log--log axes, of slope $-ab/(a+b)$: a \emph{scaling law in compute}. (The total loss $L$ would bend toward the irreducible term $E$.)}
+\label{fig:L2-frontier}
+\end{figure}
+
+\begin{openq}
+Why do these exponents take the values they do? We have several partial perspectives but no complete picture. The rest of the lecture, and the next one, develop one of them in a model that is \emph{solvable}.
+\end{openq}
+
+\input{lectures/lecture02b}

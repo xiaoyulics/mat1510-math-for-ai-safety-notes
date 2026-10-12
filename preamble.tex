@@ -1,0 +1,383 @@
+% =====================================================================================
+%  preamble.tex  —  design system for the "Mathematics for AI Safety" lecture notes
+%  Engine: XeLaTeX (or LuaLaTeX).  Build with:  latexmk -xelatex main.tex
+% =====================================================================================
+
+% ---------- fonts ---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{Libertinus Serif}[Ligatures=TeX, Numbers=Lining]
+\setsansfont{FiraSans}[Extension=.otf, UprightFont=*-Regular, BoldFont=*-SemiBold, ItalicFont=*-Italic,
+  BoldItalicFont=*-SemiBoldItalic, Scale=MatchLowercase, Ligatures=TeX, Numbers=Lining]
+\setmonofont{FiraMono}[Extension=.otf, UprightFont=*-Regular, BoldFont=*-Medium, Scale=MatchLowercase]
+\setmathfont{Libertinus Math}
+\newfontfamily\headsf{FiraSans}[Extension=.otf, UprightFont=*-Medium, BoldFont=*-SemiBold, ItalicFont=*-MediumItalic,
+  Scale=MatchLowercase, Ligatures=TeX, Numbers=Lining]
+\newfontfamily\lightsf{FiraSans}[Extension=.otf, UprightFont=*-Light, BoldFont=*-Regular, ItalicFont=*-LightItalic,
+  Scale=MatchLowercase, Ligatures=TeX, Numbers=Lining]
+
+% ---------- page geometry -------------------------------------------------------------
+\usepackage[a4paper, left=22mm, textwidth=128mm, marginparsep=7mm, marginparwidth=42mm,
+            top=27mm, bottom=27mm, headheight=14pt, headsep=10mm, footskip=12mm]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}
+\setstretch{1.075}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.62\baselineskip plus 1pt minus 1pt}
+
+% ---------- colours -------------------------------------------------------------------
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\definecolor{ink}{HTML}{14213D}        % headings, strong text
+\definecolor{accent}{HTML}{2B59C3}     % definitions, links
+\definecolor{teal}{HTML}{0E7C7B}       % theorems / propositions
+\definecolor{amber}{HTML}{B8730B}      % intuition / key ideas
+\definecolor{crimson}{HTML}{B3261E}    % cautions
+\definecolor{plum}{HTML}{6C3FA0}       % open questions
+\definecolor{slate}{HTML}{475569}      % remarks, margin notes
+\definecolor{moss}{HTML}{3F7D3A}       % examples
+\definecolor{rule}{HTML}{C9D1DE}       % hairlines
+
+% ---------- maths ---------------------------------------------------------------------
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{xspace}
+\usepackage{xparse}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\KL}{KL}
+\DeclareMathOperator{\RLCT}{RLCT}
+\DeclareMathOperator{\ran}{ran}
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\Pr}{\mathbb{P}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\ip}[2]{\left\langle #1,\,#2\right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1\right\rvert}
+\newcommand{\Hil}{L^2(\mu)}
+\newcommand{\NTK}{\mathrm{NTK}}
+\newcommand{\simeqq}{\asymp}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\bits}{\text{bits}}
+\newcommand{\Ocal}{\mathcal{O}}
+\newcommand{\Kc}{\mathsf{K}}                 % Kolmogorov complexity
+\newcommand{\rlct}{\lambda_{\mathrm{RLCT}}}  % real log canonical threshold
+\newcommand{\Pbayes}{P_{\mathrm{B}}}
+\newcommand{\Hent}{\mathrm{H}}
+\newcommand{\sig}{\sigma}
+\DeclareMathOperator{\softmax}{softmax}
+\newcommand{\vect}[1]{\bm{#1}}
+\renewcommand{\qedsymbol}{\textcolor{accent}{\raisebox{0.02ex}{\rule{0.58em}{0.58em}}}}
+\usepackage{cancel}
+
+% ---------- graphics, TikZ, pgfplots --------------------------------------------------
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, calc, positioning, shapes.geometric, shapes.misc, fit, backgrounds, decorations.pathreplacing,
+                decorations.markings, patterns, shadows.blur, shapes.symbols, intersections, through, bending, matrix, mindmap}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{fillbetween, groupplots, colorbrewer}
+\pgfplotsset{
+  notes/.style={
+    width=\linewidth, height=0.64\linewidth, scale only axis=false,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt},
+    every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink},
+    legend style={font=\sffamily\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1,
+                  inner sep=2pt, row sep=1pt, rounded corners=1pt},
+    grid=major, major grid style={rule!70, line width=0.3pt},
+    minor grid style={rule!40, line width=0.2pt},
+    every axis plot/.append style={line width=1.1pt},
+    title style={font=\sffamily\small\bfseries, text=ink},
+    unbounded coords=jump,
+    table/col sep=space,
+  }
+}
+\tikzset{
+  every picture/.append style={>={Latex[length=2mm,width=1.4mm]}},
+  smallnode/.style={font=\sffamily\footnotesize, text=ink, align=center, inner sep=3pt},
+  card/.style={rounded corners=2pt, draw=#1, fill=#1!7, line width=0.7pt, font=\sffamily\footnotesize, text=ink,
+               align=center, inner sep=4pt},
+  card/.default=accent,
+}
+
+% ---------- links & references --------------------------------------------------------
+\usepackage[authoryear, round]{natbib}
+\setlength{\bibsep}{3pt}
+\usepackage[colorlinks=true, linkcolor=accent, citecolor=teal, urlcolor=accent, breaklinks=true,
+            pdfauthor={Unofficial notes on lectures by Y. Liokumovich (MAT1510, Fields Institute / University of Toronto)}, pdfsubject={Lecture notes, Lectures 1--8: capability trajectories, scaling laws, generalization and compression, recursive self-improvement, Bayesian learning and grokking, LLM training, emergent misalignment, jailbreaks}, pdfkeywords={AI safety, scaling laws, neural tangent kernel, generalization, Solomonoff induction, singular learning theory, software intelligence explosion, Bayesian learning, grokking, language models, RLHF, emergent misalignment, jailbreaks},
+            pdftitle={Mathematics for AI Safety: Lecture Notes, Lectures 1--8},
+            bookmarksnumbered=true]{hyperref}
+\usepackage{url}
+\urlstyle{same}
+\Urlmuskip=0mu plus 1mu
+
+% ---------- margin notes (sidenotes + clickable YouTube timestamps) --------------------
+\usepackage{marginnote}
+\renewcommand*{\raggedleftmarginnote}{\raggedright}
+\renewcommand*{\marginfont}{\sffamily\scriptsize\color{slate}\setstretch{1.02}}
+\reversemarginpar   % not used: single-sided, margin on the right
+\normalmarginpar
+
+% current lecture video id (set at the start of every lecture chapter)
+\newcommand{\lecturevideo}{}
+\newcommand{\setlecturevideo}[1]{\renewcommand{\lecturevideo}{#1}}
+
+% \ts{mm:ss} or \ts{h:mm:ss}  ->  link to that moment of the current lecture video
+\newcommand{\tsfinish}[4]{%
+  \href{https://www.youtube.com/watch?v=\lecturevideo&t=\the\numexpr(#1)*3600+(#2)*60+(#3)\relax s}{#4}}
+\def\tsparse#1:#2:#3\relax{%
+  \ifx\relax#3\relax\tsfinish{0}{#1}{#2}{#1:#2}\else\tsparseB{#1}{#2}#3\relax\fi}
+\def\tsparseB#1#2#3:\relax{\tsfinish{#1}{#2}{#3}{#1:#2:#3}}
+\newcommand{\tsraw}[1]{\tsparse#1:\relax}
+\newcommand{\ts}[1]{\hbox{\sffamily\scriptsize\color{accent}$\blacktriangleright$\,\tsraw{#1}}}
+% a margin timestamp aligned with the current line
+\newcommand{\tsm}[1]{\marginnote{\ts{#1}}[-0.15\baselineskip]}
+% a general margin remark
+\newcommand{\mnote}[1]{\marginnote{#1}[-0.15\baselineskip]}
+
+% ---------- boxes ---------------------------------------------------------------------
+\usepackage[most]{tcolorbox}
+\tcbset{
+  notebox/.style n args={2}{% colour, tint
+    enhanced jigsaw, breakable, sharp corners,
+    colback=#1!#2!white, colframe=#1, boxrule=0pt, frame hidden,
+    borderline west={2.6pt}{0pt}{#1},
+    left=9pt, right=8pt, top=5pt, bottom=5pt, before skip=9pt, after skip=9pt,
+    fontupper=\normalfont, parskip=0.5\baselineskip,
+    overlay unbroken and first={},
+  },
+}
+% run-in box head:  \boxhead{colour}{Label}{number or empty}{optional title or -NoValue-}
+\NewDocumentCommand{\boxhead}{m m m m}{%
+  {\headsf\bfseries\color{#1}#2\IfBlankTF{#3}{}{\,#3}}%
+  \IfNoValueTF{#4}{}{\ \textit{(#4)}}{\color{#1}\bfseries.}\enspace}
+
+% counter shared by all numbered boxes
+\newcounter{box}[chapter]
+\renewcommand{\thebox}{\thechapter.\arabic{box}}
+
+\NewDocumentEnvironment{defn}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={accent}{6}]\boxhead{accent}{Definition}{\thebox}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{thm}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={teal}{7}]\boxhead{teal}{Theorem}{\thebox}{#1}\itshape}{\end{tcolorbox}}
+\NewDocumentEnvironment{prop}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={teal}{7}]\boxhead{teal}{Proposition}{\thebox}{#1}\itshape}{\end{tcolorbox}}
+\NewDocumentEnvironment{lem}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={teal}{7}]\boxhead{teal}{Lemma}{\thebox}{#1}\itshape}{\end{tcolorbox}}
+\NewDocumentEnvironment{claim}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={teal}{7}]\boxhead{teal}{Claim}{\thebox}{#1}\itshape}{\end{tcolorbox}}
+\NewDocumentEnvironment{exmp}{o}{%
+  \refstepcounter{box}\begin{tcolorbox}[notebox={moss}{6}]\boxhead{moss}{Example}{\thebox}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{remark}{o}{%
+  \begin{tcolorbox}[notebox={slate}{5}]\boxhead{slate}{Remark}{}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{intuition}{o}{%
+  \begin{tcolorbox}[notebox={amber}{8}]\boxhead{amber}{Intuition}{}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{caution}{o}{%
+  \begin{tcolorbox}[notebox={crimson}{5}]\boxhead{crimson}{Caution}{}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{openq}{o}{%
+  \begin{tcolorbox}[notebox={plum}{6}]\boxhead{plum}{Open question}{}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{discussion}{o}{%
+  \begin{tcolorbox}[notebox={slate}{4}, colback=black!3!white]\boxhead{slate}{From the discussion}{}{#1}}{\end{tcolorbox}}
+\NewDocumentEnvironment{beyond}{o}{%
+  \begin{tcolorbox}[notebox={amber}{3}, colback=amber!4!white, borderline west={2.6pt}{0pt}{amber!60!white}, borderline west={0.8pt}{3.4pt}{amber!60!white}]%
+  \boxhead{amber}{Beyond the lecture}{}{#1}\textsuperscript{\textcolor{amber}{\dag}}\enspace}{\end{tcolorbox}}
+
+% key take-aways box (deep navy, white text)
+\NewDocumentEnvironment{takeaways}{O{Key take-aways} }{%
+  \begin{tcolorbox}[enhanced jigsaw, breakable, colback=ink, colframe=ink, boxrule=0pt, arc=1.6mm,
+    left=12pt, right=12pt, top=9pt, bottom=9pt, before skip=14pt, after skip=10pt, coltext=white,
+    fontupper=\normalfont, parskip=0.35\baselineskip,
+    title={\headsf\bfseries\large #1}, coltitle=white, colbacktitle=ink, fonttitle=\headsf,
+    attach title to upper={\par\smallskip},
+    overlay={\fill[white, opacity=0.08] ([xshift=-1.6mm]frame.north east) circle (9mm);}]%
+  \setlist[itemize]{leftmargin=1.3em, itemsep=0.2em, topsep=0.2em, label=\textcolor{amber!70!white}{\large$\blacktriangleright$}}%
+  \hypersetup{urlcolor=white}\color{white}}{\end{tcolorbox}}
+
+% a quotation box
+\NewDocumentEnvironment{quotebox}{m }{%
+  \begin{tcolorbox}[enhanced jigsaw, breakable, colback=white, colframe=rule, boxrule=0.6pt, sharp corners,
+    left=12pt, right=12pt, top=7pt, bottom=7pt, before skip=9pt, after skip=9pt, fontupper=\itshape,
+    overlay={\node[font=\Huge\bfseries, text=rule, anchor=north west, inner sep=0pt] at ([xshift=2pt,yshift=-1pt]frame.north west) {\textquotedblleft};}]%
+  \setlength{\leftskip}{6pt}}%
+  {\par\hfill{\normalfont\sffamily\scriptsize\color{slate}#1}\end{tcolorbox}}
+
+% proofs
+\renewcommand{\proofname}{\headsf\color{slate}Proof}
+\newcommand{\proofsketchname}{\headsf\color{slate}Proof idea}
+\newenvironment{proofidea}{\par\noindent{\proofsketchname.}\enspace}{\par}
+
+% exercise lists
+\NewDocumentEnvironment{exercise}{o}{%
+  \begin{tcolorbox}[notebox={ink}{4}, colback=ink!4!white, unbreakable]\boxhead{ink}{Exercise}{}{#1}}{\end{tcolorbox}}
+
+% ---------- lists ---------------------------------------------------------------------
+\setlist[itemize]{leftmargin=1.35em, itemsep=0.15em, topsep=0.25em, parsep=0.2em,
+                  label=\textcolor{accent}{\raisebox{0.12ex}{\scriptsize$\blacktriangleright$}}}
+\setlist[enumerate]{leftmargin=1.6em, itemsep=0.15em, topsep=0.25em, parsep=0.2em, label=\textcolor{accent}{\bfseries\arabic*.}}
+\setlist[description]{font=\headsf\color{ink}, leftmargin=0pt, itemsep=0.2em}
+
+% ---------- captions ------------------------------------------------------------------
+\usepackage{caption}
+\usepackage{float}
+\captionsetup{font={small,sf}, labelfont={bf,color=accent}, labelsep=period, justification=raggedright,
+              singlelinecheck=false, skip=6pt, margin=0pt}
+\setlength{\textfloatsep}{14pt plus 2pt minus 4pt}
+\setlength{\intextsep}{12pt plus 2pt minus 2pt}
+
+% ---------- KOMA structure: chapters = lectures ---------------------------------------
+\KOMAoptions{headings=big}
+\setkomafont{disposition}{\headsf\color{ink}}
+\setkomafont{section}{\headsf\Large\color{ink}}
+\setkomafont{subsection}{\headsf\large\color{ink}}
+\setkomafont{subsubsection}{\headsf\normalsize\color{slate}}
+\setkomafont{paragraph}{\headsf\normalsize\color{accent}}
+\renewcommand*{\sectionformat}{\textcolor{accent}{\thesection}\enskip}
+\renewcommand*{\subsectionformat}{\textcolor{accent}{\thesubsection}\enskip}
+\RedeclareSectionCommand[beforeskip=1.9\baselineskip, afterskip=0.7\baselineskip]{section}
+\RedeclareSectionCommand[beforeskip=1.4\baselineskip, afterskip=0.45\baselineskip]{subsection}
+\RedeclareSectionCommand[beforeskip=1.1\baselineskip, afterskip=0.3\baselineskip]{subsubsection}
+\setkomafont{descriptionlabel}{\headsf\color{ink}}
+
+% chapter heading: big numeral + title
+\renewcommand*{\chapterformat}{\thechapter}
+\renewcommand*{\chapterlinesformat}[3]{%
+  \ifstr{#1}{chapter}{\ifstrempty{#2}{\par{\headsf\bfseries\fontsize{25}{28}\selectfont\color{ink}#3}\par}{%
+    \par\vspace*{-3mm}%
+    \begin{tikzpicture}
+      \node[anchor=south west, inner sep=0pt] (num) at (0,0)
+        {\fontsize{76}{76}\selectfont\headsf\bfseries\color{accent!85!white}#2};
+      \node[anchor=south west, inner sep=0pt] (ttl) at ([xshift=5.5mm,yshift=-0.5mm]num.south east)
+        {\parbox[b]{100mm}{\raggedright{\headsf\scshape\small\color{slate}\addfontfeature{LetterSpace=8}Lecture \thechapter}\\[3pt]%
+         {\headsf\bfseries\fontsize{25}{28}\selectfont\color{ink}#3}}};
+      \draw[accent, line width=1.4pt] ([xshift=-2.6mm,yshift=1mm]ttl.south west) -- ([xshift=-2.6mm,yshift=-1mm]ttl.north west);
+    \end{tikzpicture}%
+  }}{#3}}
+\renewcommand*{\chapterheadstartvskip}{\vspace*{0\baselineskip}}
+\renewcommand*{\chapterheadendvskip}{\vspace*{0.8\baselineskip}}
+
+% header and footer
+\usepackage[headsepline=0.4pt, footsepline=0pt, plainfootsepline=false]{scrlayer-scrpage}
+\addtokomafont{pageheadfoot}{\sffamily\scriptsize\color{slate}}
+\addtokomafont{pagenumber}{\sffamily\scriptsize\bfseries\color{ink}}
+\setkomafont{headsepline}{\color{rule}}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\ihead{MAT1510 \textperiodcentered{} Mathematics for AI Safety}
+\ohead{\headmark}
+\cfoot*{\pagemark}
+\ofoot{}
+\automark[section]{chapter}
+\renewcommand*{\chaptermarkformat}{Lecture \thechapter\enskip}
+\renewcommand*{\sectionmarkformat}{\thesection\enskip}
+\pagestyle{scrheadings}
+\setkomafont{pageheadfoot}{\sffamily\scriptsize\color{slate}}
+\renewcommand*{\chapterpagestyle}{scrplain}
+\setkomafont{pagenumber}{\sffamily\scriptsize\bfseries\color{ink}}
+\cfoot[\pagemark]{\pagemark}
+
+% table of contents
+\newcommand{\tocLecture}[1]{\textcolor{accent}{Lecture\,#1}}
+\DeclareTOCStyleEntry[indent=0pt, beforeskip=1.1em plus 2pt, numwidth=5.4em, dynnumwidth=false,
+  entryformat=\headsf\bfseries\large\color{ink}, entrynumberformat=\tocLecture,
+  pagenumberformat=\headsf\bfseries\color{ink}]{tocline}{chapter}
+\DeclareTOCStyleEntry[indent=5.4em, beforeskip=0.1em, numwidth=2.3em, dynnumwidth=false,
+  entryformat=\small\normalfont\color{ink!90}]{tocline}{section}
+\DeclareTOCStyleEntry[indent=7.7em, beforeskip=0pt, numwidth=3.0em, dynnumwidth=false,
+  entryformat=\footnotesize\normalfont\color{ink!70}]{tocline}{subsection}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% unnumbered section with a TOC entry (and a working hyperlink anchor)
+\newcommand{\tocsection}[1]{\needspace{16\baselineskip}\section*{#1}\phantomsection\addcontentsline{toc}{section}{\protect\nonumberline #1}}
+% ---------- small helpers --------------------------------------------------------------
+\newcommand{\term}[1]{\textbf{\color{ink}#1}}               % first use of a term
+\newcommand{\say}[1]{\textit{#1}}                            % paraphrase of something said in lecture
+\newcommand{\flag}{\textsuperscript{\textcolor{crimson}{\ddag}}}  % ASR-uncertain item
+\newcommand{\dagmark}{\textsuperscript{\textcolor{amber}{\dag}}} % added from literature
+\newcommand{\vid}[2]{\href{https://www.youtube.com/watch?v=#1}{#2}}
+\newcommand{\kbd}[1]{\texttt{#1}}
+\newcommand{\sfrac}[2]{\mathord{\raisebox{0.15ex}{\scriptsize$#1$}\!/\!\raisebox{-0.2ex}{\scriptsize$#2$}}}
+\newcommand{\lectureinfo}[4]{%
+  \begin{tcolorbox}[enhanced jigsaw, colback=ink!4!white, colframe=ink!4!white, boxrule=0pt, arc=1.4mm,
+      left=9pt, right=9pt, top=5pt, bottom=5pt, before skip=4pt, after skip=8pt, fontupper=\sffamily\scriptsize]
+    \begin{tabularx}{\linewidth}{@{}Xr@{}}
+      \textcolor{slate}{\textbf{Date}}\enspace #1 \quad \textcolor{slate}{\textbf{Length}}\enspace #2 &
+      \textcolor{accent}{$\blacktriangleright$}\ \href{https://www.youtube.com/watch?v=#3}{Watch the recording}\\
+      \multicolumn{2}{@{}>{\raggedright\arraybackslash}X@{}}{\textcolor{slate}{\textbf{Instructor}}\enspace Yevgeny Liokumovich (University of Toronto)\quad \textcolor{slate}{\textbf{Theme}}\enspace #4}
+    \end{tabularx}
+  \end{tcolorbox}}
+\usepackage{tabularx}
+\renewcommand{\arraystretch}{1.18}
+% lecture header for a guest lecture:  date, length, video id, speaker, theme
+\newcommand{\lectureinfoguest}[5]{%
+  \begin{tcolorbox}[enhanced jigsaw, colback=ink!4!white, colframe=ink!4!white, boxrule=0pt, arc=1.4mm,
+      left=9pt, right=9pt, top=5pt, bottom=5pt, before skip=4pt, after skip=8pt, fontupper=\sffamily\scriptsize]
+    \begin{tabularx}{\linewidth}{@{}Xr@{}}
+      \textcolor{slate}{\textbf{Date}}\enspace #1 \quad \textcolor{slate}{\textbf{Length}}\enspace #2 &
+      \textcolor{accent}{$\blacktriangleright$}\ \href{https://www.youtube.com/watch?v=#3}{Watch the recording}\\
+      \multicolumn{2}{@{}>{\raggedright\arraybackslash}X@{}}{\textcolor{slate}{\textbf{Guest speaker}}\enspace #4\quad \textcolor{slate}{\textbf{Theme}}\enspace #5}
+    \end{tabularx}
+  \end{tcolorbox}}
+
+% an "at a glance" box
+\NewDocumentEnvironment{glance}{}{%
+  \begin{tcolorbox}[enhanced jigsaw, breakable, colback=white, colframe=accent!60!white, boxrule=0.7pt, arc=1.6mm,
+    left=11pt, right=11pt, top=6pt, bottom=6pt, before skip=8pt, after skip=10pt, fontupper=\normalfont,
+    title={\headsf\bfseries\small\scshape In this lecture}, coltitle=accent, colbacktitle=white, fonttitle=\headsf,
+    attach title to upper={\par\vspace{2pt}}, bottomtitle=0pt, toptitle=0pt]}{\end{tcolorbox}}
+
+% lecture-map: a horizontal bar of sections, proportional to the video duration
+\newlength{\mapunit}
+% \mapbar{total seconds}{tick step in seconds}{TikZ commands using \mapseg / \maplabel}
+\newcommand{\mapbar}[3]{%
+  \pgfmathsetlength{\mapunit}{\linewidth/#1}%
+  \makebox[\linewidth][c]{\begin{tikzpicture}[x=\mapunit, y=1mm]
+    #3
+    \draw[slate!55, line width=0.35pt] (0,-0.9) -- (#1,-0.9);
+    \foreach \s in {0,#2,...,#1} {%
+      \pgfmathtruncatemacro{\mm}{\s/60}%
+      \draw[slate!55, line width=0.35pt] (\s,-0.9) -- (\s,-1.9);%
+      \node[font=\sffamily\fontsize{6.8}{7.5}\selectfont, text=slate, anchor=north, inner sep=1pt] at (\s,-1.9)
+        {\ifnum\mm=0 0\else\ifnum\mm<60 \mm$'$\else\ifnum\mm=60 1h\else 1h\the\numexpr\mm-60\relax\fi\fi\fi};}%
+  \end{tikzpicture}}}
+% \mapseg{start}{end}{colour}
+\newcommand{\mapseg}[3]{\fill[#3!80!white] (#1,0) rectangle (#2,5.2); \draw[white, line width=0.8pt] (#1,0) -- (#1,5.2);}
+% \maplabel{x}{text}{height}{anchor}  -- label above the bar with a thin leader
+\newcommand{\maplabel}[4]{\draw[slate!70, line width=0.3pt] (#1,5.2) -- (#1,5.2+#3);
+  \node[font=\sffamily\fontsize{6.4}{7.2}\selectfont, text=ink, anchor=#4, inner sep=1.2pt, align=left] at (#1,5.2+#3) {#2};}
+% label written inside a wide segment
+\newcommand{\mapin}[2]{\node[font=\sffamily\fontsize{6.4}{7}\selectfont\bfseries, text=white, inner sep=0pt] at (#1,2.6) {#2};}
+
+\usepackage{etoolbox}
+\usepackage{lipsum}
+\usepackage{fancyvrb}
+\usepackage{fontawesome5}
+\usepackage{needspace}
+
+% balanced bibliography heading
+\renewcommand{\bibsection}{\chapter*{References}\phantomsection\addcontentsline{toc}{chapter}{\protect\nonumberline References}\markboth{References}{References}}
+\setlength{\bibhang}{1.4em}
+
+\emergencystretch=1.5em
+\clubpenalty=4500
+\widowpenalty=4500
+\displaywidowpenalty=3000
+\brokenpenalty=2000

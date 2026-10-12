@@ -1,0 +1,199 @@
+% =====================================================================================
+%  Lecture 4, part B  —  section 4.4 (extensions), 4.5 (questions) and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Beyond the basic model}\label{sec:L4-extend}
+\tsm{24:22}
+The speaker now builds on the basic picture and takes up the questions that have been raised. The biggest problems with the basic model, he says, are that it \emph{misses some dynamics}, such as the dependence of algorithmic efficiency on the scale of the training compute, and that it \emph{misses inputs} to the production function of R\&D. Four extensions follow.
+
+\subsection{Experiments need compute: the CES production function}\label{sec:L4-ces}\tsm{24:54}
+To discover new algorithms and make more software progress one may have to \emph{run many experiments} on physical compute: ``it is not purely a case of being smart; no matter how smart you are, maybe you just need to test things out''. If so, the research input has to include a stock of \emph{experiment compute} besides the cognitive labor of the AIs. A paper by Parker Whitfill and Cheryl Wu\,\citep{whitfill2025} tries to quantify these bottlenecks by defining $R$ as a \term{CES} (constant elasticity of substitution) function of compute and cognitive labor. At the board the speaker explains what that is (``is there a whiteboard?''); he notes that mathematicians have a similar object, the $\ell^p$ norm, but that here the exponent ranges over a different set of values.
+
+\needspace{9\baselineskip}
+\begin{defn}[CES production function]\label{def:L4-ces}
+Let $K,L>0$ be two inputs (economists: capital and labor; here: experiment compute $K$ and cognitive labor $L$). For a weight $\alpha\in(0,1)$ and a substitution parameter $\rho\le1$,
+\[
+   R(K,L)\;=\;\big(\alpha\,K^{\rho}+(1-\alpha)\,L^{\rho}\big)^{1/\rho}\quad(\rho\ne0),\qquad R(K,L)=K^{\alpha}L^{1-\alpha}\quad(\rho=0).
+\]
+\end{defn}
+\noindent It is a weighted \emph{power mean}, one family that contains the arithmetic, geometric and harmonic means (my remark: the range $\rho\le1$ is the one economists use; it keeps the level curves convex). The speaker walks through the limits (Table~\ref{tab:L4-ces}): for $\rho=1$ the two inputs are \emph{perfect substitutes}, ``if you increase this, then the whole thing also increases''; as $\rho\to-\infty$ the function tends to $\min(K,L)$, the inputs are \emph{complements}: if one of them is $1000$ and the other $1$, no amount of increasing the big one raises the output much, ``you are bounded by the other thing''. The special case $\rho=0$, by l'H\^opital's rule, is Cobb--Douglas, $K^{\alpha}L^{1-\alpha}$ (``left as an exercise for the reader'').
+The economist's examples: with $\rho=-\infty$, output is the number of \emph{pairs of shoes}, with $K$ left shoes and $L$ right shoes (a thousand left shoes and one right shoe still make one pair); for substitutes, output is \emph{fruit} and it does not matter whether one has apples or pears.
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.28}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{17mm}>{\raggedright\arraybackslash}p{34mm}>{\raggedright\arraybackslash}p{44mm}>{\raggedright\arraybackslash}p{16mm}@{}}
+\toprule
+\textbf{$\rho$} & \textbf{$R(K,L)$} & \textbf{Name; bottleneck?} & \textbf{$\sigma=\frac1{1-\rho}$}\\
+\midrule
+$1$ & $\alpha K+(1-\alpha)L$ & perfect substitutes; none & $\infty$\\
+$0<\rho<1$ & power mean & substitutes; none ($R\to\infty$ as $L\to\infty$) & $>1$\\
+$\rho\to0$ & $K^{\alpha}L^{1-\alpha}$ & Cobb--Douglas; $R\to\infty$, but slowly & $1$\\
+$\rho<0$ & power mean & complements; \textbf{ceiling} $R<\alpha^{1/\rho}K$ & $<1$\\
+$\rho\to-\infty$ & $\min(K,L)$ & perfect complements & $0$\\
+\bottomrule
+\end{tabular}
+\caption{The CES family. The last column is the \emph{elasticity of substitution} that gives the family its name: $\sigma=\dd\ln(L/K)/\dd\ln\mathrm{MRS}$ along a level curve, where $\mathrm{MRS}=F_K/F_L$ is the ratio of the marginal products (the slope $\abs{\dd L/\dd K}$ of the level curve). Substitutes ($\sigma>1$) and complements ($\sigma<1$) are separated by Cobb--Douglas \citep{arrow1961}. The $\sigma$ column and the ceilings are my additions\dagmark{}.}
+\label{tab:L4-ces}
+\end{table}
+
+\paragraph{What it means for an explosion.}\tsm{29:03}
+In the application $K$ is the experiment compute and $L$ the cognitive labor. If $\rho<0$ the two are complements, ``like the left shoes and the right shoes'', and one becomes a \emph{bottleneck} for the other: one may increase the intelligence, or the number, of the AI systems a lot, but one is then bottlenecked on experiments. If $\rho>0$ they are substitutes, there is no bottleneck, and ``you can increase cognitive labor to infinity and you are golden: you get the hyperbolic growth path'' (in the model of Section~\ref{sec:L4-jones} this needs $r>1$ as well; the lecture leaves that implicit). A student remarks (the captions are garbled\flag) that for $\rho<0$ the output simply converges to a finite limit as $L\to\infty$; ``exactly''.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=11mm}, width=0.5\linewidth, height=0.5\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.4pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) output with $K=1$}, xmode=log, xmin=0.1, xmax=1000, ymin=0, ymax=6.4, xlabel={cognitive labor $L$}, ylabel={output $R(1,L)$},
+   legend to name=cesleg, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=3.5mm}}]
+  \addplot[crimson] table[x=L, y=rho1] {figures/data/ces_labor.dat};      \addlegendentry{$\rho=1$}
+  \addplot[amber] table[x=L, y=rho0p5] {figures/data/ces_labor.dat};      \addlegendentry{$\rho=0.5$}
+  \addplot[moss] table[x=L, y=rho0] {figures/data/ces_labor.dat};         \addlegendentry{$\rho=0$}
+  \addplot[teal] table[x=L, y=rhom0p4] {figures/data/ces_labor.dat};      \addlegendentry{$\rho=-0.4$}
+  \addplot[accent] table[x=L, y=rhom1] {figures/data/ces_labor.dat};      \addlegendentry{$\rho=-1$}
+  \addplot[plum] table[x=L, y=rhom4] {figures/data/ces_labor.dat};        \addlegendentry{$\rho=-4$}
+  \draw[teal, dashed, line width=0.7pt] (axis cs:0.1,5.657) -- (axis cs:1000,5.657);
+  \draw[accent, dashed, line width=0.7pt] (axis cs:0.1,2) -- (axis cs:1000,2);
+  \draw[plum, dashed, line width=0.7pt] (axis cs:0.1,1.189) -- (axis cs:1000,1.189);
+  \node[font=\sffamily\fontsize{5.8}{6.4}\selectfont, text=teal, anchor=south east, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:1000,5.72) {ceiling $2^{2.5}\approx5.7$ for $\rho=-0.4$};
+\nextgroupplot[title={(b) level curves $R=1$}, xmin=0, xmax=2.4, ymin=0, ymax=2.4, xlabel={experiment compute $K$}, ylabel={cognitive labor $L$}]
+  \addplot[crimson] table[x=K, y=rho1] {figures/data/ces_isoquant.dat};
+  \addplot[moss] table[x=K, y=rho0] {figures/data/ces_isoquant.dat};
+  \addplot[accent] table[x=K, y=rhom1] {figures/data/ces_isoquant.dat};
+  \addplot[plum] table[x=K, y=rhom4] {figures/data/ces_isoquant.dat};
+\end{groupplot}
+\end{tikzpicture}\par\smallskip\ref{cesleg}
+\caption{The CES function with equal weights $\alpha=\tfrac12$ (computed from the formula; script \kbd{figures/gen\_data.py}). \textbf{(a)} Output as the cognitive labor grows with experiment compute fixed at $K=1$. Substitutes ($\rho>0$) have no ceiling; for $\rho<0$ the output saturates at $\alpha^{1/\rho}K$ (dashed), and for $\rho$ close to $0$ the ceiling is approached very slowly. \textbf{(b)} Level curves $R=1$ (colors as in the legend, for $\rho=1,0,-1,-4$): for complements they become an L-shape with asymptotes at $K=\alpha^{1/|\rho|}$ and $L=(1-\alpha)^{1/|\rho|}$; no amount of the plentiful input compensates for a shortage of the other.}
+\label{fig:L4-ces}
+\end{figure}
+
+\paragraph{What the data say.}\tsm{30:05}
+In the \emph{baseline} model of Whitfill and Wu, with total experiment compute and cognitive labor as the inputs, the bottleneck is quite weak: they find $\rho>0$. If instead of the total stock of experiment compute one uses the number of \emph{frontier experiments}, i.e.\ experiments at or near the scale of the largest training runs, then the bottleneck becomes strong and $\rho$ is very negative.
+A student asks what ``frontier'' means here. Two pictures: one can run huge numbers of tiny experiments, at the scale of GPT-2, and hope that the innovations transfer to the largest runs. But people at the frontier labs point out that one does not know whether an algorithm \emph{scales}: it may work at the GPT-2 scale and break at the GPT-6 scale, giving no efficiency boost. So one may need to run experiments across scales and close to the scale where the algorithm is to be used. In the model, the total R\&D compute stock is divided by the size of the training run, with a factor that allows generalization two or three orders of magnitude away from the frontier; with that adjustment the compute bottleneck becomes much stronger. Noam Brown\flag{} of OpenAI is cited as saying that many algorithmic innovations introduced in academia do not work at frontier scales.
+
+\begin{discussion}[Is there evidence for the Jones model itself?]
+A student finds it odd that the exponent $\lambda$ does not depend on $S$ (the same ``difficulty'' at all levels of knowledge) and asks for the evidence for the formula. The speaker: evidence for it is probably not available in the AI world. It comes from \emph{endogenous growth theory}, where Jones introduced the exponents to repair an unrealistic prediction of earlier models, in which raising research effort gives a \emph{permanent increase in the growth rate} (twice the researchers, twice the growth rate, forever); he is not sure where exactly the exponent $\beta$ comes from, and will look it up.
+\end{discussion}
+
+\begin{beyond}[Why Jones needed the exponents, and what $r$ was there]
+In Romer's model\,\citep{romer1990} new ideas are produced by $\dot A=\delta L_AA$, so the growth rate $\dot A/A=\delta L_A$ is proportional to the \emph{number} of researchers: a ``scale effect''. \citet{jones1995} replaced it by $\dot A=\delta L_A^{\lambda}A^{\phi}$ with $\phi<1$, which is \eqref{eq:L4-jones} with $\beta=1-\phi$. If research labor grows at a constant rate $n$, the long-run growth rate of $A$ is $\lambda n/(1-\phi)=r\,n$, exactly the relation \eqref{eq:L4-balanced}: the growth rate of technology is tied to the \emph{growth rate} of the research population, not to its level (``semi-endogenous'' growth). So $r$ is the multiplier from research growth to idea growth, and Section~\ref{sec:L4-balanced} is Jones' formula read backwards.
+\end{beyond}
+
+\begin{beyond}[What a bottleneck does to the explosion condition]\label{box:L4-bottleneck}
+Combine the two models, for $\beta>0$: $R=\mathrm{CES}(K,L)$ with experiment compute $K$ and cognitive labor $L=CS$ as in \eqref{eq:L4-RSC}, inserted in \eqref{eq:L4-jones}. Proposition~\ref{prop:L4-loop}(a) still holds, $\frac{\dd}{\dd t}S^\beta=\beta R^\lambda$, and the behavior of $R$ for large $L$ decides everything. Write $R\asymp L^{\theta}$ for large $L$, with $K$ fixed: $\theta=1$ if $0<\rho\le1$, $\theta=1-\alpha$ if $\rho=0$, and $\theta=0$ if $\rho<0$.
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{$K$ constant.} The loop blows up in finite time iff $\theta\,r>1$. That is: for substitutes iff $r>1$ (the basic condition); for Cobb--Douglas iff $(1-\alpha)\,r>1$; for complements \emph{never}, and then $S^\beta$ grows at most linearly, $S\lesssim t^{1/\beta}$.
+  \item \textbf{$\rho<0$ and $K(t)=K_0e^{g_Kt}$, $g_K\ge0$.} Then $\limsup_{t\to\infty}\frac1t\log S\le r\,g_K$, with equality if $r>1$; if $r<1$ the limit is $0$ (AI labor, not compute, is then the limiting factor: polynomial growth). So growth is at most exponential, at a rate set by the growth of \emph{compute}, not of AI labor.
+\end{enumerate}
+\emph{Proof.} For $\rho<0$ the map $x\mapsto x^{1/\rho}$ is decreasing, so $R\le(\alpha K^{\rho})^{1/\rho}=\alpha^{1/\rho}K$, and (a) gives $S^{\beta}\le S_0^\beta+\beta\alpha^{\lambda/\rho}K^\lambda t$ for constant $K$, and $S^\beta\le S_0^\beta+\beta\alpha^{\lambda/\rho}K_0^\lambda(e^{\lambda g_Kt}-1)/(\lambda g_K)$ in case (ii), i.e.\ $\log S\le r g_Kt+O(1)$. For $\rho=0$, $R=K^\alpha(CS)^{1-\alpha}$, so $u=S^\beta$ solves $\dot u=k'u^{(1-\alpha)r}$: the equation of Proposition~\ref{prop:L4-loop}(b) with $r$ replaced by $(1-\alpha)r$. For $0<\rho\le1$ one has $(1-\alpha)^{1/\rho}CS\le R\le K+CS$ (a weighted power mean never exceeds the largest input), which gives $\dot u\ge c\,u^{r}$ (blow-up if $r>1$) and, from the upper bound, at most exponential growth if $r\le1$.
+
+For the remaining claims of (ii), note that $R\le(1-\alpha)^{1/\rho}CS$ as well (same argument), so $\dot u\le c_1u^r$ with $c_1=\beta\big((1-\alpha)^{1/\rho}C\big)^{\lambda}$: for $r<1$ the quantity $u$ grows at most polynomially and $\log S=o(t)$. For $r>1$ the upper bound is attained. A power mean is at least the smaller input, $R\ge\min(K,CS)$. Let $u_*=(K/C)^\beta$, so that $CS\ge K$ iff $u\ge u_*$. If $u<u_*$ for all large $t$, then $\dot u\ge\beta C^\lambda u^r$ and $u$ would blow up in finite time, which is absurd. At a time with $u=u_*$ one has $\dot u\ge\beta K^\lambda\propto e^{\lambda g_Kt}$, while $\dot u_*=\beta g_Ku_*\propto e^{\beta g_Kt}$ and $\lambda>\beta$; so after some time $t_c$ the difference $u-u_*$ cannot cross zero downward, and since $u\ge u_*$ at arbitrarily large times, $u\ge u_*$ from some time on. Then $\dot u\ge\beta K^\lambda$, i.e.\ $\log S\ge r\,g_Kt-O(1)$. \hfill\qedsymbol\par
+The box quantifies ``bottlenecked on experiments'': once $L\gg K$, complementarity does not merely slow the explosion, it \emph{switches the feedback off} (the exponent $\theta=0$), and what remains is a growth rate bounded by the growth of hardware (the speaker cites chips below); while $L\ll K$ the loop still runs as in Proposition~\ref{prop:L4-loop}. The dichotomy is asymptotic ($L\to\infty$) and not uniform in $\rho$: with equal weights the ceiling is $2^{1/|\rho|}K$, i.e.\ $5.7K$ at $\rho=-0.4$ but $1024K$ at $\rho=-0.1$ and $10^6K$ at $\rho=-0.05$, and as $\rho\downarrow0$ the blow-up time in the substitutes case diverges (for $\lambda=1.5$, $\beta=1$, $\alpha=\tfrac12$, $K=C=S_0=1$: $T^*\approx6,\,13,\,30,\,104,\,2150$ for $\rho=0.5,\,0.2,\,0.1,\,0.05,\,0.02$). So the sign of $\rho$ decides whether an explosion is possible in principle, and its size decides on what horizon. I checked all of this numerically (script \kbd{figures/check\_L4\_bottleneck.py}: the blow-up classification for $\rho\in\{1,0.5,0,-0.5,-2\}$ and $r\in\{0.5,1,1.5,1.9,2.1\}$, the growth rates in (ii), and the numbers above).
+\emph{How large is the ceiling?} For equal weights and $\rho=-0.4$ the ceiling $\alpha^{1/\rho}K$ is $2^{2.5}\approx5.7$ times the output $R(K,K)=K$ one has when labor equals compute. This is consistent with the ``maximum speed-up of about $6\times$'' that \citet{davidson2025} derives, in his essay on this very objection, from an estimate $\rho\approx-0.4$ for US manufacturing (an elasticity of substitution of about $0.7$); he argues that for AI R\&D $\rho$ is probably higher (between $-0.2$ and $0$) and gives a 10--40\% chance of an explosion despite compute bottlenecks. (I compared these numbers with the passages of the essay, read through a page-summarizing tool; check the essay itself before citing.)
+\end{beyond}
+
+\subsection{Intelligence versus the number of AIs}\label{sec:L4-two}\tsm{34:45}
+A second issue is that the model does not cleanly separate \emph{improvements in intelligence} from \emph{increases in the number of AIs}. In $R=S\cdot C$ the speaker has been taking $S$ to be training-compute efficiency, while $C$ is more like inference compute, so multiplying them is ``sort of a category error''; it is justified only if training efficiency and inference efficiency are (linearly) related, in which case the setup works.
+One way to separate the two is the AI Futures model\,\citep{aifutures2025dec}, ``probably the best model of the software intelligence explosion to date'', because it accounts for all this in much more depth; a student asks whether it is the AI~2027 model, and the answer is that it is the update of it, released in December of the previous year. In it, \emph{training compute} raises the capabilities of the models through scaling laws, which the authors relate to an abstract quantity called \emph{research taste} (how well one can use experiments); \emph{inference compute} is a separate input that goes into the amount of research effort; and experiment throughput is multiplied by research taste. ``It is pretty complicated.'' There is always a trade-off between capturing dynamics and how many parameters one can actually estimate, versus how much one is making up.
+
+\begin{beyond}[If the two efficiencies differ, and what the AI Futures write-up says]
+Suppose the AIs' efficiency at inference scales as a power $S^{\kappa}$ of the training-efficiency index: $R=S^{\kappa}C$. Then \eqref{eq:L4-closed} becomes $\dot S=C^\lambda S^{1+\kappa\lambda-\beta}$, and the explosion condition is $\kappa r>1$: the linear case $\kappa=1$ is the one in which $r$ is the right number (Exercise~7 below). As I read the write-up of the December 2025 update\,\citep{aifutures2025dec}, it is organized in three stages (automated coding, then a superhuman AI researcher, then the explosion), models experiment compute as a bottleneck on how much coding automation speeds up R\&D, and says that whether a ``taste-only'' singularity occurs depends on how fast ideas get harder to find compared with how fast research taste improves; its median parameters push the dates of full coding automation several years later than the AI~2027 model did. I have not examined the model itself.
+\end{beyond}
+
+\subsection{Scale-dependent progress}\label{sec:L4-scale}\tsm{36:50}
+Another assumption is that $S$ is a \emph{single multiplier}, the same at every scale of training compute. In Figure~\ref{fig:L4-shift}(a) the curve was shifted in parallel, so that the horizontal compute-efficiency gains are always of the same size. It is possible instead that the \emph{slope} changes, and then models trained with more compute get larger efficiency gains than those trained with less (more at GPT-4 scale than at GPT-2 scale); or the slope could decrease; ``the lines may not even be straight''. The speaker simplifies in order to keep the conceptual clarity.
+One case in which this has happened is the switch from recurrent networks (LSTMs) to the transformer: with the capability axis flipped to loss, the two scaling curves can be compared, and the compute saved is smaller at small scales than at large ones. The speaker quotes about $6.3\times$ near $3\cdot10^{15}$ FLOP and about $26\times$ near $10^{17}$ FLOP\flag{} (the figures are read off his slide). More generally, perhaps one cannot capture capabilities, or software quality, on a single axis at all; this is a problem regardless of scale dependence, and a more general model should allow it.
+
+\begin{beyond}[A one-line model of scale-dependent gains]
+Let the reducible losses of two methods be power laws, $L_i-E=A_iC^{-a_i}$ ($i=1$ the old method, $i=2$ the new one). To reach the reducible-loss level $\ell=L-E$ one needs $C_i=(A_i/\ell)^{1/a_i}$, so the compute-equivalent gain is $G=C_1/C_2$, and expressed through the compute $C_2$ of the new method
+\[
+   G\;=\;\Big(\frac{A_1}{A_2}\Big)^{1/a_1}\,C_2^{\;a_2/a_1-1}.
+\]
+The gain is independent of scale exactly when $a_1=a_2$ (a parallel shift of the curves on a log--log scale); if the new method has the steeper law, $a_2>a_1$, it grows like a power of the scale. The two numbers above would correspond to an exponent $\ln(26/6.3)\big/\ln\!\big(10^{17}/(3\cdot10^{15})\big)\approx0.40$ in $G\propto C_2^{\,a_2/a_1-1}$, i.e.\ $a_2/a_1\approx1.4$, if both curves were pure power laws with a common $E$ in this range and if the quoted FLOP figures are the \emph{new} method's compute $C_2$ (if they are the old method's compute $C_1=GC_2$, the same numbers give $a_2/a_1\approx1.7$); two points cannot establish any of this. \citet{ho2024} flag the same issue: older architectures such as the LSTM can be more efficient than the transformer at small scales (the curves of Figure~\ref{fig:L4-shift}b cross), and extrapolating a constant doubling time to much larger efficiency gains is unwarranted.
+\end{beyond}
+
+\subsection{Data from inside the labs}\label{sec:L4-data}\tsm{39:30}
+A line of work that follows up on the basic model is to \emph{gather empirical data}, both to inform the parameters of the model and to obtain \emph{indicators}: perhaps we do not understand the model well, but we may be able to see when an explosion is under way, if it happens. People at the frontier labs, Anthropic among them, have begun to share more data about their internal R\&D process and about capability improvements inside the labs. The speaker shows a graph of the fraction of tasks done by Claude\flag{} (the captions say ``flawed'') rather than by humans, at different \emph{levels of automation} on a somewhat arbitrary scale from $0$ to $5$. Level $4$ is rising fast; a ``bold, heroic extrapolation'' has it cover almost all tasks sometime in 2027 (a student asks when; ``I was just eyeballing it''), and there is no level $5$ in the plot, except ``if you squint really hard'' at the bottom line.
+
+This is the line of work the speaker is most excited about: without knowing many details of how AI R\&D works, it is hard to pin down the right production function, and sharing data on when an explosion might happen is extremely useful. It is also important \emph{for society} to know whether in three months ``we are going to get crazy superintelligence''. And it is important for those outside the labs to specify which metrics matter most. Epoch is actively working with labs (the speaker names Anthropic and OpenAI) on this: defining a set of \term{leading indicators} (is the Epoch Capabilities Index increasing by this much?), statistical tests that say that an acceleration of such a size triggers a particular warning, other indicators, and data to pin down the most important parameter, the complementarity between experiment compute and cognitive labor. The labs also need \emph{incentives} to share, and third-party assessments to keep them honest: METR, ``famous for looking into the Hugging Face hack'' (Lecture~1), and one other organization the captions call ``Essenture''\flag{}. There are active efforts, including at METR, at \emph{embedded investigations inside labs}, to learn about uplift and capability improvements over time; ``if we can get this out, I think that would help a lot''.
+
+%% ------------------------------------------------------------------------------------
+\section{Take-aways and questions}\label{sec:L4-questions}
+\tsm{42:38}
+The speaker's summary slide: (1)~the basic model of recursive self-improvement is a growth-theory model that captures ideas getting harder to find and parallelization penalties; (2)~its most important parameter is $r$, the returns to AI software R\&D, and the hyperbolic-growth condition is $r>1$; (3)~empirical estimates are terrible but do not rule out a software intelligence explosion; (4)~the basic model can be extended in several directions: experiment-compute bottlenecks, the difference between more intelligence and more workers, scale-dependent progress; and (5)~the thing he is most excited about is \emph{sharing data} on recursive self-improvement with the world.
+
+\begin{discussion}[Credences]\label{disc:L4-credence}
+\emph{Is it likely that ideas keep getting harder to find, in AI in particular, and is there reason to believe that more intelligence also gives more workers?} (The question is only partly audible.) The speaker: ``people in this crowd are supposed to be Bayesians'', so he gives a number: his personal credence in a software intelligence explosion is \textbf{about 20--25\%}. He thinks the compute bottlenecks will be pretty important and binding, but the probability is high enough that, if it happens, it could be really crazy. His best guess of $r$, which depends on the exact setup, is \emph{a little above one}. It is hard to know without a good time series of algorithmic progress, which is why Epoch asks the labs for it, or at least to estimate $r$ themselves and report it.
+
+
+Asked again (and after correcting himself, having first flipped it): ideas \emph{do} get harder to find, but one can outpace that with many more or much smarter AI researchers; the 25\% is the chance that they do \emph{not} get harder to find fast enough, i.e.\ the chance of a hyperbolic path.
+
+
+\emph{Is this the most widely held view?} In the San Francisco Bay Area crowd, he says, views range from ``it will not happen'' to ``it will totally happen, 100\%''; there is more variation there than in the rest of the world, so it is hard to say what the median is. His guess is that people who are really worried about AI safety would put a higher credence than he does.
+\end{discussion}
+
+\begin{discussion}[Bottlenecks in the physical world]
+\emph{What are the bottlenecks for compute?} They are easier to pin down, the speaker says, because they involve things in the physical world. One of the biggest is how fast new chips can be built: look at TSMC and how fast it can expand its fabrication plants. At present it can probably sustain the current growth of compute, which he puts, from memory, at about three times a year in the number of chips\flag, but it is hard to make that go \emph{hyperbolic}; if anything it is getting harder to sustain as capital expenditure already reaches hundreds of billions of dollars; unless one improves the number of FLOP per second per chip (possible; he does not know how much AI has sped that up and guesses not much so far).
+
+
+\emph{Has much work been done to estimate the substitution parameter?} Not much: the Whitfill--Wu paper is the main one, it uses basically all the public data, and everything else rests on anecdotes (``did Noam Brown think they were bottlenecked?''), which is not good for estimating $\rho$. The bottleneck is data.
+\end{discussion}
+
+\begin{discussion}[Is the capability axis unbounded? On measuring capabilities]
+A student presses a deeper point. ``Less compute for the same performance'' is easy to quantify at \emph{already achieved} performance, but is there not a moment where methods stop working properly at scale? Is one assuming that capabilities form an axis that continues essentially unboundedly? (For humans one can see IQ 80 versus 140, but what is IQ 400?)
+
+
+The speaker: measuring capabilities well is \emph{not a solved problem}. In the AI Futures model intelligence is captured as research taste, but nobody knows whether that is unbounded, since we have no variation in the data to see what happens if one gets there; ``it is in fact just a guess'', and a skeptic should lower the credences accordingly. One can study cases of wildly superhuman AI, chess and Go, to see how far they went before plateauing in Elo, or try to estimate the maximum software efficiency of neural networks; at the moment there is no good answer. 
+
+It is even worse, he adds, because capabilities are not well measured \emph{today}: Anthropic's frontier safety framework (``responsible scaling policy'') asks, for instance, whether a model is at a dangerous level of biosecurity capability, requiring different safeguards or no release. At some point the models became so good that all the biosecurity benchmarks \emph{saturated}, and a saturated benchmark does not tell one whether the model could really help create a bioweapon; if it \emph{cannot} do the benchmark one is pretty confident that it cannot. It \emph{rules out} rather than \emph{rules in}.
+
+
+A student suggests chess-like Elo ratings as a measurable scale. The speaker: Epoch tries several things, including Elo-like ones, but one always needs some game or common task to test on, and it need not be valid for the real world (``maybe it is just this math thing and does not apply to doing all of my job''); the Epoch Capabilities Index does this by linking overlapping benchmarks. 
+
+And whenever a new benchmark is released, as soon as the AIs reach about $3\%$ ``you can be pretty confident that within the next two years it will be at 90-something percent, probably more like one''. For FrontierMath, Epoch interviewed Fields medalists including Terence Tao and Timothy Gowers and asked how long hard problems would last; Tao, he says, answered at least five years unless there was something like a Manhattan Project. ``Now they have blasted through the entire benchmark'', and through the harder version and some released open problems; given the spending, ``we have sort of been doing a Manhattan Project''. It is really hard to keep finding a harder benchmark that persists.
+\end{discussion}
+
+\begin{beyond}[Why a saturated benchmark can only rule things out]
+Let $X$ be the event that the model has a dangerous capability and $B$ that it passes a test designed to be passed by any model with that capability: $P(B\mid X)=1$, while $P(B\mid\neg X)=q$ measures how easy the test is for models \emph{without} it. Passing multiplies the odds of $X$ by $1/q$, which tends to $1$ as the benchmark saturates ($q\to1$): no information. Failing multiplies the odds by $0$ (for $q<1$): it excludes $X$ completely. A benchmark that tests a \emph{necessary} condition therefore provides one-sided evidence whose strength is limited by how many models without the capability also pass; this is the formal content of ``rules out rather than rules in''. (If $P(B\mid X)<1$ the failure is only evidence of absence: it multiplies the odds by $(1-P(B\mid X))/(1-q)$.)
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item What is the right \emph{production function} of AI R\&D? Is software quality a single number at all, and does the cost of the next idea depend on the level reached, as in $S^{-\beta}$, or on the scale of the training runs?
+  \item Can $r$ and $\rho$ be estimated from data that the labs could share, with error bars narrow enough to decide whether $\theta r>1$? Which \emph{leading indicators} would warn of an acceleration early enough to act?
+  \item How should one model capabilities that are not bounded by any benchmark, and what happens to the feedback loop when the capability axis itself is poorly measured?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item The \textbf{software intelligence explosion} question is whether AIs doing AI research can raise capability using only software. The simplest model is Jones' growth model, $\dot S/S=R^{\lambda}S^{-\beta}$: $\lambda$ is a parallelization penalty and $\beta>0$ means ideas get harder to find.
+  \item With AIs doing the research, $R=SC$ and \emph{hyperbolic growth} (a finite-time blow-up) occurs iff $\lambda>\beta$, i.e.\ $r=\lambda/\beta>1$ (for $\beta>0$). With $u=S^\beta$ it is Lecture~1's toy ODE $\dot u=ku^r$; on a balanced path $r=g_S/g_R$.
+  \item \textbf{Software quality} is measured as \emph{compute efficiency}: how much less training compute reaches the same capability. Estimates of the rate ($\approx3\times$ per year in the 2024 estimate, with huge error bars) concern pre-training only; those of $r$ straddle $1$.
+  \item \textbf{Compute bottlenecks.} Modeling research input as CES$(K,L)$: for complements ($\rho<0$) the output has a ceiling $\alpha^{1/\rho}K$ and once labor is plentiful the feedback switches off (for constant $K$, $S^\beta$ grows at most linearly; for $K=K_0e^{g_Kt}$, $\log S\le r\,g_Kt+O(1)$, with equality in the limit when $r>1$); Cobb--Douglas needs $(1-\alpha)r>1$; substitutes need only $r>1$ (constant $K$). Estimates of $\rho$ differ by specification: substitutes for total compute, strong complements for \emph{frontier-scale} experiments.
+  \item Further refinements: separate the number of AIs from their intelligence (training versus inference efficiency); allow \emph{scale-dependent} efficiency gains; share data from inside the labs, with third-party checks.
+  \item The speaker's credence for an explosion is about 20--25\% (best guess of $r$ a little above $1$); benchmark saturation means measurements of capability \emph{rule out} more than they \emph{rule in}.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems]
+\begin{enumerate}
+  \item \emph{The loop.} Prove parts (a) and (b) of Proposition~\ref{prop:L4-loop}. For $\lambda=0.8$, $\beta=0.5$, $C=2$, $S_0=1$ find $r$ and the blow-up time $T^*$.
+  \item \emph{The polynomial regime.} For $r<1$ show that $S(t)\sim\big((1-r)kt\big)^{1/(\beta(1-r))}$, and that the solution is \emph{not} exponential.
+  \item \emph{Balanced growth.} Derive \eqref{eq:L4-balanced}. If software efficiency doubles every $8$ months and the (effective) research input grows $40\%$ per year, what is $r$? What if the doubling time is $16$ months? (Hypothetical numbers.) Why does the lecture's ``three times higher'' become a factor of about two when $3\times$ per year is replaced by $10\times$ per year?
+  \item \emph{CES.} Show that $R\to K^{\alpha}L^{1-\alpha}$ as $\rho\to0$ and $R\to\min(K,L)$ as $\rho\to-\infty$. Show that the elasticity of substitution is $1/(1-\rho)$.
+  \item \emph{Ceilings.} For $\rho<0$ prove $R(K,L)<\alpha^{1/\rho}K$ for all $L$, and that the bound is sharp as $L\to\infty$. Evaluate it for $\alpha=\frac12$ and $\rho=-0.4,\,-1,\,-4$ (relative to $R(K,K)=K$).
+  \item \emph{Bottlenecks and blow-up.} Prove the cases $\rho=0$ and $\rho<0$ of the box \emph{What a bottleneck does to the explosion condition} (Section~\ref{sec:L4-ces}). For $\rho<0$ and $K(t)=K_0e^{g_Kt}$, find the long-run growth rate of $S$ (per unit of time) when $\lambda=1.5$, $\beta=1$, $g_K=0.1$; what changes if $\lambda=0.5$?
+  \item \emph{Two efficiencies.} If $R=S^\kappa C$ (inference efficiency a power of training efficiency), show that (for $\beta>0$) the loop blows up iff $\kappa r>1$, equivalently $\kappa\lambda>\beta$. What does $\kappa<1$ mean economically?
+  \item \emph{Scale-dependent gains.} For $L_i-E=A_iC^{-a_i}$ derive $G=(A_1/A_2)^{1/a_1}C_2^{a_2/a_1-1}$. When does the gain not depend on the scale? What exponent do the speaker's two numbers give?
+  \item \emph{Rules out, rules in.} In the model of the last Beyond box, compute the posterior probability of $X$ after passing and after failing a test with $q=0.9$, from a prior of $10\%$.
+\end{enumerate}
+\end{exercise}

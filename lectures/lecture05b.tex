@@ -1,0 +1,236 @@
+% =====================================================================================
+%  Lecture 5, part B  —  sections 5.4 (a Gaussian example) and 5.5 (from Bayes to training)
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{A Gaussian example: two Bayesian predictors}\label{sec:L5-gauss}
+\tsm{42:38}
+To show how the two classes are related, the instructor works one example on the board. The truth is a Gaussian with identity covariance,
+\[
+  q(x)\;=\;(2\pi)^{-d/2}\exp\!\big(-\tfrac12|x-\theta^*|^2\big),\qquad x\in\R^d,
+\]
+centered at an unknown vector $\theta^*\in\R^d$, and the data $D_n$ are i.i.d.\ from $q$. He builds two Bayesian predictors for it and compares their regret. Several of the computations are left to the students as exercises, and the board formulas are garbled in the captions: the formulas of this section are my reconstructions, derived and checked by computer in the boxes.
+
+\needspace{5\baselineskip}
+\subsection{Class 2: the parametric class with a Gaussian prior}\label{sec:L5-class2}\tsm{42:38}
+The models are the Gaussians $p_\theta=N(\theta,I_d)$ with the same covariance, the parameter space is $\Theta=\R^d$, and the prior is Gaussian as well, $\pi=N(0,I_d)$: \say{our $x$ is equal to our parameter space and everything is Gaussian}. The evidence \eqref{eq:L5-mixture} is
+\[
+  \Pbayes(D_n)\;=\;\int_{\R^d}(2\pi)^{-d/2}e^{-|\theta|^2/2}\,\prod_{i=1}^n(2\pi)^{-d/2}e^{-|x_i-\theta|^2/2}\,\dd\theta .
+\]
+The instructor points out the effect of the Gaussian prior: it gives little weight to parameters with large $|\theta|$, so it is a \emph{penalty on largeness}. In general one goes \say{back and forth between minimizing loss and the Bayesian posterior distribution}, and \say{a common observation} is \say{that your prior is your penalization for largeness and complexity}; he promises to show why this is closely related to complexity (Section~\ref{sec:L5-lesson}).
+
+\paragraph{Exercises 1 and 2 of the lecture.}\tsm{46:54}
+First, complete the square in $\theta$ and integrate it out, \say{a very common step that happens in Bayesian statistics}. The result is explicit:
+\begin{equation}\label{eq:L5-gauss-evidence}
+  \Pbayes(D_n)\;=\;(2\pi)^{-nd/2}(n+1)^{-d/2}\exp\Big(-\frac12\sum_{i=1}^n|x_i|^2+\frac{n^2\,|\bar x|^2}{2(n+1)}\Big),\qquad\bar x=\frac1n\sum_{i=1}^nx_i .
+\end{equation}
+Second, put this into the regret $R_n=\E_q\log\frac{q(D_n)}{\Pbayes(D_n)}$ and compute the expectation. In the lecture's words the result is \say{exactly the bound plus some terms}: the leading term is the $\frac d2\log n$ of Rissanen's theorem. The terms after it are cut off in the captions; the exact value is
+\begin{equation}\label{eq:L5-gauss-regret}
+  R_n\;=\;\frac d2\ln(n+1)\;+\;\frac{n}{2(n+1)}\big(|\theta^*|^2-d\big),
+\end{equation}
+a $\frac d2\ln n$ plus a bounded remainder (which depends on $\theta^*$ through $|\theta^*|^2$; see the box).
+
+\begin{beyond}[The exact regret of the Gaussian example, by completing the square]
+Expanding $\sum_i|x_i-\theta|^2=\sum_i|x_i|^2-2n\,\theta\!\cdot\!\bar x+n|\theta|^2$, the integrand of the evidence is $(2\pi)^{-(n+1)d/2}e^{-\frac12\sum|x_i|^2}\exp\big(n\,\theta\!\cdot\!\bar x-\frac{n+1}2|\theta|^2\big)$, and
+\[
+   n\,\theta\!\cdot\!\bar x-\tfrac{n+1}2|\theta|^2\;=\;-\tfrac{n+1}2\Big|\theta-\tfrac n{n+1}\bar x\Big|^2+\tfrac{n^2|\bar x|^2}{2(n+1)} .
+\]
+The Gaussian integral over $\theta$ contributes $(2\pi/(n+1))^{d/2}$, which gives \eqref{eq:L5-gauss-evidence}. The same computation shows that the posterior is $N\big(\frac n{n+1}\bar x,\frac1{n+1}I_d\big)$: its mean is $\bar x$ shrunk towards the prior mean~$0$, and its variance is that of $n+1$ observations. Dividing by $q(D_n)$, the terms in $\sum_i|x_i|^2$ combine, and
+\[
+  \log\frac{q(D_n)}{\Pbayes(D_n)}\;=\;\frac d2\ln(n+1)+n\,\theta^*\!\cdot\!\bar x-\frac n2|\theta^*|^2-\frac{n^2|\bar x|^2}{2(n+1)} .
+\]
+Under $q$ one has $\bar x\sim N(\theta^*,\frac1nI_d)$, so $\E[\theta^*\!\cdot\!\bar x]=|\theta^*|^2$ and $\E|\bar x|^2=|\theta^*|^2+\frac dn$; collecting terms gives \eqref{eq:L5-gauss-regret}. For a prior $N(0,s^2I_d)$ the same computation gives
+\begin{equation}\label{eq:L5-gauss-regret-s}
+  R_n\;=\;\frac d2\ln(1+ns^2)+\frac{n\,(|\theta^*|^2-s^2d)}{2(1+ns^2)} .
+\end{equation}
+As $n\to\infty$, \eqref{eq:L5-gauss-regret} equals $\frac d2\ln n+\frac12(|\theta^*|^2-d)+O(1/n)$, which is the Clarke--Barron value of Theorem~\ref{thm:rissanen} for the Fisher information $I=\mathrm{Id}$ and the prior density $\pi(\theta^*)=(2\pi)^{-d/2}e^{-|\theta^*|^2/2}$: the two differ by $-(|\theta^*|^2-2d)/(2n)+O(n^{-2})$. I checked \eqref{eq:L5-gauss-evidence} against numerical integration for $d=1,2$ and \eqref{eq:L5-gauss-regret-s} against Gauss--Hermite quadrature and a Monte Carlo of the log-ratio for several $(n,d,s)$, and verified that the sum of the one-step errors $\E\,\KL(q\,\|\,N(\frac t{t+1}\bar x_t,\frac{t+2}{t+1}I_d))$ over $t<n$ reproduces \eqref{eq:L5-gauss-regret} (script \kbd{figures/gen\_data\_L5.py}, part A). For example $R_{10}=2.5626$ nats for $d=1$, $|\theta^*|=2$.
+\end{beyond}
+
+\needspace{5\baselineskip}
+\subsection{Class 1: a Solomonoff-style discretization}\label{sec:L5-class1}\tsm{50:46}
+Now the same truth is approached with the first class, and there is a problem: $\theta^*$ is a \emph{generic} real vector, one cannot compute all of its digits (there are only countably many computable numbers), so $q$ is almost surely not in the countable class of computable distributions and Theorem~\ref{thm:solomonoff} does not apply as it stands. The remedy is to pick a computable, for instance rational, vector $\tilde\theta$ close to $\theta^*$, to do Solomonoff-style Bayesian prediction in the class of the Gaussians $N(\tilde\theta,I_d)$ with computable centers, and to estimate the regret \emph{with respect to the original truth}.
+
+\paragraph{Exercise 3: the price of a wrong center.}\tsm{52:19}
+Let $e=\tilde\theta-\theta^*$. Then
+\[
+  \log\frac{q(D_n)}{p_{\tilde\theta}(D_n)}\;=\;\frac12\sum_{i=1}^n\big(|x_i-\tilde\theta|^2-|x_i-\theta^*|^2\big)\;=\;\frac n2|e|^2-e\cdot\sum_{i=1}^n(x_i-\theta^*).
+\]
+The instructor stresses that there are two ways to complete the squares, and one should choose the one in which $\theta^*$ appears, because then the last term has mean zero under $q$ and
+\begin{equation}\label{eq:L5-wrong-center}
+  \E_q\log\frac{q(D_n)}{p_{\tilde\theta}(D_n)}\;=\;\frac n2|\tilde\theta-\theta^*|^2 .
+\end{equation}
+By the argument of Section~\ref{sec:L5-solomonoff-proof} (keep only the term of $\tilde\theta$ in the mixture; it carries the weight $2^{-\Kc(\tilde\theta)}$), the regret of the mixture with respect to $q$ is at most \eqref{eq:L5-wrong-center} plus $\Kc(\tilde\theta)\ln2$:
+\begin{equation}\label{eq:L5-oracle}
+  R_n\;\le\;\frac n2|\tilde\theta-\theta^*|^2+\Kc(\tilde\theta)\ln2\qquad\text{for every computable }\tilde\theta .
+\end{equation}
+The first term is the price of the center being wrong, which grows linearly in $n$; the second is the price of describing the center.
+
+\paragraph{Exercise 4: choosing the grid.}\tsm{1:03:14}
+How fine should the grid be? Take a mesh $\delta=2^{-k}$ in each coordinate (\say{it doesn't have to be dyadic, but that's something that works}) and let $\tilde\theta$ keep $k$ binary digits of each coordinate. Then $|\tilde\theta-\theta^*|^2\le d\delta^2$, while writing $\tilde\theta$ down takes about $d\log_2(\|\theta^*\|_\infty/\delta)$ binary digits, so that $\Kc(\tilde\theta)\ln2\lesssim d\ln\frac{\|\theta^*\|_\infty}\delta$ plus smaller terms: the finer the grid, the more digits. Optimizing over $\delta$ the sum $\frac n2d\delta^2+d\ln\frac{\|\theta^*\|_\infty}\delta$ (the box shows how) leaves
+\begin{equation}\label{eq:L5-solo-gauss}
+  R_n\;\lesssim\;\frac d2\ln n\;+\;d\ln\|\theta^*\|_\infty\;+\;\text{smaller terms.}
+\end{equation}
+(At 1:04:48 the captions have $d\log\log\|\theta^*\|_\infty$ for the middle term\flag{}; the optimization gives $d\ln\|\theta^*\|_\infty+O(d)$, as the box below shows, and I follow the derivation, not the captions.) The first term is again Rissanen's $\frac d2\log n$: the Solomonoff-style predictor recovers the parametric bound (my remark: even though the parametric class played no role in its construction).
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=14mm}, width=0.5\linewidth, height=0.46\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.4pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) precision versus description}, xmode=log, xmin=0.01, xmax=1, ymin=0, ymax=9.5, xlabel={mesh $\delta$}, ylabel={nats},
+   legend style={at={(0.03,0.97)}, anchor=north west, font=\sffamily\fontsize{6.0}{6.8}\selectfont, draw=none, fill=white, fill opacity=0.85, text opacity=1}]
+  \addplot[crimson] table[x=delta, y=distortion] {figures/data/L5_precision.dat};   \addlegendentry{$\frac n2d\delta^2$ (fit)}
+  \addplot[accent] table[x=delta, y=description] {figures/data/L5_precision.dat};   \addlegendentry{$d\ln\frac c\delta$ (digits)}
+  \addplot[ink, line width=2pt] table[x=delta, y=total] {figures/data/L5_precision.dat};   \addlegendentry{sum}
+  \draw[amber, dashed, line width=0.8pt] (axis cs:0.1,0) -- (axis cs:0.1,9.5);
+  \fill[amber] (axis cs:0.1,3.9012) circle (2.2pt);
+  \node[font=\sffamily\fontsize{6.0}{6.8}\selectfont, text=amber!80!black, anchor=south west, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:0.115,1.7) {$\delta=n^{-1/2}$};
+\nextgroupplot[title={(b) what a large $|\theta^*|$ costs}, xmode=log, ymode=log, xmin=1, xmax=1000, ymin=1, ymax=1e6, xlabel={$|\theta^*|$}, ylabel={nats above $\tfrac12\ln n$},
+   legend style={at={(0.03,0.97)}, anchor=north west, font=\sffamily\fontsize{6.0}{6.8}\selectfont, draw=none, fill=white, fill opacity=0.85, text opacity=1}]
+  \addplot[crimson] table[x=theta, y=gauss1] {figures/data/L5_prior_cost.dat};   \addlegendentry{Gaussian prior, $s=1$}
+  \addplot[plum] table[x=theta, y=gauss10] {figures/data/L5_prior_cost.dat};   \addlegendentry{Gaussian prior, $s=10$}
+  \addplot[teal, line width=1.8pt] table[x=theta, y=universal_max] {figures/data/L5_prior_cost.dat};   \addlegendentry{discretized (bound)}
+\end{groupplot}
+\end{tikzpicture}
+\caption{\textbf{(a)} The trade-off behind \eqref{eq:L5-solo-gauss} for $n=100$, $d=1$, $\|\theta^*\|_\infty=c=3$ (closed form): the fit term grows with the mesh, the number of digits to write down shrinks, and the sum is smallest at $\delta=n^{-1/2}=0.1$, where it equals $\frac12+\ln3+\frac12\ln100=3.90$. \textbf{(b)} What a parameter of norm $|\theta^*|$ costs beyond $\frac12\ln n$, for $n=10^4$, $d=1$: the exact regret \eqref{eq:L5-gauss-regret-s} for Gaussian priors of scale $s=1$ (the lecture's) and $s=10$, and an upper bound for the Solomonoff-style class with an explicit Elias-delta code (worst value over $[|\theta^*|,1.05\,|\theta^*|]$, because the bound depends on the binary expansion of $\theta^*$). Script \kbd{figures/gen\_data\_L5.py}.}
+\label{fig:L5-trade}
+\end{figure}
+
+\begin{beyond}[The best precision is the statistical resolution; an explicit code and the oracle inequality]
+Put $c=\|\theta^*\|_\infty$ and $f(\delta)=\frac{nd}2\delta^2+d\ln\frac c\delta$. Then $f'(\delta)=nd\,\delta-d/\delta$ vanishes at $\delta=n^{-1/2}$, where $f=\frac d2+d\ln c+\frac d2\ln n$ (Figure~\ref{fig:L5-trade}a). The optimal mesh is $n^{-1/2}$, the precision to which $n$ observations determine a mean: the heuristic of Lecture~3 (each parameter must be specified to a precision of order $n^{-1/2}$, which costs about $\frac12\log n$ per coordinate), which is how the discretization re-derives the $\frac d2\log n$.
+
+\emph{The smaller terms, made explicit.} Write $\tilde\theta_i=m_i2^{-k}$ with $m_i\in\mathbb Z$. Encode the positive integer $k+1$ and then the positive integers $\mathrm{zz}(m_i)$, where $\mathrm{zz}(m)=2m+1$ for $m\ge0$ and $-2m$ for $m<0$ (a bijection $\mathbb Z\to\mathbb N_{>0}$ that absorbs the sign), each with the Elias-delta code, a prefix-free code of length $\ell(N)=L+2\lfloor\log_2(L+1)\rfloor+1$ with $L=\lfloor\log_2N\rfloor$. A concatenation of a fixed number ($d+1$) of codewords of a prefix-free code is again prefix-free, so the weights $2^{-\mathrm{len}(h)}$ sum to at most one (in fact to exactly one: the Elias delta code is complete) and $\Pbayes\ge2^{-\mathrm{len}(h)}p_h$ for every hypothesis $h$ of the class (up to the additive constant of the universal machine, which I ignore). Hence for every $h=N(\tilde\theta,I_d)$ in the class,
+\begin{align*}
+  R_n&\;\le\;\frac n2|\theta^*-\tilde\theta|^2+\mathrm{len}(h)\ln2,\\
+  \mathrm{len}(h)\ln2&\;=\;d\ln\frac c\delta+O\big(d\ln\ln\tfrac c\delta\big)+O(d)\qquad(c\ge1,\ c/\delta\ge3),
+\end{align*}
+which is \eqref{eq:L5-oracle} with the ``smaller terms'' explicit: the $\log\log$ of the captions is the same kind of term as the overhead of coding the integers. In statistics, a bound of this form (fit of the best approximant plus its description length) is called an \emph{index of resolvability}\,\citep{barron1991}; there it bounds the risk of minimum-description-length estimators, and for a mixture it is the one-line argument above. I checked in code that the Elias-delta codewords are prefix-free and have the stated lengths (for $N\le20000$), that \eqref{eq:L5-oracle} holds against a Monte Carlo of the regret of the actual (truncated) mixture, and that the minimum of $f$ is as stated.
+\end{beyond}
+
+\begin{beyond}[What each prior charges for a large parameter]
+By \eqref{eq:L5-gauss-regret-s}, for a prior $N(0,s^2I_d)$ one has $R_n-\frac d2\ln n\to d\ln s+\frac{|\theta^*|^2}{2s^2}-\frac d2$ as $n\to\infty$. The truth is charged $\frac{|\theta^*|^2}{2s^2}$, \emph{quadratically} in its norm ($\frac12|\theta^*|^2$ for the lecture's $s=1$: the penalty term of the prior), plus $d\ln s$ for the scale. The sum is smallest at $s^2=|\theta^*|^2/d$, where it equals $\frac d2\ln\frac{|\theta^*|^2}d$: a Gaussian whose scale fits the truth also charges only \emph{logarithmically}, like the discretization of \eqref{eq:L5-solo-gauss}, which needs no knowledge of the scale. Numbers for $n=10^4$, $d=1$ (nats above $\frac12\ln n$: Gaussian prior with $s=1$, Gaussian prior with $s=10$, and the largest discretized bound over $[|\theta^*|,1.05|\theta^*|]$): $|\theta^*|=10$: $49.5$, $2.3$, $\le11.9$; $|\theta^*|=100$: $4999$, $51.8$, $\le13.9$; $|\theta^*|=1000$: $4.999\cdot10^5$, $5002$, $\le18.1$ (Figure~\ref{fig:L5-trade}b). For $|\theta^*|\approx1$ the Gaussian priors are ahead of this bound (about $0$ and $1.8$ against up to $8$ in the worst case of the window; for a dyadic $\theta^*$ such as $1$ the bound is much lower, as the grid contains the truth): the constants of a universal code are not small, and the unit Gaussian is a good prior when the truth has unit size. The moral is the lecture's: \emph{what a prior charges for a parameter depends on how fast it decays}, and a prior that decays too fast (relative to the scale of the truth) is expensive.
+\end{beyond}
+
+\needspace{5\baselineskip}
+\subsection{The lesson}\label{sec:L5-lesson}\tsm{1:05:18}
+What was the point of the exercise? The instructor wanted to illustrate two things. First, the course will argue a lot about Bayesian approximations to learning in neural networks, and these usually deal with \emph{continuous} parameter spaces; but one must keep in mind that the parameters of a neural network are not continuous: one looks at particular discretizations. Once a precision is fixed, one is dealing with a finite collection of hypotheses, and one wants to do something like Solomonoff induction: \emph{penalize complexity}. Second, the way the penalization enters is that one wants to pick solutions of smaller norm: a smaller $\|\theta^*\|$ gives a smaller regret. In the Bayesian approach this is a prior that decays as $\theta$ grows; in the gradient-descent approach it is a term added to the loss that penalizes large values of the parameters.
+
+\begin{discussion}[Why prefer small classes, and where was discreteness used?]
+A student asks why one would want a class with fewer parameters, or smaller norm. The instructor: if one searches a very large class of distributions, one is more likely to end up with a complex one, and it is harder to find the right one, \say{looking for a needle in a haystack}. One wants two things at the same time. On the one hand a \emph{large} class, because real-world data can be complicated and restricting to linear maps, or to polynomials up to some degree, limits what can be learned. On the other hand, if all complexities are weighted equally then one is likely to end up with a very complex solution, which probably does not generalize to unseen data, because there are many more ways to select something complex than something simple: that goes against Occam's razor. The success of deep learning is related to the fact that one can look at a very large class of functions and at the same time have a learning mechanism that pushes towards simple solutions, \emph{and towards solutions that are simple in a way adapted to the specific problem}: it is not that one has a fixed basis (of polynomials, say) and picks the first few functions; the \emph{basis itself is changing}, the network learns which functions to work with, and then a small number of them suffice.
+
+Another student points out that discreteness was used only at one step, and the instructor agrees: the \emph{only} place is the observation that to specify a number to a given precision one has to pay a price, namely about $d\log(\|\theta\|/\delta)$ digits, \say{so large dimension leads to many more ways to write it down}.
+\end{discussion}
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{From Bayes to training: MAP, Langevin dynamics and SGLD}\label{sec:L5-training}
+\tsm{1:11:42}
+After a two-minute break the instructor goes back to practice: networks are not trained by computing the Bayesian mixture. There is, however, a way of looking at training as minimizing a negative log-likelihood, and the Bayesian objects reappear in new roles.
+
+\needspace{5\baselineskip}
+\subsection{The posterior as a Boltzmann weight}\label{sec:L5-boltzmann}\tsm{1:11:42}
+Given the data, the posterior is a probability distribution on the parameter space that says how well each parameter predicts the points seen. Write it as
+\begin{equation}\label{eq:L5-boltzmann}
+  \pi_n(\theta)\;=\;\frac{e^{-U(\theta)}}{Z_n},\qquad U(\theta)\;=\;-\sum_{i=1}^n\log p_\theta(x_i)\;-\;\log\pi(\theta),
+\end{equation}
+the negative log-likelihood of the data plus the negative log of the prior. The constant $Z_n=\int e^{-U}$ is the same number as the evidence of \eqref{eq:L5-mixture}, the Bayesian probability of seeing the $n$ data points, now playing the role of the normalization of the posterior: \say{you can smile that you've already seen this one before}.
+
+\needspace{5\baselineskip}
+\subsection{Maximum a posteriori}\label{sec:L5-map}\tsm{1:13:55}
+The Bayesian prediction considers all parameters and gives each a number of votes proportional to its quality. Instead of taking this mixture one can simply pick the best parameter, the \term{maximum a posteriori} (MAP) estimate, the $\argmax$ of the posterior. Taking logarithms, this is
+\begin{equation}\label{eq:L5-map}
+  \hat\theta_{\mathrm{MAP}}\;=\;\argmin_{\theta}\Big[-\sum_{i=1}^n\log p_\theta(x_i)\;+\;\mathcal R(\theta)\Big],\qquad\mathcal R(\theta)=-\log\pi(\theta):
+\end{equation}
+the usual learning problem, a loss (the negative log-likelihood) plus a regularization term that is minus the log of the prior; typically the prior punishes complexity. One can go back and forth between minimizing the error with a regularization term and starting with a good prior and finding its maximum a posteriori. For a Gaussian prior everything becomes quadratic: the penalty is the squared norm of $\theta$ (for $N(0,I_d)$, $\mathcal R=\frac12|\theta|^2$ up to the constant $\frac d2\ln2\pi$), which practitioners call \term{weight decay} (the term is mine; the instructor does not use it). A student remarks that the maximum need not exist unless the prior decays fast enough towards the boundary or towards infinity, and the instructor agrees (the Gaussian does decay).
+
+The verdict: MAP is \say{a cool thing, but it is not as good as Bayes}: one does not have, for MAP, the regret bounds that one has for the Bayesian predictive distribution.
+
+\begin{beyond}[MAP in the Gaussian example, and what ``no comparable bound'' can mean]
+In the example of Section~\ref{sec:L5-gauss}, \eqref{eq:L5-map} is $\min_\theta\big[\frac12\sum_i|x_i-\theta|^2+\frac12|\theta|^2\big]$, whose solution is $\hat\theta=\frac n{n+1}\bar x$, the posterior mean computed above. Predict the next point by the plug-in distribution $N(\hat\theta_{t-1},I_d)$. Its expected extra code length at step $t$ over the truth is $\frac12\E|\theta^*-\hat\theta_{t-1}|^2=\frac12\,\frac{(t-1)d+|\theta^*|^2}{t^2}$ (bias $\theta^*/t$ and variance $\frac{(t-1)d}{t^2}$), and summing over $t\le n$,
+\[
+  R_n^{\mathrm{MAP}}\;=\;\frac12\sum_{t=1}^n\frac{(t-1)d+|\theta^*|^2}{t^2}\;=\;\frac d2\ln n+O(1),
+\]
+the \emph{same} leading term as the Bayes mixture; the constants differ by $R_n^{\mathrm{MAP}}-R_n\to-0.034\,d+0.322\,|\theta^*|^2$ (namely $\frac d2(\gamma+1-\frac{\pi^2}6)+|\theta^*|^2(\frac{\pi^2}{12}-\frac12)$ with Euler's $\gamma$; verified numerically and by Monte Carlo of the one-step error). So in this example MAP, used sequentially, loses only a constant, and the instructor's remark has to be read as being about the absence of \emph{general} guarantees of the type of Theorem~\ref{thm:solomonoff}, not as a statement about every model. As I understand the literature on plug-in (``prequential'') codes, they also pay $\frac d2\ln n+O(1)$ in well-specified regular families; but under misspecification the plug-in redundancy can have a different leading constant (for one-parameter exponential families the variance of the truth divided by that of the closest model, while the Bayes mixture keeps the constant $1$)\,\citep{grunwald2005}, so the difference is real in general. For singular models I would not extrapolate from this example. The student's remark about existence has a standard example: logistic regression on separable data has no maximum-likelihood estimate (the likelihood increases as the weights go to infinity), whereas a Gaussian prior makes the MAP exist.
+\end{beyond}
+
+\begin{beyond}[Weight decay is only loosely a Gaussian prior]
+For plain gradient descent, minimizing the sum of the per-example losses plus $\frac\lambda2|\theta|^2$ is MAP estimation with the prior $N(0,\lambda^{-1}I)$ (if the loss is the \emph{average} over $n$ examples the precision is $n\lambda$), and ``L2 regularization'' and ``weight decay'' are the same thing. For adaptive optimizers they are not: Adam with an L2 term rescales the penalty's gradient by the adaptive step, while AdamW applies the decay directly to the weights, $\theta\leftarrow(1-\eta\lambda)\theta-\eta\,\mathrm{Adam}(\nabla L)$\,\citep{loshchilov2019}. The grokking experiments below use AdamW; reading them as MAP under a Gaussian prior is a heuristic, which is how Power et al.\ read their finding that weight decay helps (Section~\ref{sec:L5-grok}).
+\end{beyond}
+
+\needspace{5\baselineskip}
+\subsection{Sampling the posterior: Langevin dynamics}\label{sec:L5-langevin}\tsm{1:17:13}
+How does one compute the Bayesian posterior in practice? The normalizing constant $Z_n$ is hard to learn, but $U$ is not: \say{you can try to just get away with learning $U$}. One wants a procedure that produces several parameters, to be averaged over, such that points of high posterior density are picked more often than points of low density. The simplest way is \term{Langevin dynamics}, a stochastic differential equation: one moves in the direction that minimizes $U$, but adds some random motion, so as to explore different points of the posterior,
+\begin{equation}\label{eq:L5-langevin}
+  \dd\theta_t\;=\;-\nabla U(\theta_t)\,\dd t+\sqrt2\,\dd W_t
+\end{equation}
+(the formula is on a slide and not legible in the captions; $\sqrt2$ is the normalization for which $e^{-U}$ is stationary), with $W$ a Brownian motion. The \emph{Fokker--Planck equation} of \eqref{eq:L5-langevin} is the evolution equation of the density $\rho_t$ of $\theta_t$,
+\[
+  \partial_t\rho\;=\;\nabla\!\cdot\!\big(\rho\,\nabla U+\nabla\rho\big),
+\]
+and the instructor does the computation at the board that shows that $\rho\propto e^{-U}$ is a stationary solution. So if one starts from the posterior one explores it perfectly, according to its concentration.
+
+\begin{beyond}[Why $e^{-U}$ is stationary, and what a finite step costs]
+The equation is $\partial_t\rho=-\nabla\!\cdot J$ with the probability current $J=-\rho\nabla U-\nabla\rho$. For $\rho=e^{-U}/Z$ one has $\nabla\rho=-\rho\nabla U$, so $J\equiv0$: the density is stationary, and in fact the dynamics is \emph{reversible} with respect to it. This needs $\int e^{-U}<\infty$, i.e.\ the prior must decay (as with MAP); that the law of $\theta_t$ actually converges to $e^{-U}/Z$ needs further assumptions on~$U$, which I do not discuss.
+
+Every simulation has a step. The Euler--Maruyama discretization $\theta_{k+1}=\theta_k-\varepsilon\nabla U(\theta_k)+\sqrt{2\varepsilon}\,\xi_k$, $\xi_k\sim N(0,I)$, has a stationary law that is \emph{not} $e^{-U}/Z$. For a quadratic $U=\frac a2(\theta-\mu)^2$ (a Gaussian posterior) the chain is an AR(1) process with stationary mean $\mu$ and variance
+\[
+  \frac{2\varepsilon}{1-(1-\varepsilon a)^2}\;=\;\frac1a\cdot\frac1{1-\varepsilon a/2},
+\]
+too large by the factor $1/(1-\varepsilon a/2)\approx1+\varepsilon a/2$. In the example of Figure~\ref{fig:L5-langevin} ($a=n+1=21$) a step $\varepsilon=0.002$ already inflates the variance by $2.1\%$ ($0.04864$ against $0.04762$), $\varepsilon=0.01$ by $11.7\%$, and a bias of $1\%$ needs $\varepsilon\approx9.4\cdot10^{-4}$. This is why algorithms decrease the step size to zero (SGLD, below) or correct each step by a Metropolis--Hastings accept/reject. (Exact formulas checked by simulation of many chains; script \kbd{figures/gen\_data\_L5.py}, part D.)
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.78\linewidth, height=0.4\linewidth, xmin=0.2, xmax=2.05, ymin=0, ymax=2.1, xlabel={$\theta$}, ylabel={density},
+   legend style={at={(0.98,0.97)}, anchor=north east, font=\sffamily\fontsize{6.2}{7}\selectfont}]
+  \addplot[only marks, mark=*, mark size=1.7pt, accent, mark options={fill=accent}] table[x=theta, y=empirical] {figures/data/langevin_hist.dat};   \addlegendentry{Langevin histogram}
+  \addplot[crimson, line width=1.5pt, domain=0.2:2.05, samples=120] {sqrt(21/(2*pi))*exp(-0.5*21*(x-1.125004)^2)};   \addlegendentry{exact posterior}
+  \draw[amber, dashed, line width=0.9pt] (axis cs:1.125,0) -- (axis cs:1.125,2.1);
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=amber!80!black, anchor=south east] at (axis cs:1.11,0.05) {MAP $=1.125$};
+\end{axis}
+\end{tikzpicture}
+\caption{A Langevin simulation of the one-dimensional Gaussian posterior (my own computation in the spirit of the lecture's slide, which I could not see): $n=20$ points drawn from $N(1,1)$, prior $N(0,1)$, so the posterior is $N(1.125,\,21^{-1})$ (standard deviation $0.2182$); Euler--Maruyama with $\varepsilon=0.002$, $3\cdot10^6$ steps. Dots: density of the visited values; line: exact posterior. Plain gradient descent on $U$ ends at the MAP, $1.125$ (here also the posterior mean), and carries no information about the width. Script \kbd{figures/gen\_data.py}.}
+\label{fig:L5-langevin}
+\end{figure}
+
+\needspace{5\baselineskip}
+\subsection{SGLD: SGD plus noise}\label{sec:L5-sgld}\tsm{1:20:56}
+The most popular algorithm for learning a Bayesian posterior is the one of Welling and Teh\,\citep{welling2011}: \term{stochastic gradient Langevin dynamics} (SGLD). (There is a whole class of algorithms developed by Radford Neal at the University of Toronto in the 1990s\,\citep{neal1996}, and even earlier ones, but this one is particularly simple and seems to perform particularly well; the instructor says it ``seems to be the standard way of calculating Bayesian posteriors''.) What is interesting is that it looks very much like stochastic gradient descent, the usual training algorithm of neural networks, and yet there is a significant difference. Start from a point $\theta_k$ and a step size $\varepsilon_k$; pick a random selection of the data points and compute the gradient of the loss (the negative log-likelihood) \emph{on that minibatch only}, as in stochastic gradient descent; subtract it; \emph{and on top of that add Gaussian noise}. That extra term is the only difference from SGD, and it is what allows exploration.
+
+Why discuss it? Many theoretical explanations of what is seen in deep learning do not look at what SGD does, because that is difficult to analyze, but at the stationary distribution of Langevin dynamics, which is what one gets in the ideal Bayesian case. There are differences and some similarities between the two.
+
+\begin{discussion}[Two sources of noise, or one?]
+A student asks to what extent the noise injected in SGLD is already present in SGD through its stochasticity, when the data set is large. The instructor: in SGLD there are two sources of randomness (the minibatch and the injected noise), in SGD only one, and the relation is \say{kind of an open question}. SGD is a much more efficient algorithm, and in the cases where one can compute both they seem to give similar results. A slide shows the trajectory of $\theta$ under the Langevin algorithm: one counts how often each value is visited, and this gives the posterior distribution. The point is that SGD is run \emph{once}, to find one good solution, whereas the noisier SGLD is less likely to land on one good solution and is run many, many times to obtain a \emph{distribution}. (The captions say SGD twice in this passage; the second must be SGLD.)
+\end{discussion}
+
+\begin{beyond}[The Welling--Teh update, and the two noises on a quadratic]
+For data $x_1,\dots,x_N$ and a minibatch $x_{t1},\dots,x_{tn}$, the update of \citet{welling2011}, in their notation and normalization ($p(\theta)$ is the prior), is
+\[
+  \Delta\theta_t\;=\;\frac{\varepsilon_t}2\Big(\nabla\log p(\theta_t)+\frac Nn\sum_{i=1}^n\nabla\log p(x_{ti}\mid\theta_t)\Big)+\eta_t,\qquad\eta_t\sim N(0,\varepsilon_t),
+\]
+with step sizes $\sum_t\varepsilon_t=\infty$ and $\sum_t\varepsilon_t^2<\infty$ (the Robbins--Monro conditions; for instance $\varepsilon_t=a(b+t)^{-\gamma}$ with $\gamma\in(\frac12,1]$). The bracket is an unbiased estimate of $-\nabla U$; the update discretizes $\dd\theta=-\frac12\nabla U\,\dd t+\dd W_t$, which is \eqref{eq:L5-langevin} after the change of time $t\mapsto t/2$. The authors argue that the minibatch noise has variance of order $\varepsilon_t^2$, much smaller than the injected variance $\varepsilon_t$ once $\varepsilon_t$ is small, so that late in the run the iterates behave like Langevin dynamics, while early on (large steps) the minibatch noise dominates and the algorithm acts as an optimizer: a seamless transition between optimization and Bayesian posterior sampling. They ignore the Metropolis--Hastings correction because the rejection rate tends to zero with~$\varepsilon_t$.
+
+A computation of mine on the quadratic $U=\frac a2(\theta-\mu)^2$, with an additive gradient noise of variance $\sigma_g^2$ independent of $\theta$ (a strong simplification of minibatch noise), shows what the extra term does at a \emph{constant} step $\varepsilon$. The update is $\theta'=\theta-\varepsilon\big(a(\theta-\mu)+\zeta\big)+\sqrt{2\varepsilon}\,\xi$ with $\zeta\sim N(0,\sigma_g^2)$ and $\xi\sim N(0,1)$ for SGLD, and without the last term for SGD, in the time normalization of \eqref{eq:L5-langevin} (the step $\varepsilon$ here is half the step of Welling and Teh). The stationary variances are
+\begin{center}\renewcommand{\arraystretch}{1.9}
+\begin{tabular}{@{}ccc@{}}
+  \textsf{\small Langevin} & \textsf{\small SGD (no injected noise)} & \textsf{\small SGLD}\\
+  $\displaystyle\frac{1}{a(1-\varepsilon a/2)}$ & $\displaystyle\frac{\varepsilon\sigma_g^2/2}{a(1-\varepsilon a/2)}$ & $\displaystyle\frac{1+\varepsilon\sigma_g^2/2}{a(1-\varepsilon a/2)}$
+\end{tabular}\end{center}
+all with mean $\mu$ (the MAP). SGD's stationary law is a Gaussian of the \emph{shape} of the posterior (variance $T/a$ against $1/a$), but at a ``temperature'' $T\approx\varepsilon\sigma_g^2/2$ set by the step size and the gradient noise (in real SGD the noise is a property of the data and the minibatch; here it is a free parameter), not by the posterior; it matches the posterior (up to the factor $1-\varepsilon a/2$) only if $\varepsilon\sigma_g^2/2=1$. This is the quadratic case of the picture of \citet{mandt2017}, SGD with a constant step as an approximate sampler, and it makes the lecture's open question concrete: whether SGD samples the posterior depends on whether its noise happens to have the right size and shape (verified by simulating $4\cdot10^4$ chains; script \kbd{figures/gen\_data\_L5.py}, part D).
+\end{beyond}
+
+\needspace{5\baselineskip}
+\subsection{Is SGD a Bayesian sampler?}\label{sec:L5-mingard}\tsm{1:26:22}
+There is a result of Mingard and others, \emph{Is SGD a Bayesian sampler? Well, almost}\,\citep{mingard2021}. In the instructor's description, the authors run stochastic gradient descent many times, also use SGLD to compute the posterior probability on the neural network parameters, and \say{find that they seem to agree quite well}. Since a lot of theory uses the Bayesian posterior while in practice one does SGD, understanding the difference between the two is \say{a very important direction for theory}; he recommends the paper and, for lack of time, leapfrogs over it.
+
+\begin{beyond}[What the paper says, and how it differs from the lecture's description]
+I read the arXiv text of the paper (version~2, October 2020; JMLR 22(79), 2021). For binary classification tasks the authors compare two probabilities. $P_{\mathrm{SGD}}(f\mid S)$ is the probability that SGD (or a variant), started from i.i.d.\ random initializations ($10^4$--$10^6$ runs) and stopped at the first epoch with $100\%$ training accuracy, ends on the function $f$. $P_{\mathrm B}(f\mid S)$ is the probability that the network expresses $f$ when its parameters are drawn from the prior \emph{conditioned on fitting} the training set $S$. A function is identified with its labeling of a held-out test set, so the comparison is in \emph{function} space, not on the parameters as in the lecture's description. And the Bayesian side is estimated by \emph{Gaussian-process} (NNGP) formulas, analytically for the squared loss and with an expectation-propagation approximation for a zero--one likelihood, not by SGLD: I searched the text for ``Langevin'' and ``SGLD'' and found it only in the paper's heuristic discussion of the Langevin picture of SGD (their Section~6) and in citations. The findings: for fully connected, convolutional and recurrent networks on MNIST, Fashion-MNIST, an IMDb task and a small dataset, and for SGD and several variants, $P_{\mathrm{SGD}}(f\mid S)\approx P_{\mathrm B}(f\mid S)$ even though $P_{\mathrm B}$ varies over hundreds of orders of magnitude, and $P_{\mathrm B}$ is strongly biased towards functions of low generalization error and low complexity. Their conclusion is that the inductive bias of the \emph{parameter--function map} (which fixes $P_{\mathrm B}$), rather than a special property of SGD, is the primary explanation for why such networks generalize; the posterior is called the first-order determinant of $P_{\mathrm{SGD}}$, with second-order differences that depend on batch size, learning rate and optimizer. In their Section~7.3 the simplicity bias of the prior over functions is tied to the coding theorem of algorithmic information theory, $P(f)\lesssim2^{-K(f)}$ up to approximations of $K$: the weighting of Solomonoff's theorem, which makes the paper relevant to the first open question of Lecture~3. The instructor's one-sentence summary (``they agree quite well'') is faithful to the first-order finding.
+\end{beyond}
+
+\input{lectures/lecture05c}

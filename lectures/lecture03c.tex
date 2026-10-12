@@ -1,0 +1,166 @@
+% =====================================================================================
+%  Lecture 3, part C  —  section 3.7 and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Continuous parameters: from Rissanen to singular learning theory}\label{sec:L3-singular}
+\tsm{1:32:26}
+What happens in a situation closer to neural networks: a large parameter space $\Theta\subset\R^d$, with each $\theta$ giving a distribution $p_\theta$? Instead of a countable collection of hypotheses we now have a \emph{continuum}, and the Bayesian story is the same with integrals in place of sums.
+
+\subsection{Evidence and regret}\label{sec:L3-evidence}\tsm{1:33:27}
+Assume that the truth lies in the family: $Q=p_{\theta^*}$ for some $\theta^*\in\Theta$. Start from a prior density $\pi(\theta)$ and, given $x_1,\dots,x_n$, form the posterior
+\[
+   \pi_n(\theta)\;=\;\frac{\pi(\theta)\prod_{i=1}^np_\theta(x_i)}{Z_n},\qquad Z_n=\int\pi(\theta)\prod_{i=1}^np_\theta(x_i)\,\dd\theta ,
+\]
+where the \emph{normalizing constant} $Z_n$ (the \term{evidence} or marginal likelihood) turns out to be an important object. It says how \emph{surprised} the model, with its prior over parameters, should be by the data: it is the probability the model assigns to the data. And, exactly as before,
+$-\log Z_n=\sum_{t=1}^n-\log\Pbayes(x_t\mid x_{<t})$ is the code length of the data under the Bayesian predictions, and the regret is
+\[
+   R_n\;=\;\E_{p_{\theta^*}}\Big[\log\frac{p_{\theta^*}(x_{1:n})}{Z_n}\Big].
+\]
+
+\begin{thm}[Rissanen; Clarke--Barron]\label{thm:rissanen}
+Let $\{p_\theta\}_{\theta\in\Theta\subset\R^d}$ be a regular parametric family: identifiable and smooth, with $\theta^*$ an interior point where the Fisher information matrix $I(\theta^*)=\nabla^2_\theta\KL(p_{\theta^*}\|p_\theta)\big|_{\theta=\theta^*}$ is positive definite, and let the prior density be continuous and positive at $\theta^*$; assume also the technical regularity conditions of \citet{clarke1990} (smoothness and moment bounds for $\log p_\theta$ near $\theta^*$, a proper prior, and consistency of the posterior, for instance for compact $\Theta$). For i.i.d.\ data from $p_{\theta^*}$,
+\[
+  R_n\;=\;\frac d2\,\log\frac{n}{2\pi e}\;+\;\log\frac{\sqrt{\det I(\theta^*)}}{\pi(\theta^*)}\;+\;o(1)\qquad(n\to\infty).
+\]
+\end{thm}
+\noindent This is the content of the result the lecture credits to Rissanen\,\citep{rissanen1986,rissanen1996}; the precise form with these constants is due to \citet{clarke1990}. As $n\to\infty$ the posterior looks more and more like a Gaussian centered at the true parameter and converges to a delta function there; the regret grows like $\tfrac d2\log n$, \emph{depending on the dimension $d$ of the parameter space}.
+The assumptions are essential: the truth is in the model, and the divergence $\KL(p_{\theta^*}\|p_\theta)$ has a \emph{positive definite} Hessian at $\theta^*$.
+
+\begin{intuition}
+Each parameter must be specified to a precision of order $n^{-1/2}$ (the statistical resolution of $n$ observations); that costs about $\tfrac12\log n$ nats per coordinate, which is the origin of the BIC/MDL penalty $\tfrac d2\log n$. Compare with Theorem~\ref{thm:solomonoff}: for a \emph{countable} class with a simplicity prior the regret is a \emph{constant}; for a \emph{continuous} parametric family it grows with $n$ and with $d$.
+\end{intuition}
+
+The instructor's verdict is that this is ``bad news compared with Solomonoff induction'': the regret increases with the complexity (dimension) of the parameter space. Two caveats keep the news from being so bad for neural networks.
+
+\begin{enumerate}
+  \item \textbf{Not in the regime.} The theorem is a statement about $n\gg d$. For language models the amount of data is typically larger than the number of parameters, but probably still not by enough to be in the asymptotic regime where this behavior appears; in image experiments such as that of Zhang et al., the networks have more parameters than training examples.
+  \item \textbf{The Hessian is not positive definite.} Neural networks have many directions along which the loss does not change, so the assumption of a positive definite Hessian fails, at least at realistic error levels. And there is typically not one true parameter but a whole \emph{set} of parameters that give the true distribution.
+\end{enumerate}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.88\linewidth, height=0.56\linewidth, xmode=log, xmin=1, xmax=1e5, ymin=0, ymax=15, xlabel={number of observations $n$}, ylabel={regret $R_n$ (bits)},
+   legend style={at={(0.03,0.97)}, anchor=north west, font=\sffamily\fontsize{6.2}{7}\selectfont}]
+  \addplot[crimson, line width=1.8pt] table[x=n, y=Rfinite] {figures/data/regret.dat};   \addlegendentry{finite class of 16, uniform prior (exact)}
+  \addplot[accent, line width=1.8pt] table[x=n, y=Rcont] {figures/data/regret.dat};   \addlegendentry{Bernoulli, uniform prior (exact)}
+  \addplot[ink, dashed, line width=1.0pt] table[x=n, y=Rasym] {figures/data/regret.dat};   \addlegendentry{$\frac12\log_2\frac n{2\pi e}+\frac12\log_2\frac1{\theta^*(1-\theta^*)}$}
+  \draw[crimson, dotted, line width=0.9pt] (axis cs:1,4) -- (axis cs:1e5,4);
+  \node[font=\sffamily\scriptsize, text=crimson, anchor=south east] at (axis cs:9e4,4.1) {$\log_2 16=4$};
+\end{axis}
+\end{tikzpicture}
+\caption{Regret of Bayesian prediction in two models of coin flips with true bias $\theta^*=5/17$ (exact computation by summing over the binomial). \textbf{Finite class} $\{j/17\}_{j=1}^{16}$ with uniform prior: the regret saturates at $\log_2 16=4$ bits, the bound of Theorem~\ref{thm:solomonoff} (with $\Kc$ replaced by $-\log_2\pi$). \textbf{One continuous parameter}, uniform prior: it keeps growing like $\frac12\log_2n$ and tracks the formula of Theorem~\ref{thm:rissanen} (dashed); at $n=10^5$ the two differ by $1.5\cdot10^{-5}$ bits.}
+\label{fig:L3-regret}
+\end{figure}
+
+\subsection{Singular learning theory}\label{sec:L3-watanabe}\tsm{1:41:55}
+There is a different result of Watanabe\,\citep{watanabe2009,watanabe2018} which does \emph{not} assume that the Hessian is positive definite. Let $K(\theta)=\KL(Q\,\|\,p_\theta)\ge0$ and let $W_0=\{\theta:K(\theta)=0\}$ be the set of true parameters; it can be a complicated (algebraic or analytic) subset, not a single point.
+When the Hessian has zero eigenvalues, the regret depends in an interesting way on \emph{how quickly $K$ grows as one moves away from $W_0$}, and the leading term is governed by a number called the \term{real log canonical threshold} (RLCT).
+
+\begin{defn}[Volume scaling and the RLCT]\label{def:rlct}
+Let $V(\epsilon)=\int_{\{K(\theta)<\epsilon\}}\pi(\theta)\,\dd\theta$ be the prior mass of the parameters whose divergence is below $\epsilon$. For analytic $K$ there are $\rlct>0$ and an integer $m\ge1$ with
+\[
+   V(\epsilon)\;\sim\;c\;\epsilon^{\,\rlct}\,\big(\log\tfrac1\epsilon\big)^{m-1}\qquad(\epsilon\to0).
+\]
+$\rlct$ is the \emph{real log canonical threshold} and $m$ its \emph{multiplicity}. It measures \emph{flatness} around $W_0$: how the volume below level $\epsilon$ scales as one moves away from the truth.
+\end{defn}
+
+\begin{thm}[Watanabe]\label{thm:watanabe}
+In the realizable case, under Watanabe's regularity conditions (a compact parameter set, a positive analytic prior, a log-likelihood ratio that is analytic in $\theta$ with values in $L^s(Q)$, and relatively finite variance, $\E_Q[(\log\frac{q}{p_\theta})^2]\le c\,K(\theta)$),
+\[
+   R_n\;=\;\rlct\,\log n\;-\;(m-1)\log\log n\;+\;O(1).
+\]
+For a regular model $\rlct=d/2$ and $m=1$, which recovers the leading term of Theorem~\ref{thm:rissanen}; in general $\rlct\le d/2$.
+\end{thm}
+\noindent (The lecture states only the leading behavior: ``the principal order term depends on the real log canonical threshold''.)
+
+\paragraph{The simplest case.}\tsm{1:44:44}
+Take the case in which $W_0$ is a smooth submanifold of dimension $d-r$ and $K$ is a \emph{Morse--Bott} function: zero on $W_0$ and with positive definite Hessian in the $r$ directions normal to it. Then near $W_0$, $K\approx\abs{y}^2$ in normal coordinates $y\in\R^r$, so $V(\epsilon)\asymp\epsilon^{r/2}$ and $\rlct=r/2$. The \emph{effective dimension} is the \emph{codimension} of the set of true parameters, and the regret is
+$\tfrac r2\log n$ rather than $\tfrac d2\log n$: the $d-r$ parameters that are free to move along $W_0$ cost nothing. The instructor sees in this ``another reason why in some situations neural networks learn surprisingly well''.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=3 by 1, horizontal sep=3.5mm}, width=0.355\linewidth, height=0.355\linewidth, view={0}{90},
+    colormap={kl}{rgb255=(20,33,61) rgb255=(60,98,180) rgb255=(238,242,250)}, point meta min=0, point meta max=1,
+    axis lines=box, ticks=none, xmin=-1, xmax=1, ymin=-1, ymax=1, title style={font=\sffamily\scriptsize\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) regular}]
+  \addplot3[surf, shader=interp, samples=34, domain=-1:1, y domain=-1:1] {x^2+y^2};
+  \fill[amber] (axis cs:0,0) circle (2.2pt);
+\nextgroupplot[title={(b) Morse--Bott}]
+  \addplot3[surf, shader=interp, samples=34, domain=-1:1, y domain=-1:1] {y^2};
+  \draw[amber, line width=1.8pt] (axis cs:-1,0) -- (axis cs:1,0);
+\nextgroupplot[title={(c) singular}]
+  \addplot3[surf, shader=interp, samples=34, domain=-1:1, y domain=-1:1] {x^2*y^2};
+  \draw[amber, line width=1.8pt] (axis cs:-1,0) -- (axis cs:1,0);
+  \draw[amber, line width=1.8pt] (axis cs:0,-1) -- (axis cs:0,1);
+\end{groupplot}
+\end{tikzpicture}
+\caption{Three divergence landscapes $K(\theta)$ on $[-1,1]^2$ (dark $=$ small; saturated at $K=1$); the set $W_0$ of true parameters is drawn in amber. \textbf{(a)} $K=\theta_1^2+\theta_2^2$: an isolated minimum, $\rlct=d/2=1$. \textbf{(b)} $K=\theta_2^2$: a whole valley; $\rlct=\tfrac12$ (the codimension over two). \textbf{(c)} $K=\theta_1^2\theta_2^2$: a cross of true parameters with a singular crossing; $\rlct=\tfrac12$ and $m=2$.}
+\label{fig:L3-landscapes}
+\end{figure}
+
+\begin{beyond}[Worked RLCT examples, and why they matter]
+Volumes (Lebesgue areas) on $[-1,1]^2$ for $\epsilon\to0$; a uniform probability prior divides them by $4$ and changes neither $\rlct$ nor $m$:
+\begin{itemize}
+  \item $K=\theta_2^2$: $V(\epsilon)=4\sqrt\epsilon$, so $\rlct=\tfrac12$, $m=1$ (versus $d/2=1$).
+  \item $K=\theta_1^2\theta_2^2$: $\{|\theta_1\theta_2|<\sqrt\epsilon\}$ has area $4\sqrt\epsilon\,(1+\tfrac12\ln\tfrac1\epsilon)$, so $\rlct=\tfrac12$, $m=2$.
+  \item $K=\theta_1^2+\theta_2^4$: the region is an ellipse-like set of area $\asymp\epsilon^{1/2}\epsilon^{1/4}$, so $\rlct=\tfrac34$, $m=1$.
+\end{itemize}
+Watanabe also proves, as a separate theorem, that the Bayes generalization error satisfies $\E\,\KL(Q\,\|\,\Pbayes(\cdot\mid x_{1:n}))=\rlct/n+o(1/n)$ (the regret is the sum of these errors over the first $n$ steps), so \emph{$\rlct$ plays the role of $d/2$} in the familiar $d/(2n)$ of regular models. Over-parameterized networks have large degenerate sets $W_0$ (continuous rescaling symmetries, removable or dead units), so $\rlct$ can be much smaller than $d/2$; merely permuting hidden units only produces finitely many copies of $W_0$ and changes neither $\rlct$ nor $m$.
+Estimating a ``local learning coefficient'' for real networks is an active research direction\,\citep{lau2023}. The caveat is that all of this concerns the \emph{Bayesian posterior}, not the output of SGD.
+\end{beyond}
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{33mm}>{\raggedright\arraybackslash}p{23mm}>{\raggedright\arraybackslash}p{39mm}>{\raggedright\arraybackslash}p{16mm}@{}}
+\toprule
+\textbf{Hypothesis class} & \textbf{Prior} & \textbf{Regret $R_n$} & \textbf{Credit}\\
+\midrule
+Countable, e.g.\ all computable distributions & $2^{-\Kc(h)}$ & $\le\Kc(h^*)$ bits, for all $n$ & Solomonoff\\
+Regular parametric, $\Theta\subset\R^d$ & smooth density & $\tfrac d2\log\frac n{2\pi e}+O(1)$ & Rissanen; Clarke--Barron\\
+Singular parametric & smooth density & $\rlct\log n-(m-1)\log\log n+O(1)$, with $\rlct\le d/2$ & Watanabe\\
+\bottomrule
+\end{tabular}
+\caption{Three regimes of Bayesian regret met in this lecture.}
+\end{table}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Where this leaves us}
+The picture assembled in these three lectures is partial but coherent. Capabilities follow smooth trends (Lecture~1); those trends can be derived, in a solvable model, from the spectrum of a kernel (Lecture~2); and large, apparently over-parameterized models can nevertheless generalize
+because learning is a form of \emph{compression}, in which simplicity is rewarded softly and effective complexity is smaller than parameter count (Lecture~3). The instructor stops here, with the remark that grokking and in-context learning, the other items in the opening table, wait for later.
+
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item Does SGD on a neural network implement something like a simplicity prior $2^{-\Kc}$? What is the right notion of ``program length'' for a network?
+  \item Can the RLCT (or a practical proxy) be measured for large language models, and does it predict generalization or capability jumps?
+  \item What is the spectral theory of scaling for language models: do the NTK spectra and target coefficients follow power laws, and what changes in the feature-learning regime, including the ``third'', faster stage?
+  \item For safety: can one connect the abrupt transitions (grokking, in-context learning) to a notion like a change in effective dimension, and hence \emph{forecast} sudden capability jumps?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item Open puzzles of deep learning: scaling, generalization, grokking, shared and linear representations, in-context learning. Only for the first two is there a (partial) theory today.
+  \item The spectral law $L(t)\asymp t^{-s/\alpha}$ assumes a frozen kernel and a target in the range of the NTK; it is architecture-agnostic but its exponents must be measured. In CIFAR experiments the initial slope is predicted well, later regimes are not.
+  \item A heuristic for model size: data on a $d$-dimensional manifold and ReLU networks give $L\propto N^{-4/d}$.
+  \item \textbf{Bias--variance:} $\E[(Y-\hat f)^2]=\text{bias}^2+\text{variance}+\sigma^2$. The classical heuristic (complexity $\Rightarrow$ overfitting) fails for deep networks: they fit random labels (zero training loss) yet generalize on real data.
+  \item \textbf{Prediction is compression:} log-loss $=$ code length (Kraft, Shannon); regret $=\KL$ between the truth and the Bayes mixture. With Solomonoff's prior, $R_n\le\Kc(h^*)$ for all $n$, however huge the class.
+  \item Continuous parametric models pay $\tfrac d2\log n$ (Rissanen); singular models pay only $\rlct\log n$ with $\rlct\le d/2$ (Watanabe), so degenerate parameter space means \emph{lower effective complexity}.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems]
+\begin{enumerate}
+  \item \emph{Gibbs' inequality.} Show $\KL(Q\|P)\ge0$ with equality iff $P=Q$. (Hint: $-\log$ is convex; Jensen.)
+  \item \emph{Kraft.} Prove $\sum_x2^{-\ell(x)}\le1$ for a binary prefix-free code (hint: the codewords are leaves of a binary tree; count the fraction of the tree below each), and construct a prefix code with lengths $\lceil-\log_2P(x)\rceil$. Deduce $\E_Q[\ell]\ge\Hent(Q)$ using Gibbs.
+  \item \emph{Bias--variance for shrinkage.} Observe $y_1,\dots,y_n$ i.i.d.\ with mean $\mu$ and variance $\sigma^2$, and use the estimator $\hat\mu_c=c\,\bar y$ with $c\in[0,1]$. Compute bias$^2$ and variance, the minimizing $c^*$ and the minimal total error. Show that $c^*<1$ whenever $\sigma^2>0$, and that the gain over $c=1$ is largest when $n\mu^2/\sigma^2$ is small.
+  \item \emph{Finite classes.} For a finite class with prior $\pi$ and truth $h^*$, show $R_n\le\log\frac1{\pi(h^*)}$ and $\lim_nR_n=\log\frac1{\pi(h^*)}$ (when the hypotheses are distinguishable).
+  \item \emph{Laplace's rule.} For coin flips with the uniform prior on $\theta$, show $Z_n=\frac{1}{(n+1)\binom nk}$ for a sequence with $k$ ones, and deduce $R_n$. Check numerically against Theorem~\ref{thm:rissanen} with $d=1$.
+  \item \emph{RLCT.} Compute $\rlct$ and $m$ for $K(\theta)=\theta_1^2+\theta_2^4$ and for $K(\theta)=\theta_1^4\theta_2^2$ on $[-1,1]^2$.
+  \item \emph{Manifold dimension.} With $d=2$ what is the exponent in \eqref{eq:N4d}? What intrinsic dimension gives an exponent $0.076$?
+  \item \emph{Random labels.} Why is the \emph{training} loss of Zhang et al.'s random-label experiment no evidence against the soft-inductive-bias picture? What would the picture predict for the test loss?
+\end{enumerate}
+\end{exercise}

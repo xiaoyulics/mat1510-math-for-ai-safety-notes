@@ -1,0 +1,175 @@
+% =====================================================================================
+%  Lecture 3  —  21 September 2026
+% =====================================================================================
+\chapter{Why do big models generalize?}\label{ch:L3}
+\setlecturevideo{q_Dj4-QNJV8}
+\lectureinfo{21 September 2026}{1 h 46 min}{q_Dj4-QNJV8}{scaling revisited, generalization, compression, singular learning theory}
+
+\begin{glance}
+\begin{itemize}
+  \item A list of \emph{empirical} puzzles in deep learning that lack a theory: scaling laws, generalization, grokking, shared representations, in-context learning.
+  \item The spectral model of Lecture~2 revisited: what it assumes, and a test against data (image classification on CIFAR; still open for language models).
+  \item A heuristic for scaling with \emph{model size}: the dimension of the data manifold gives $L\propto N^{-4/d}$.
+  \item \textbf{Generalization:} the classical bias--variance picture, and Zhang et al.'s experiment that breaks it.
+  \item \textbf{Learning as compression:} Bayesian prediction, log-loss, Kraft and Shannon, and Solomonoff's prior, under which regret is bounded by the Kolmogorov complexity of the truth; then Rissanen's $\tfrac d2\log n$ and Watanabe's singular learning theory.
+\end{itemize}
+\end{glance}
+
+\begin{caution}[About the source for this lecture]
+YouTube provides no English captions for this recording (the auto-dubbed tracks are in other languages). I worked from machine translations of the captions into English via four different languages, cross-checked against each other, and reconstructed the mathematics from them. Technical terms were occasionally mistranslated (for example, ``in-context learning'' came out as ``contextual learning''); I have normalized them. The names of authors and papers are the ones I could identify with confidence; those I am less sure of are marked\flag.
+\end{caution}
+
+\begin{figure}[tb]
+\centering
+\mapbar{6363}{900}{%
+  \mapseg{0}{688}{slate}\mapseg{688}{2081}{teal}\mapseg{2081}{2720}{accent}\mapseg{2720}{3168}{amber}
+  \mapseg{3168}{4045}{crimson}\mapseg{4045}{5546}{plum}\mapseg{5546}{6363}{moss}
+  \mapin{344}{3.1}\mapin{1384}{3.2 \ Spectral law revisited}\mapin{2400}{3.3}\mapin{2944}{3.4}\mapin{3606}{3.5 \ Classical view}\mapin{4795}{3.6 \ Compression}\mapin{5954}{3.7 \ Parametric}
+  \maplabel{344}{Puzzles}{3.2}{south west}
+  \maplabel{2400}{Data check}{7.2}{south west}
+  \maplabel{2944}{$N^{-4/d}$}{3.2}{south west}
+}
+\caption{\textbf{Lecture map} (1\,h\,46\,min, to scale). The first part (3.1--3.4) is about scaling laws, the second (3.5--3.7) about generalization.}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{Observations without a theory}\label{sec:L3-observations}
+\tsm{0:01}
+After some announcements (a Monday seminar on \emph{corrigibility}, i.e.\ how to train a system persistent at its goals so that the goals can still be updated; a guest lecture by Anson Ho of Epoch AI on Wednesday; everything is recorded) the instructor sets the plan.
+The course outline for this week was \emph{theories of learning, deep learning in particular}, which was ``probably a bit ambitious'' for one week. The coverage will be incomplete, and will not match the reading material exactly; the field is large, and it makes sense to focus on what one finds interesting and understand it as well as possible rather than everything.
+Being new to the area himself, the instructor warns that his picks may not be the aspects most relevant for safety.
+
+\paragraph{The analogy again.}\tsm{4:14}
+We are in a situation like that of physics in the early twentieth century: interesting observations (the photoelectric effect, Michelson--Morley) but no complete explanation. \emph{We have no good theory with which to reason about thinking machines}, and progress on such a theory would be valuable for understanding risks.
+What are the empirical observations?
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.28}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{26mm}>{\raggedright\arraybackslash}p{41mm}>{\raggedright\arraybackslash}p{31mm}>{\raggedright\arraybackslash}p{14mm}@{}}
+\toprule
+\textbf{Phenomenon} & \textbf{What is observed} & \textbf{Why safety cares} & \textbf{Here?}\\
+\midrule
+Scaling laws & Loss is a power law in compute, data, parameters (Lecture~2). & Forecasting capabilities; compute governance. & recap, \S\ref{sec:L3-recap}--\ref{sec:L3-params}\\
+Generalization & A network trained on some data does very well on data it has never seen; the classical theory had expected this to be hard. & What can and cannot be learned; behavior off the training distribution. & main topic, \S\ref{sec:L3-classical}--\ref{sec:L3-singular}\\
+Grokking & Perfect training accuracy early, poor test accuracy for a long time, then an abrupt jump, like a phase transition. & Sudden capability jumps. & later\\
+Platonic representations & Networks with different architectures trained on different data have surprisingly similar internal features. & Transferability of interpretability tools. & later\\
+Linear representations & Features are largely linear directions in activation space. & Probes, steering, monitoring. & later\\
+Entangled concepts (``subliminal learning'') & Many concepts are intertwined in ways that let traits pass through apparently unrelated data\flag. & Hidden transmission of behavior. & later\\
+In-context learning & Given examples in the prompt, a model infers the pattern without any weight update; absent in small or early models, then it appears suddenly. & Learning \emph{at inference}; jumps. & later\\
+\bottomrule
+\end{tabular}
+\caption{The empirical puzzles listed at the start of the lecture, with the instructor's remark that for each of them ``we have some partial theories, but not a complete understanding''. Only scaling and generalization are treated today. Pointers\dagmark: grokking \citep{power2022}; Platonic representations \citep{huh2024}; linear representations \citep{park2024}; subliminal learning \citep{cloud2025}; in-context learning \citep{olsson2022}.}
+\end{table}
+
+\paragraph{Generalization is the fundamental observation.}\tsm{5:14}
+The most basic fact about deep learning is that a network trained on some data works very well on data it has not seen. This runs against the intuition of earlier theory, which supposed it hard to make systems generalize and found, surprisingly, that it was easy. It is \emph{not quite right to say that it contradicted the theory},
+because the theory focused on the wrong situation: it was overly pessimistic about what can and cannot be learned.
+
+\paragraph{Grokking.}\tsm{6:19}
+In the instructor's description: when a model is trained on certain tasks it may reach perfect accuracy on the training set but not on the test set; the loss nevertheless continues to decrease (loss is not accuracy); and then, suddenly, performance on unseen data improves dramatically. Such a phase after memorization followed by a sudden change can be described as a \emph{phase transition},
+and some physics-like theories explain the resemblance. From the safety viewpoint it matters to understand \emph{when a network suddenly becomes much better at a task than before}\,\citep{power2022}.
+
+\begin{discussion}[Where does the word ``grokking'' come from?]
+The intuition: when learning a new language one can sit down and study the grammar, but that is not how humans actually learn; they hear and memorize, and suddenly everything falls into place and they understand the underlying rule. The word describes that moment. A student adds that it spread from a hacker subculture, where it meant to understand deeply.\dagmark{} (The word itself comes from Heinlein's novel \emph{Stranger in a Strange Land}, 1961.)
+\end{discussion}
+
+%% ------------------------------------------------------------------------------------
+\section{The spectral law revisited}\label{sec:L3-recap}
+\tsm{11:28}
+\paragraph{Recap.}\tsm{13:01}
+Scaling laws were observed over very large ranges, with Chinchilla looking at a wider range than Kaplan; the loss falls linearly on a log scale as compute, data or parameters grow, and once compute is fixed there is a trade-off between data and parameters, $C\propto N\cdot D$. The instructor repeats the solvable model of Lecture~2, in one sentence each:
+\begin{itemize}
+  \item the parameters $\theta\in\R^n$ define a function $f_\theta$ on the data space; one wants $f_\theta\to f^*$ by following the gradient of the loss; the true loss would be over \emph{all} data but one uses the empirical loss, and in the scaling regime the training and test losses are so similar as to be indistinguishable (the reason is the subject of the second half of the lecture);
+  \item the \emph{neural tangent kernel} $K_\theta(x,x')=\ip{\nabla_\theta f_\theta(x)}{\nabla_\theta f_\theta(x')}$ measures how similar the gradient sensitivities of two inputs are, and gradient flow becomes $\partial_tg=-T\,g$ with $T$ self-adjoint, positive and compact (Lemma~\ref{lem:T});
+  \item expanding the target in the eigenfunctions of $T$ gives an ODE whose solution converges, mode by mode, at a rate set by the eigenvalue.
+\end{itemize}
+This time the exponents are named differently: eigenvalues $\lambda_k\sim k^{-\alpha}$ and target coefficients $a_k^2\sim k^{-1-s}$ with $s>0$ (so that $f^*$ has finite $L^2$ norm). The result is
+\[
+   L(t)\;\asymp\;t^{-s/\alpha},\qquad\text{i.e. Proposition~\ref{prop:powerlaw} with } s=\alpha\beta .
+\]
+The quantity $t^{1/\alpha}$ is the transition index between the eigenfunctions that have been learned and those that have not, and $e^{-2\lambda_kt}$ is the factor that separates them. The instructor re-derives the bounds along the lines of Section~\ref{sec:L2-power}: the tail $k\ge m$ gives the lower bound, the whole sum the matching upper bound. (He stumbles over which exponent is which, a mix-up that he catches and corrects: $\alpha$ is the decay of the eigenvalues $\lambda_k$, $s$ that of the target coefficients $a_k^2$. If the target is concentrated on the first few eigenfunctions, learning is fast.)
+
+\begin{discussion}[Questions from the class]
+\emph{What architecture does this need?} None: nothing was assumed about the architecture except that the network evolves by gradient flow; it could be as simple as a linear network. But there is an \emph{implicit assumption} the instructor now makes explicit: the target lies in the span of the eigenfunctions of $T$. If the architecture can only learn linear functions (a deep \emph{linear} network) then what is learned is the best linear approximation, and the loss does not go to zero; if the tangent kernel has the target in the range of its eigenfunctions, we expect learning.
+\emph{By choosing the two exponents I can get any error I like. Is that realistic?} The reply: ``we will get to that''; it is not entirely clear how realistic the assumption is, although it is seen in some cases, and what happens with large language models in the feature-learning regime is puzzling.
+\emph{Can the same be done for the number of parameters?} No: this is a scaling law in \emph{training time}, which stands in for the number of data points (each step takes fresh data). The parameter count needs a different argument; one can at least count operations (two for the forward pass and four for backpropagation per parameter, giving $C\approx6ND$). ``I am not sure we have a satisfactory answer for the scaling law in the number of parameters''; the heuristic of Section~\ref{sec:L3-params} is the nearest the lecture comes.
+\end{discussion}
+
+%% ------------------------------------------------------------------------------------
+\section{Does the spectral picture match data?}\label{sec:L3-data}
+\tsm{34:41}
+For language models one cannot yet compute the necessary spectra. For image classification one can. The instructor describes a study on the CIFAR dataset by Bordelon, Atanasov and Pehlevan\flag\,\citep{bordelon2025}.
+
+\begin{enumerate}
+  \item \textbf{Measure $\alpha$.} Compute the eigenvalues of the NTK \emph{at initialization} on the images; they decay like a power law (the finite number of images makes the matrix finite rank, whence a drop at the end of the plot).
+  \item \textbf{Measure $s$.} Project the true classification function (cat versus table versus dog, a simple classification task) onto the first $k$ eigenfunctions; the loss \emph{not} explained by the first $k$ modes decays like $k^{-s}$.
+  \item \textbf{Predict.} Combine the two to predict the initial slope $t^{-s/\alpha}$ of the training loss of a convolutional network trained on the task: the initial slope matches the observed decay well.
+  \item \textbf{What happens next.} Later the NTK starts to \emph{change} (the feature-learning regime). The authors have a theory, \emph{dynamical mean-field theory}, that predicts a second, steeper slope. Finally there is a third stage in which the network learns even \emph{faster}; for this one has no good explanation.
+\end{enumerate}
+A student asks what the curves labeled by $\gamma$ are; the instructor does not remember.
+
+\begin{beyond}[What that paper claims]
+\citet{bordelon2025} build a solvable model that goes beyond the kernel limit and identify three regimes of task difficulty (hard, easy, super-easy). For easy and super-easy targets the exponents are unchanged by feature learning; for \emph{hard} targets feature learning improves the scaling with training time and compute, nearly doubling the exponent. The parameter $\gamma$ in their plots is, as I understand it, the strength of feature learning. Experiments there are on power-law targets on the circle and on CNNs for vision tasks.
+\end{beyond}
+
+\paragraph{Language models.}\tsm{41:14}
+For large language models it is much less clear what happens with the eigenvalues and with the coefficients $a_k$; the instructor does not think it well understood. He shows a recent paper (from spring or summer)\flag{} that computes the spectrum of the NTK \emph{along training}, not at initialization, and tries to locate the index $k_*$ at which one passes from learned to unlearned eigenfunctions,
+measured as the average of the normalized eigenvalues seen by the loss gradient (project the gradient onto the first $k$ eigendirections and see how much remains in the others). It finds a resemblance between how the training loss decreases and how $k_*$ moves, and the smallest learned eigenvalue is smaller in bigger models. Curves seem to rise again at the end, which may be an artifact of the measurement.
+\begin{openq}
+Nothing like a spectral theory exists that \emph{predicts} the scaling loss of language models. Do the spectra and coefficients of LLMs follow power laws? How do feature learning and the third, faster regime change the exponents?
+\end{openq}
+
+%% ------------------------------------------------------------------------------------
+\section{Scaling with parameters: the dimension of the data manifold}\label{sec:L3-params}
+\tsm{45:20}
+The questioner's case: why would the loss fall with the number of parameters $N$? The instructor offers ``a very simple observation'' that relates $N$ for a ReLU network to the \emph{dimension of the data}. Suppose the data are samples from a $d$-dimensional manifold $\mathcal M$, much smaller than the ambient data space (one suspects some structure).
+
+\paragraph{The argument.}\tsm{46:21}
+Subdivide $\mathcal M$ into small cells of diameter about $h$. Since $\dim\mathcal M=d$, the number of cells needed is
+\[
+   M\ \asymp\ h^{-d}\qquad(\text{for a square, }d=2:\ M\,h^2\approx\text{area},\ h\approx M^{-1/2}).
+\]
+Now take a target $f:\mathcal M\to\R$ that is regular ($C^2$). If one knows the value of $f$ at the cell vertices (and its slope), one approximates it by a \emph{piecewise linear} function, for instance the continuous interpolant, with error of order $h^2$ (Figure~\ref{fig:L3-pl}); the squared error, which is what the loss measures, is of order $h^4$.
+A ReLU network defines a piecewise linear function, and to specify a function with different slopes on $M$ different patches one needs, up to a constant depending on the dimension, about $M$ parameters. So $N\approx M\approx h^{-d}$ (up to constants, and for $d\ge2$ up to logarithmic factors), i.e.\ $h\approx N^{-1/d}$, and
+\begin{equation}\label{eq:N4d}
+   \boxed{\;L(N)\;\lesssim\;h^{4}\;\approx\;N^{-4/d}\;}
+\end{equation}
+This heuristic relates the intrinsic dimension of the sampled manifold to the decay of the loss in a situation with plenty of data and enough parameters\,\citep{sharma2022}; the lecture takes the exponent $4/d$ as the prediction.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1.88cm, y=1.5cm]
+  \draw[ink!45, ->] (-0.15,0) -- (6.35,0) node[below left, font=\sffamily\scriptsize, text=ink] {$x$};
+  \foreach \a in {0,1.5,3,4.5} {
+    \pgfmathsetmacro{\b}{\a+1.5}
+    \pgfmathsetmacro{\fa}{1.0+0.75*sin(deg(\a))+0.12*\a}
+    \pgfmathsetmacro{\fb}{1.0+0.75*sin(deg(\b))+0.12*\b}
+    \fill[amber!35] (\a,\fa) -- (\b,\fb) -- plot[domain=\b:\a, samples=24, smooth] (\x,{1.0+0.75*sin(deg(\x))+0.12*\x}) -- cycle;
+    \draw[slate!50, line width=0.4pt, dotted] (\b,0) -- (\b,\fb);
+  }
+  \draw[accent, line width=1.8pt, domain=0:6, samples=120, smooth] plot (\x, {1.0+0.75*sin(deg(\x))+0.12*\x});
+  \foreach \a in {0,1.5,3,4.5} {
+    \pgfmathsetmacro{\b}{\a+1.5}
+    \draw[amber!85!black, line width=1.5pt] (\a,{1.0+0.75*sin(deg(\a))+0.12*\a}) -- (\b,{1.0+0.75*sin(deg(\b))+0.12*\b});
+    \fill[amber!85!black] (\a,{1.0+0.75*sin(deg(\a))+0.12*\a}) circle (1.1pt);
+  }
+  \fill[amber!85!black] (6.0,{1.0+0.75*sin(deg(6.0))+0.12*6.0}) circle (1.1pt);
+  \draw[<->, ink, line width=0.6pt] (0,-0.17) -- (1.5,-0.17) node[midway, below, font=\sffamily\scriptsize] {cell of size $h$};
+  \node[font=\sffamily\scriptsize, text=accent, anchor=south west] at (0.25,1.62) {target $f$};
+  \node[font=\sffamily\scriptsize, text=amber!80!black, anchor=north west, align=left] at (3.35,0.55) {shaded: error of the piecewise-linear fit,\\$\lesssim h^{2}$ (squared: $\lesssim h^{4}$)};
+\end{tikzpicture}
+\caption{Approximating a smooth function by a piecewise-linear one on cells of size $h$ (here $d=1$). A ReLU network with about one parameter per cell can represent the fit, which gives $N\approx h^{-d}$ and $L\lesssim N^{-4/d}$.}
+\label{fig:L3-pl}
+\end{figure}
+
+\begin{beyond}[The error bound, and what $4/d$ would say]
+For $f\in C^2$ on an interval $[a,a+h]$ the linear interpolant $\ell$ through the endpoints satisfies $\abs{f-\ell}\le\tfrac18h^2\max\abs{f''}$ (a standard estimate; the same order holds on cells in higher dimension), so the squared $L^2$ error on $\mathcal M$ is $\lesssim h^4$ and the loss follows \eqref{eq:N4d}. The exponent $2/d$ for the uniform error is the best possible worst-case rate over the unit ball of $C^2$ for approximation by $N$ parameters that depend continuously on $f$ \citep{devore1989}; very deep ReLU networks, whose weights may depend discontinuously on $f$, can do better (up to logarithmic factors, $N^{-4/d}$ in the uniform error\,\citep{yarotsky2018}), and the count $N\approx M$ holds only up to logarithms for $d\ge2$\,\citep{yarotsky2017}. So $4/d$ is the prediction of a specific (shallow, continuous) approximation scheme that matches the observed exponents, not a ceiling on what networks can achieve.
+Reading \eqref{eq:N4d} backwards, an empirical exponent $\alpha_N\approx0.076$ (Kaplan et al.) would correspond to an intrinsic dimension $d\approx4/0.076\approx53$; \citet{sharma2022} test the relation for both images and language by estimating $d$ independently.
+\end{beyond}
+
+\begin{caution}
+Whether language should be viewed as samples from a finite-dimensional manifold is not clear (``perhaps it makes more sense for images''). The argument is for a particular regime, with plenty of data and \emph{enough} parameters. And the empirical laws of Kaplan and Chinchilla concern optimally trained models of increasing size: during training the shapes of the curves change a lot, but once one reaches the optimum, one sees a scaling law across the models.
+\end{caution}
+
+\input{lectures/lecture03b}

@@ -1,0 +1,145 @@
+%%%% FORMULA
+\begin{fsblock}{crimson}{Lecture 6 \textperiodcentered{} LLM architecture and training}
+\fsrow{softmax, temperature}{\Pr(v)=\frac{e^{z_v/\tau}}{\sum_we^{z_w/\tau}},\ \ z_v=\langle u_v,h\rangle+b_v}
+\fsrow{entropy in $\tau$}{\frac{\mathrm dH}{\mathrm d\tau}=\frac{\mathrm{Var}_{p_\tau}(z)}{\tau^{3}}\ge0}
+\fsrow{causal attention}{\mathrm{softmax}\!\big(QK^{\top}/\sqrt{d_k}+M\big)\,XW_v}
+\fsrow{causal mask}{M_{ij}=0\ (j\le i),\ \ M_{ij}=-\infty\ (j>i)}
+\fsrow{parameters, compute}{N\approx12Ld^2+Vd,\ \ C\approx6ND}
+\fsrow{pre-training loss}{\mathcal L(\theta)=-\tfrac1T\sum_t\log P_\theta(x_t\mid x_{<t})}
+\fsrow{Bradley--Terry}{\Pr(w\succ l)=\sigma\big(r(w)-r(l)\big)}
+\fsrow{reward-model loss}{\mathcal L_{\mathrm{rew}}=-\mathbb E\log\sigma\big(r(w)-r(l)\big)}
+\fsrow{KL-regularized optimum}{\pi^*\propto\pi_{\mathrm{ref}}e^{r/\beta},\ \ J(\pi)=\beta\log Z-\beta\,\mathrm{KL}(\pi\|\pi^*)}
+\fsrow{DPO loss}{-\mathbb E\log\sigma\big(\beta\rho_\theta(y_w)-\beta\rho_\theta(y_l)\big),\ \ \rho_\theta=\log\tfrac{\pi_\theta}{\pi_{\mathrm{ref}}}}
+\end{fsblock}
+
+%%%% NOTATION
+$V,\ d,\ L,\ H,\ d_k$ & vocabulary size, width of the residual stream, number of layers, heads, head width $d/H$ (local to \S6.1) & L6\\
+$E,\ U,\ u_v,\ b$ & embedding matrix, unembedding matrix, its rows (one vector per token), output bias & L6\\
+$z_v,\ \tau$ & logit $\langle u_v,h\rangle+b_v$ of token $v$; sampling temperature & L6\\
+$Q,\ K,\ M$ & queries, keys and causal mask of attention & L6\\
+$P_\theta,\ \mathcal L(\theta)$ & next-token distribution of the model; pre-training loss (negative log-likelihood) & L6\\
+$w\succ l$ & answer $w$ is preferred to answer $l$ (winner, loser) & L6\\
+$r,\ \mathcal L_{\mathrm{rew}}$ & reward function; reward-model (Bradley--Terry) loss & L6\\
+$\pi,\ \pi_{\mathrm{ref}},\ \beta,\ J$ & policy, reference policy, weight of the KL penalty (local to \S6.7), KL-regularized objective $\mathbb E_\pi r-\beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})$ & L6\\
+$\mathsf{TC}^0,\mathsf{AC}^0,\mathsf{NC}^1$ & circuit classes: constant-depth threshold circuits, constant-depth AND/OR circuits, logarithmic-depth circuits & L6\\
+
+%%%% GLOSSARY
+\item[Token, embedding] A piece of text (word, part of a word, punctuation) and the vector assigned to it; vocabularies have about $10^5$ tokens, vectors $10^3$--$10^4$ dimensions. (L6)
+\item[Causal attention] The operation by which each position reads the vectors of \emph{earlier} positions only, with weights that depend on the content (softmax of scaled dot products). (L6)
+\item[Residual stream] The running vector of a transformer, to which every attention and MLP step adds its output. (L6)
+\item[Temperature] The factor $\tau$ in $\softmax(z/\tau)$: $\tau\to0$ gives the most probable token, $\tau\to\infty$ the uniform distribution; entropy increases with $\tau$. (L6)
+\item[KV cache] Stored keys and values of earlier tokens, so that generating a token does not recompute the past. (L6)
+\item[System prompt] Hidden instructions put by the provider in front of the conversation. (L6)
+\item[Chain of thought] Reasoning tokens generated between a ``think'' token and an end-of-thinking token; buys serial computation, and is hidden or summarized by commercial providers. (L6)
+\item[Linear probe] A linear map on internal activations trained to detect a property, e.g.\ misuse or deception. (L6)
+\item[Mid-training] Pre-training-style training on selected, higher-quality text after the bulk of pre-training. (L6)
+\item[SFT] Supervised fine-tuning: next-token loss on demonstrations, taken only on the part of the text after the context. (L6)
+\item[RLHF, RLAIF, RLVR] Reinforcement learning from human feedback, from AI feedback, and with verifiable rewards (a checkable right answer). (L6)
+\item[Bradley--Terry model] $\Pr(w\succ l)=\sigma(r(w)-r(l))$; the basis of reward models and DPO; $r$ is identified up to an additive constant. (L6)
+\item[DPO] Direct preference optimization: the loss obtained by inserting the KL-regularized optimum $\pi^*\propto\pi_{\mathrm{ref}}e^{r/\beta}$ into the Bradley--Terry likelihood; no explicit reward model. (L6)
+\item[Deliberative alignment] Training a model to reason about a written specification (the spec is in the context while data are generated, then removed) so that it follows it without seeing it. (L6)
+
+%%%% VIDEOINDEX
+\begin{vidtable}{Lecture 6 \textperiodcentered{} how a language model is built and trained}{-cqba5tE6aQ}
+\vrow{6.1}{What a language model is made of}{0:00}
+\vsub{6.1.1}{Neural networks: graphs and chains of vector spaces}{1:10}
+\vsub{6.1.2}{The transformer}{4:55}
+\vrow{6.2}{From the last layer to the next token}{8:30}
+\vsub{6.2.1}{Softmax over dot products, and the temperature}{8:35}
+\vsub{6.2.2}{The loop: sample, append, repeat}{11:35}
+\vrow{6.3}{What really goes into the model}{15:45}
+\vsub{6.3.1}{The system prompt and the conversation history}{15:45}
+\vsub{6.3.2}{An extracted system prompt}{17:20}
+\vsub{6.3.3}{Reasoning tokens}{22:15}
+\vsub{6.3.4}{What the user does not see}{24:35}
+\vrow{6.4}{Agents, and the layers of monitoring}{27:50}
+\vsub{6.4.1}{An LLM plus a harness}{27:50}
+\vsub{6.4.2}{Four layers of monitoring}{30:50}
+\vrow{6.5}{How a model is trained: stages, compute and data}{35:15}
+\vsub{6.5.1}{The stages}{35:15}
+\vsub{6.5.2}{How the compute is split}{37:10}
+\vsub{6.5.3}{Data: sources and scale}{39:25}
+\vsub{6.5.4}{Tokens per parameter, synthetic data, repetition, the optimizer}{42:00}
+\vrow{6.6}{A misconception: minimizing the surprise is not learning shallow statistics}{44:30}
+\vrow{6.7}{Post-training techniques}{47:50}
+\vsub{6.7.1}{Supervised fine-tuning}{47:50}
+\vsub{6.7.2}{Reinforcement learning for reasoning}{49:30}
+\vsub{6.7.3}{Learning from human preferences}{49:50}
+\vsub{6.7.4}{Staying close to the base model; DPO}{52:00}
+\vrow{6.8}{The safety side: from human feedback to documents}{53:35}
+\vsub{6.8.1}{What is wrong with RLHF}{53:35}
+\vsub{6.8.2}{Two documents}{54:35}
+\vsub{6.8.3}{The Model Spec and deliberative alignment}{59:05}
+\vsub{6.8.4}{Questions}{1:00:30}
+\end{vidtable}
+
+%%%% HINTS
+\paragraph{Lecture 6.}
+\textbf{1.} $p=(0.980,0.018,0.002)$, $H=0.107$ at $\tau=0.5$; $(0.844,0.114,0.042)$, $0.524$ at $\tau=1$; $(0.629,0.231,0.140)$, $0.906$ at $\tau=2$ (nats). Use $(\log Z)'=\E_\beta z$, $(\log Z)''=\Var_\beta z$, $H=\log Z-\beta(\log Z)'$; the limits are the uniform distribution on the maximizers of $z$, respectively on all tokens. \quad
+\textbf{2.} Angles $21.8^\circ$ and $45^\circ$, probabilities $0.182$ and $0.818$: the token with the larger angle wins. With equal norms $z_v=\norm u\norm h\cos\theta_v+b$ is increasing in $\cos\theta_v$, and $\norm h\norm u$ multiplies it exactly as $1/\tau$ would. \quad
+\textbf{3.} $N=12Ld^2+Vd+2048\,d=1.7395\times10^{11}+6.2\times10^{8}+2.5\times10^{7}=1.746\times10^{11}$; $6ND=3.14\times10^{23}$ (the value of Table~D.1 of Brown et al.). Cache: $2\cdot L\cdot d\cdot2$ bytes $=4{,}718{,}592$ bytes per token ($4.7$ MB), $472$ GB for $10^5$ tokens; positions processed (the last generated token is not fed back): $P+T-1=1499$ with the cache, $PT+T(T-1)/2=624{,}750$ without (a factor $417$); feeding the last token too adds one pass ($1500$ and $626{,}250$). \quad
+\textbf{4.} (a) Only differences enter. (b) Along $r=t(1,0,-1)$ the loss is positive for every $r$ but falls to $0$ ($0.251,\,0.091,\,0.012,\,2.2\times10^{-4}$ at $t=1,2,4,8$), so the infimum is not attained and there is no minimizer: the graph $A\to B\to C$, $A\to C$ is not strongly connected. (c) With $C\succ A$ added there is a cycle; by symmetry $r_B=0$ and the maximizer is $\hat r=(1.224,\,0,\,-1.224)$, the solution of $6\sigma(-a)+6\sigma(-2a)=2\sigma(2a)$. \quad
+\textbf{5.} $\beta=1$: $\pi^*=(0.179,0.292,0.529)$, $\E_{\pi^*}r=1.350$, $\KL(\pi^*\|\pi_{\mathrm{ref}})=0.323$, $\max J=\log Z=1.027$; $\beta=0.5$: $\pi^*=(0.037,0.163,0.801)$, $\max J=1.306$. As $\beta\to0$ all mass goes to the best answer, as $\beta\to\infty$, $\pi^*\to\pi_{\mathrm{ref}}$. \quad
+\textbf{6.} Substitute $r=\beta\log(\pi^*/\pi_{\mathrm{ref}})+\beta\log Z$ into the Bradley--Terry likelihood. The loss is $-\log\sigma\big(0.1\cdot(1.2+0.8)\big)=-\log\sigma(0.2)=0.598$. \quad
+\textbf{7.} $N=7.5\times10^{11}$, $C=6.75\times10^{25}$; $N=1.6\times10^{13}$, $C=3.07\times10^{28}$. DeepSeek-V3: $400$ tokens per active parameter, $6ND=3.29\times10^{24}$ FLOP. \quad
+\textbf{8.} Sequential: $n-1=63$ compositions; tree: $6$ rounds for $n=64$ (checked: same product). A single pass has fixed depth, so it cannot run the $n$-step scan, and the tree needs depth growing like $\log n$; if $\mathsf{TC}^0\ne\mathsf{NC}^1$ no fixed depth suffices. A chain of thought of $n$ tokens supplies the $n$ serial steps: it trades depth for length. \quad
+\textbf{9.} Perplexity $e^{2}=7.39$; $2/(4\ln2)=0.721$ bits per byte, i.e.\ $9.0\%$ of the raw size (Chinchilla: $8.3\%$, $0.664$ bits per byte); at most $\log_27=2.81$ bits.
+
+%%%% READING
+\textbf{Lecture 6:} \citet{vaswani2017} for the transformer; \citet{ouyang2022} (InstructGPT: SFT, reward model, PPO with a KL penalty) and \citet{rafailov2023} (DPO); \citet{bai2022} (RLAIF with a constitution); the Constitution \citep{anthropic2026constitution} and \citet{guan2024} with the Model Spec \citep{openai2026spec}; \citet{kutasov2026} for the evidence; \citet{li2024cot} and \citet{merrill2024cot} for what chains of thought add; \citet{korbak2025} on chain-of-thought monitoring; \citet{deletang2024} for prediction as compression.
+
+%%%% PROJECTS
+\item \textbf{Serial depth versus chain-of-thought length (L6).} Train small transformers on word problems of groups such as $S_5$ with and without scratchpads, and measure the shortest chain of thought and the least depth with which the task is learned; compare with the expressivity theorems of Li et al.\ and Merrill--Sabharwal, and test whether the learned scratchpads are the sequential scan or a tree. A starting point, not a claim of openness.
+\item \textbf{Reward error and the KL leash (L6).} Since $\pi^*_{r}\propto\pi_{\mathrm{ref}}e^{r/\beta}$, express the loss of true reward and $\mathrm{KL}(\pi^*_r\|\pi^*_{\hat r})$ caused by a reward-model error $\hat r-r$ through the variance of $\hat r-r$ under tilted measures, and compare with the best-of-$n$ and RL over-optimization curves of Gao et al.; how should $\beta$ scale with the reward-model error?
+\item \textbf{A specification as a short program (L6, L3).} Model deliberative alignment as context distillation: a student imitates a teacher conditioned on a specification of $\ell$ bits and the specification is then dropped. Does a Solomonoff-type bound (Lecture 3) predict that teaching reasons (a short program) generalizes better than teaching behaviors (a long table)? Test on synthetic rule-following tasks.
+\item \textbf{Prequential code length of language models (L3, L6).} Measure two-part and prequential code lengths of small language models on held-out text as functions of data and parameters, count the model, and compare with the regret formulas $\tfrac d2\log n$ and $\lambda_{\mathrm{RLCT}}\log n$ of Lecture 3.
+
+%%%% REFS
+\bibitem[Ainslie et~al.(2023)]{ainslie2023} J.~Ainslie, J.~Lee-Thorp, M.~de~Jong, Y.~Zemlyanskiy, F.~Lebr{\'o}n, S.~Sanghai. GQA: training generalized multi-query transformer models from multi-head checkpoints. \emph{EMNLP} 2023; arXiv:2305.13245.
+\bibitem[Anthropic(2026a)]{anthropic2026constitution} Anthropic. Claude's Constitution. 21 January 2026 (84-page PDF, CC0). \url{https://www.anthropic.com/constitution}
+\bibitem[Anthropic(2026b)]{anthropic2026nextclf} Anthropic. Next-generation Constitutional Classifiers: more efficient protection against universal jailbreaks. 9 January 2026. \url{https://www.anthropic.com/research/next-generation-constitutional-classifiers}
+\bibitem[Anthropic(2026c)]{anthropic2026auto} Anthropic. Auto mode for Claude Code. 24 March 2026. \url{https://claude.com/blog/auto-mode}
+\bibitem[Anthropic(2026d)]{anthropicdocs2026} Anthropic. Building with extended thinking. Claude API documentation, accessed October 2026. \url{https://platform.claude.com/docs/en/build-with-claude/extended-thinking}
+\bibitem[Bai et~al.(2022)]{bai2022} Y.~Bai et al. Constitutional AI: harmlessness from AI feedback. arXiv:2212.08073, 2022.
+\bibitem[Baker et~al.(2025)]{baker2025} B.~Baker, J.~Huizinga, L.~Gao, Z.~Dou, M.~Y. Guan, A.~Madry, W.~Zaremba, J.~Pachocki, D.~Farhi. Monitoring reasoning models for misbehavior and the risks of promoting obfuscation. arXiv:2503.11926, 2025.
+\bibitem[Bradley and Terry(1952)]{bradley1952} R.~A. Bradley, M.~E. Terry. Rank analysis of incomplete block designs: I. The method of paired comparisons. \emph{Biometrika} 39(3/4):324--345, 1952.
+\bibitem[Brown et~al.(2020)]{brown2020} T.~B. Brown, B.~Mann, N.~Ryder et al. Language models are few-shot learners. \emph{NeurIPS} 2020; arXiv:2005.14165.
+\bibitem[Christiano et~al.(2017)]{christiano2017} P.~F. Christiano, J.~Leike, T.~B. Brown, M.~Martic, S.~Legg, D.~Amodei. Deep reinforcement learning from human preferences. \emph{NeurIPS} 2017; arXiv:1706.03741.
+\bibitem[DeepSeek-AI(2024)]{deepseek2024} DeepSeek-AI. DeepSeek-V3 technical report. arXiv:2412.19437, 2024.
+\bibitem[DeepSeek-AI(2025a)]{deepseek2025} DeepSeek-AI. DeepSeek-V3.2: pushing the frontier of open large language models. arXiv:2512.02556, 2025.
+\bibitem[DeepSeek-AI(2025b)]{deepseek2025r1} DeepSeek-AI. DeepSeek-R1: incentivizing reasoning capability in LLMs via reinforcement learning. arXiv:2501.12948, 2025 (\emph{Nature} 645:633--638).
+\bibitem[Del{\'e}tang et~al.(2024)]{deletang2024} G.~Del{\'e}tang, A.~Ruoss, P.-A. Duquenne, E.~Catt, T.~Genewein, C.~Mattern, J.~Grau-Moya, L.~K. Wenliang, M.~Aitchison, L.~Orseau, M.~Hutter, J.~Veness. Language modeling is compression. \emph{ICLR} 2024; arXiv:2309.10668.
+\bibitem[Feng et~al.(2023)]{feng2023} G.~Feng, B.~Zhang, Y.~Gu, H.~Ye, D.~He, L.~Wang. Towards revealing the mystery behind chain of thought: a theoretical perspective. \emph{NeurIPS} 2023; arXiv:2305.15408.
+\bibitem[Gao et~al.(2023)]{gao2023} L.~Gao, J.~Schulman, J.~Hilton. Scaling laws for reward model overoptimization. \emph{ICML} 2023; arXiv:2210.10760.
+\bibitem[Guan et~al.(2024)]{guan2024} M.~Y. Guan, M.~Joglekar, E.~Wallace, S.~Jain, B.~Barak, A.~Helyar, R.~Dias, A.~Vallone, H.~Ren, J.~Wei, H.~W. Chung, S.~Toyer, J.~Heidecke, A.~Beutel, A.~Glaese. Deliberative alignment: reasoning enables safer language models. arXiv:2412.16339, 2024.
+\bibitem[Holtzman et~al.(2020)]{holtzman2020} A.~Holtzman, J.~Buys, L.~Du, M.~Forbes, Y.~Choi. The curious case of neural text degeneration. \emph{ICLR} 2020; arXiv:1904.09751.
+\bibitem[Hunter(2004)]{hunter2004} D.~R. Hunter. MM algorithms for generalized Bradley--Terry models. \emph{Annals of Statistics} 32(1):384--406, 2004.
+\bibitem[Kazemnejad et~al.(2023)]{kazemnejad2023} A.~Kazemnejad, I.~Padhi, K.~N. Ramamurthy, P.~Das, S.~Reddy. The impact of positional encoding on length generalization in transformers. \emph{NeurIPS} 2023; arXiv:2305.19466.
+\bibitem[Korbak et~al.(2025)]{korbak2025} T.~Korbak, M.~Balesni, E.~Barnes et al. Chain of thought monitorability: a new and fragile opportunity for AI safety. arXiv:2507.11473, 2025.
+\bibitem[Kram{\'a}r et~al.(2026)]{kramar2026} J.~Kram{\'a}r et al. Building production-ready probes for Gemini. arXiv:2601.11516, 2026.
+\bibitem[Kutasov et~al.(2026)]{kutasov2026} J.~Kutasov, A.~Jermyn et al. Teaching Claude why. Anthropic Alignment Science Blog, 8 May 2026. \url{https://alignment.anthropic.com/2026/teaching-claude-why/}
+\bibitem[Li et~al.(2024)]{li2024cot} Z.~Li, H.~Liu, D.~Zhou, T.~Ma. Chain of thought empowers transformers to solve inherently serial problems. \emph{ICLR} 2024; arXiv:2402.12875.
+\bibitem[Loshchilov and Hutter(2019)]{loshchilov2019} I.~Loshchilov, F.~Hutter. Decoupled weight decay regularization. \emph{ICLR} 2019; arXiv:1711.05101.
+\bibitem[Maini et~al.(2024)]{maini2024} P.~Maini, S.~Seto, H.~Bai, D.~Grangier, Y.~Zhang, N.~Jaitly. Rephrasing the web: a recipe for compute and data-efficient language modeling. \emph{ACL} 2024; arXiv:2401.16380.
+\bibitem[Merrill and Sabharwal(2023)]{merrill2023} W.~Merrill, A.~Sabharwal. The parallelism tradeoff: limitations of log-precision transformers. \emph{Transactions of the ACL}, 2023; arXiv:2207.00729.
+\bibitem[Merrill and Sabharwal(2024)]{merrill2024cot} W.~Merrill, A.~Sabharwal. The expressive power of transformers with chain of thought. \emph{ICLR} 2024; arXiv:2310.07923.
+\bibitem[Muennighoff et~al.(2023)]{muennighoff2023} N.~Muennighoff et al. Scaling data-constrained language models. \emph{NeurIPS} 2023; arXiv:2305.16264.
+\bibitem[OpenAI(2024)]{openai2024o1} OpenAI. Learning to reason with LLMs. 12 September 2024. \url{https://openai.com/index/learning-to-reason-with-llms/}
+\bibitem[OpenAI(2026d)]{openai2026spec} OpenAI. Model Spec. Versions of 12 September 2025 to 18 August 2026. \url{https://model-spec.openai.com}
+\bibitem[Ouyang et~al.(2022)]{ouyang2022} L.~Ouyang, J.~Wu, X.~Jiang et al. Training language models to follow instructions with human feedback. \emph{NeurIPS} 2022; arXiv:2203.02155.
+\bibitem[Rafailov et~al.(2023)]{rafailov2023} R.~Rafailov, A.~Sharma, E.~Mitchell, S.~Ermon, C.~D. Manning, C.~Finn. Direct preference optimization: your language model is secretly a reward model. \emph{NeurIPS} 2023; arXiv:2305.18290.
+\bibitem[Sharma et~al.(2023)]{sharma2023} M.~Sharma et al. Towards understanding sycophancy in language models. arXiv:2310.13548, 2023.
+\bibitem[Sharma et~al.(2025)]{sharma2025} M.~Sharma et al. Constitutional classifiers: defending against universal jailbreaks across thousands of hours of red teaming. arXiv:2501.18837, 2025.
+\bibitem[Su et~al.(2021)]{su2021} J.~Su, Y.~Lu, S.~Pan, A.~Murtadha, B.~Wen, Y.~Liu. RoFormer: enhanced transformer with rotary position embedding. arXiv:2104.09864, 2021.
+\bibitem[Touvron et~al.(2023)]{touvron2023} H.~Touvron et al. Llama 2: open foundation and fine-tuned chat models. arXiv:2307.09288, 2023.
+\bibitem[Tr{\k e}bacz et~al.(2026)]{trebacz2026} M.~Tr{\k e}bacz, S.~Arnesen, O.~Matthews, D.~Hurd, W.~Park, O.~Lin, J.~Gershenson. Auto-review of agent actions without synchronous human oversight. OpenAI Alignment Blog, 30 April 2026. \url{https://alignment.openai.com/auto-review}
+\bibitem[Vaswani et~al.(2017)]{vaswani2017} A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N. Gomez, {\L}.~Kaiser, I.~Polosukhin. Attention is all you need. \emph{NeurIPS} (NIPS~30), 2017; arXiv:1706.03762.
+\bibitem[Villalobos et~al.(2024)]{villalobos2024} P.~Villalobos, A.~Ho, J.~Sevilla, T.~Besiroglu, L.~Heim, M.~Hobbhahn. Will we run out of data? Limits of LLM scaling based on human-generated data. arXiv:2211.04325 (v2, June 2024).
+\bibitem[Wani et~al.(2026)]{wani2026} S.~G. Wani, A.~Dholakia, D.~Ellison. The reasoning tax: token economics of LLM reasoning across task types and deployment contexts. arXiv:2608.26235, 2026.
+\bibitem[Willison(2025)]{willison2025} S.~Willison. Weblog post on the Claude~4 system prompt. 25 May 2025. \url{https://simonwillison.net/2025/May/25/claude-4-system-prompt/}
+
+%%%% SUMMARY
+\textbf{Lecture 6} (a descriptive tour, held online) explains what an LLM is and how it is trained. A transformer turns tokens into vectors, applies layers of causal attention and MLPs of one width, converts the last vector into probabilities by a softmax with temperature, samples a token and repeats; what it actually sees is a hidden system prompt, the history and a hidden chain of thought, and agents add a harness and four layers of monitoring. Training has three stages: pre-training on the next-token log-loss (which, by Kraft--Shannon, is compression and not shallow statistics), mid-training, and post-training (SFT, RLHF and RLAIF, RL with verifiable rewards, DPO). The lecture ends with the safety rationale: RLHF does not scale and breeds sycophancy, so Claude's Constitution and OpenAI's Model Spec are trained in instead.
+
+%%%% CARD
+Building and training LLMs | transformers, RLHF, constitutions | crimson

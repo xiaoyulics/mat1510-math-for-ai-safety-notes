@@ -1,0 +1,198 @@
+% =====================================================================================
+%  Lecture 6, part C  —  sections 6.7 (post-training techniques), 6.8 (safety side) and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Post-training techniques}\label{sec:L6-posttrain}
+\tsm{47:50}
+\subsection{Supervised fine-tuning}\label{sec:L6-sft}\tsm{47:50}
+To deal with that, there are a few techniques in post-training. The first is \term{supervised fine-tuning} (SFT): the same thing as next-token prediction, except that one does not train on the whole text, only on a piece of it. A collection of tokens is fed in as the context: they go into the model, but its predictions on them are not trained, the weights are not updated because of them, and the updates start only after. The speaker's example (Figure~\ref{fig:L6-stages}b): the user message ``explain why the square root of two is rational''\flag{} (the captions have ``rational''; the proof he has in mind starts ``assume the square root of two is\dots'', so presumably \emph{ir}rational), then the thinking token is opened and the weight updates start from there; in the example the thinking token will be closed and the answer given. The model is shown a correct reasoning followed by a correct answer and tries to imitate all of it, which ``pushes it into the correct mindset of how to think about things''.
+
+\subsection{Reinforcement learning for reasoning}\label{sec:L6-rlreason}\tsm{49:30}
+Once SFT is done one needs to improve on it, and that is where reinforcement learning comes in: the model is given actual problems, has to do its thinking and has to obtain good results, and that is also what updates the weights.
+
+\subsection{Learning from human preferences}\label{sec:L6-preference}\tsm{49:50}
+Another thing one wants is answers that \emph{humans like}. How to extract that information? The easiest way is to give humans \emph{pairs} of answers and ask which is better: it is difficult for humans to assign particular scores, human time is valuable and there are not many humans, so one wants the maximum of information with the minimum of effort. The comparisons must then be turned into a function that says which answers are better: the probability that answer $w$ beats answer $l$ is a function of the difference of their rewards, composed with a smooth step function, a sigmoid.
+
+\begin{defn}[Pairwise preference model]\label{def:L6-bt}
+There is a reward function $r$ on answers (unknown), and the probability that a human prefers answer $w$ to answer $l$ is
+\[
+  \Pr(w\succ l)\;=\;\sig\big(r(w)-r(l)\big),\qquad \sig(s)=\frac1{1+e^{-s}} .
+\]
+The reward is found by inverting this relation: it is learned from the observed comparisons by minimizing the expectation of the negative logarithm of this probability (the captions only say ``the expectation of the log of $\sig$ of the difference''; the minus sign that makes it a loss is mine),
+\[
+  \Lcal_{\mathrm{rew}}(r)\;=\;-\,\E_{(w,l)}\Big[\log\sig\big(r(w)-r(l)\big)\Big].
+\]
+\end{defn}
+\noindent This differs from training the LLM with humans updating its weights every time: there are not enough humans and human time. Instead one gets some information from humans and builds from it a reward function, by inverting the relationship.
+
+\subsection{Staying close to the base model; DPO}\label{sec:L6-kl}\tsm{52:00}
+The other thing one wants is to \emph{maximize the reward}. But if one just maximizes it, the model may degenerate into gibberish. So one adds a term that punishes going too far from the original probability distribution: the LLM should still be coherent, it learned to be coherent by next-token prediction, and one must balance staying coherent against optimizing this imperfect reward. (The formula on the slide is not readable in the captions; the standard form is in the box below.) A particular algorithm, \term{direct preference optimization} (DPO), is quite popular: it lets one do this faster, sidestepping the computation of the reward function, taking the information directly from the comparisons between pairs, the preference pairs, and designing a training algorithm that does the job. (What this says about the question on slide~25 is in Section~\ref{sec:L6-questions}.)
+
+\begin{beyond}[Bradley--Terry, the KL leash and DPO: the mathematics]\label{box:L6-bt}
+Fix a prompt and drop it from the notation; $y$ ranges over a finite set $\mathcal Y$ of responses (on a countable set the identities below hold for every $\pi$ with $\E_\pi|r|<\infty$ and $\KL(\pi\|\Lpiref)<\infty$, provided $Z<\infty$; otherwise they can serve as the definition of $J$).
+
+\textbf{1.\ Bradley--Terry, and what is identified.} $\Pr(y\succ y')=\sig(r(y)-r(y'))$ is the model of \citet{bradley1952}: the law of comparing utilities $r(y)+g_y$ with independent standard Gumbel noises, because the difference of two such noises is standard logistic (checked by simulation). The loss $\Lcal_{\mathrm{rew}}$ (the speaker did not state its sign) is the reward-model loss of \citet[eq.~(1)]{ouyang2022}. Only differences of $r$ enter, so $\Lcal_{\mathrm{rew}}(r+c)=\Lcal_{\mathrm{rew}}(r)$ (a constant $c(x)$ per prompt): InstructGPT notes that ``the RM loss is invariant to shifts in reward'' and normalizes by a bias. The loss is convex, and strictly convex modulo constants if every two responses are linked by a chain of comparisons.
+
+\emph{Proposition 1.} Under that connectedness, $\Lcal_{\mathrm{rew}}$ has a minimizer iff the directed graph with an edge $y_w\to y_l$ for each comparison is strongly connected (Zermelo 1929, Ford 1957; see \citealp{hunter2004}); it is then unique up to a constant. \emph{Proof.} Suppose the graph is strongly connected and $r$ takes $k$ distinct values with spread $\Delta=\max r-\min r$. Some gap between consecutive values is $\ge\Delta/(k-1)$; let $S$ be the set of responses above that gap. Some edge enters $S$, i.e.\ some comparison has its winner outside $S$ and its loser in $S$, so it is mis-ordered by $\ge\Delta/(k-1)$, and $\Lcal_{\mathrm{rew}}\to\infty$ as $\Delta\to\infty$: a minimum exists, unique by strict convexity. If the graph is not strongly connected, pick a vertex $v$, let $R$ be the set of vertices reachable from $v$ and $S$ its (nonempty, proper) complement: every comparison across the cut is won from inside $S$, and $\Lcal_{\mathrm{rew}}(r+t\mathbf 1_S)$ decreases strictly as $t\to\infty$: no minimizer.~\qedsymbol
+
+For a transitive set of results (Exercise~4) the loss tends to $0$ along a ray. For $K=8$ responses compared in random pairs, the fitted reward has root-mean-square error falling with log-log slope $-0.498$ in the number $m$ of comparisons and equal to $1.02$ times the Fisher-information prediction $\sqrt{\operatorname{tr}(I^{+})/(Km)}$ at $m=5\times10^4$ (Figure~\ref{fig:L6-bt}b).
+
+\textbf{2.\ The KL-regularized problem.} For a reward $r$, a reference policy $\Lpiref$ of full support and $\beta>0$ let $J(\pi)=\E_{\pi}[r]-\beta\,\KL(\pi\,\|\,\Lpiref)$; this is the form used by \citet{ouyang2022}, with the SFT model as reference, a per-token penalty, and PPO as the optimizer.
+
+\emph{Proposition 2.} Let $Z=\sum_y\Lpiref(y)e^{r(y)/\beta}<\infty$ and $\pi^*(y)=\Lpiref(y)e^{r(y)/\beta}/Z$. For every $\pi\ll\Lpiref$,
+\[
+  J(\pi)\;=\;\beta\log Z\;-\;\beta\,\KL(\pi\,\|\,\pi^*),
+\]
+so $\pi^*$ is the unique maximizer and $\max J=\beta\log Z$. \emph{Proof.} $\KL(\pi\|\pi^*)=\sum_y\pi\log\frac{\pi}{\Lpiref}-\frac1\beta\sum_y\pi r+\log Z=\KL(\pi\|\Lpiref)-\frac1\beta\E_\pi r+\log Z$; multiply by $-\beta$.~\qedsymbol
+
+$\pi^*$ is unchanged under $r\mapsto r+c$: the unidentified part of the reward drops out of the policy. As $\beta\to\infty$, $\pi^*\to\Lpiref$; as $\beta\to0$ it concentrates on the maximizers of $r$; in between, $\beta$ moves along a frontier of expected reward against $\KL(\pi^*\|\Lpiref)$ (Figure~\ref{fig:L6-bt}a shows the policies $\pi^*_\beta$ for several $\beta$). With a uniform $\Lpiref$ and $r=z$ this is temperature sampling (the box \emph{Temperature, ``angle'', the cache and positions} in Section~\ref{sec:L6-softmax}). I checked the formula against a generic optimizer ($<10^{-6}$) and the identity for $J$ on random $\pi$ ($<10^{-10}$). Pushing a learned reward too hard does lower the true reward in experiments \citep{gao2023}: the KL term is the leash.
+
+\textbf{3.\ DPO.} Solve for the reward: $r(y)=\beta\log\frac{\pi^*(y)}{\Lpiref(y)}+\beta\log Z$. Only differences enter a comparison, so $\beta\log Z$ cancels and $\Pr(y_w\succ y_l)=\sig\big(\beta\log\frac{\pi^*(y_w)}{\Lpiref(y_w)}-\beta\log\frac{\pi^*(y_l)}{\Lpiref(y_l)}\big)$. Maximizing the likelihood over policies $\pi_\theta$ instead of rewards gives the DPO loss
+\[
+  \Lcal_{\mathrm{DPO}}(\theta)=-\E\log\sig\Big(\beta\log\frac{\pi_\theta(y_w)}{\Lpiref(y_w)}-\beta\log\frac{\pi_\theta(y_l)}{\Lpiref(y_l)}\Big)
+\]
+\citep{rafailov2023}, in which the policy is its own reward model, $\hat r_\theta=\beta\log(\pi_\theta/\Lpiref)$.
+
+\emph{Proposition 3.} If $\pi_\theta$ ranges over all full-support distributions (the tabular case), the minimizer of $\Lcal_{\mathrm{DPO}}$ (when it exists, Proposition~1) is the policy of the two-stage pipeline: Bradley--Terry maximum likelihood $\hat r$, then $\pi^*_{\hat r}$ with the same $\beta$ and $\Lpiref$. \emph{Proof.} $\pi\mapsto\beta\log(\pi/\Lpiref)$ is a bijection from full-support distributions onto rewards modulo constants, with inverse $\hat r\mapsto\pi^*_{\hat r}$ (Proposition~2), and $\Lcal_{\mathrm{DPO}}(\pi)=\Lcal_{\mathrm{rew}}(\beta\log(\pi/\Lpiref))$.~\qedsymbol
+
+Numerically (five responses, $6000$ comparisons, $\beta=0.5$) the two policies agree to $2.5\times10^{-8}$. With a neural policy the procedures differ: DPO optimizes within the class and never builds $\hat r$.
+
+\textbf{4.\ Which objective is learned when.} \emph{Stage 1} (reward model): minimize $\Lcal_{\mathrm{rew}}(\varphi)$ over the comparisons; the unknown is the reward $r_\varphi$. \emph{Stage 2} (policy): with $\hat r$ frozen, maximize $J(\pi)=\E_\pi[\hat r]-\beta\KL(\pi\|\Lpiref)$; the unknown is the policy. \emph{DPO} does both at once. This is the content of the speaker's clarification of slide~25 (Section~\ref{sec:L6-questions}): the sigmoid loss belongs to stage~1, the objective $J$ to stage~2.
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=14mm}, width=0.50\linewidth, height=0.40\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.3pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) the KL-regularized optimum}, xmode=log, xmin=0.03, xmax=250, ymin=0, ymax=1, xlabel={$\beta$ (weight of the KL penalty)}, ylabel={probability $\pi^*_\beta(y_i)$}]
+  \addplot[accent] table[x=beta, y=p1] {figures/data/L6_kl_policy.dat};
+  \addplot[teal] table[x=beta, y=p2] {figures/data/L6_kl_policy.dat};
+  \addplot[moss] table[x=beta, y=p3] {figures/data/L6_kl_policy.dat};
+  \addplot[amber] table[x=beta, y=p4] {figures/data/L6_kl_policy.dat};
+  \addplot[crimson] table[x=beta, y=p5] {figures/data/L6_kl_policy.dat};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=accent, anchor=west] at (axis cs:38,0.45) {$y_1$};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=teal, anchor=west] at (axis cs:38,0.30) {$y_2$};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=moss, anchor=west] at (axis cs:38,0.15) {$y_3$};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=amber, anchor=west] at (axis cs:38,0.075) {$y_4$};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=crimson, anchor=west] at (axis cs:38,0.015) {$y_5$};
+\nextgroupplot[title={(b) learning $r$ from comparisons}, xmode=log, ymode=log, xmin=80, xmax=70000, ymin=0.005, ymax=0.5, xlabel={number of comparisons $m$}, ylabel={RMS error of $\hat r$},
+   legend style={font=\sffamily\fontsize{6.2}{7}\selectfont, at={(0.02,0.04)}, anchor=south west, draw=none, fill=white, fill opacity=0.85, text opacity=1}]
+  \addplot[crimson, only marks, mark=*, mark size=1.8pt] table[x=n, y=rmse] {figures/data/L6_bt_consistency.dat};  \addlegendentry{simulation (60 runs)}
+  \addplot[ink, dashed] table[x=n, y=asym] {figures/data/L6_bt_consistency.dat};  \addlegendentry{$\sqrt{\operatorname{tr}(I^{+})/(Km)}$}
+\end{groupplot}
+\end{tikzpicture}
+\caption{\textbf{(a)} The optimum $\pi^*_\beta\propto\Lpiref e^{r/\beta}$ on five responses with rewards $r=(0,0.5,1,2,3)$ and reference $\Lpiref=(0.45,0.30,0.15,0.07,0.03)$: for large $\beta$ the model stays at the reference (right end), for small $\beta$ it puts all its mass on the best response. \textbf{(b)} Fitting a Bradley--Terry reward to simulated comparisons of $K=8$ responses: the error (up to a constant) falls like $m^{-1/2}$ and follows the Fisher-information prediction (dashed). Computed by \kbd{figures/gen\_data\_L6.py}.}
+\label{fig:L6-bt}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{The safety side: from human feedback to documents}\label{sec:L6-safety}
+\tsm{53:35}
+\subsection{What is wrong with RLHF}\label{sec:L6-rlhflimits}\tsm{53:35}
+The speaker is going more slowly than planned; what he wants to discuss is the safety aspect of the training. One issue is that RLHF is \emph{not scalable}: the number of human answers used ranges from $100{,}000$ to a million, which is not enough, and more is needed as the models grow. The other is that models with too much RLHF do not necessarily show the best behavior: they optimize the immediate reward of a human and so can become \term{sycophantic}, telling you that you are an amazing person and that all your ideas are genius. We do not want to optimize for the split-second reaction of a human; we would like to optimize for longer-term things and to think about consequences. So the way various companies approach this is to formulate general ideas, a document that summarizes what we want these models to do and how we want them to behave. The two famous examples are \emph{Claude's Constitution} and OpenAI's \emph{Model Spec}, and the difference between them is, he says, philosophically interesting.
+
+\begin{beyond}[Scale of the preference data, sycophancy, over-optimization]\label{box:L6-sycophancy}
+The numbers are of the right order: InstructGPT's reward model used $33$k prompts with $K=4$ to $9$ ranked completions each, so $\binom K2=6$ to $36$ comparisons per prompt and between about $2\times10^5$ and $1.2\times10^6$ comparisons \citep{ouyang2022}; Llama~2 reports ``over 1 million binary comparisons'' \citep{touvron2023}. Sycophancy is documented in five state-of-the-art assistants; in existing human preference data, responses agreeing with the user's views are more likely to be preferred, and optimizing against preference models can sacrifice truthfulness \citep{sharma2023}. Over-optimization of an imperfect reward is in \citet{gao2023} (see the box \emph{Bradley--Terry, the KL leash and DPO}); preference-based reward learning for deep RL goes back to \citet{christiano2017}.
+\end{beyond}
+
+\subsection{Two documents}\label{sec:L6-docs}\tsm{54:35}
+Claude's Constitution is very philosophical. Its main author is Amanda Askell, a philosopher with a PhD from NYU (the speaker first calls her one of the authors, then corrects himself). The document is $84$ pages long and talks a lot about Claude's \emph{character}: it focuses not on what Claude should or should not do but on what kind of character, what persona, it should have, and spends much time describing it. Claude should act like a best friend of a human, someone who is an expert engineer and scientist, perhaps also a lawyer and a doctor, and also a good friend: how would such a person act? OpenAI's approach is, by comparison, more \emph{behavior}-focused. Anthropic's claim is that they find character training more effective for alignment: when they add more examples of models thinking carefully through moral and ethical dilemmas before deciding, in mid-training, in supervised fine-tuning and in the RL stage, the model ends up more aligned in a more diverse set of situations, also out of distribution.
+
+Rather like the laws of robotics of the famous science-fiction author, the document has a \emph{hierarchy} of rules (Figure~\ref{fig:L6-ladders}, left). The rules about oversight, about Claude's being steerable and inspectable by humans, are the most important. Next in priority is that Claude be ethical; next, that it adhere to what Anthropic thinks it should do; after that it should be helpful, to what the user asks or, through the API, to what a third-party company wants, and after that to what the user wants. The speaker finds this structure interesting; the document's point of view, he says, is that it is more important for Claude to develop general ethical principles than just to listen to whatever Anthropic tells it. The constitution is organized into sections and he shows some excerpts.
+
+\subsection{The Model Spec and deliberative alignment}\label{sec:L6-spec}\tsm{59:05}
+\term{Deliberative alignment} is OpenAI's approach, and again there is a hierarchy: \emph{root, system, developer, user, guideline} (Figure~\ref{fig:L6-ladders}, right). \emph{Root} holds the most important rules, the principles under which the model should operate: for example, that it should not seek power and should not try to deceive humans. Then come what OpenAI wants (\emph{system}), what the third-party provider wants (\emph{developer}), what the actual user wants, and finally the tips for being helpful, reasonable and having common sense (\emph{guidelines}). ``That is how I understand these levels.''
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm, >={Latex[length=2mm,width=1.4mm]},
+    rung/.style={card=#1, text width=5.3cm, align=left, inner sep=4pt},
+    lab/.style={font=\sffamily\fontsize{6.6}{7.4}\selectfont, text=slate, align=left}]
+  \node[font=\sffamily\small\bfseries, text=ink] at (3.0,6.45) {Claude's Constitution};
+  \node[rung=crimson, minimum height=1.0cm] (c1) at (3.0,5.5) {\textbf{1\ Broadly safe}: not undermining appropriate human oversight of AI};
+  \node[rung=plum, minimum height=1.0cm] (c2) at (3.0,4.15) {\textbf{2\ Broadly ethical}: good values, honesty, avoiding harm};
+  \node[rung=amber, minimum height=1.0cm] (c3) at (3.0,2.8) {\textbf{3\ Compliant with Anthropic's guidelines}};
+  \node[rung=moss, minimum height=1.0cm] (c4) at (3.0,1.45) {\textbf{4\ Genuinely helpful}: to operators and users};
+  \foreach \a/\b in {c1/c2, c2/c3, c3/c4} \draw[->, slate, line width=0.8pt] (\a.south) -- (\b.north);
+  \node[lab, text width=5.6cm] at (3.0,0.4) {``in the order in which they are listed'', but ``holistic rather than strict''; hard constraints apply separately};
+  \node[font=\sffamily\small\bfseries, text=ink] at (9.8,6.45) {OpenAI Model Spec: chain of command};
+  \node[rung=crimson, minimum height=0.8cm] (m1) at (9.8,5.6) {\textbf{Root}: fundamental rules that nothing below can override};
+  \node[rung=plum, minimum height=0.8cm] (m2) at (9.8,4.55) {\textbf{System}: what OpenAI wants};
+  \node[rung=amber, minimum height=0.8cm] (m3) at (9.8,3.5) {\textbf{Developer}: what the third-party provider wants};
+  \node[rung=moss, minimum height=0.8cm] (m4) at (9.8,2.45) {\textbf{User}: what the actual user wants};
+  \node[rung=slate, minimum height=0.8cm] (m5) at (9.8,1.4) {\textbf{Guideline}: tips for being helpful; overridable};
+  \foreach \a/\b in {m1/m2, m2/m3, m3/m4, m4/m5} \draw[->, slate, line width=0.8pt] (\a.south) -- (\b.north);
+  \node[lab, text width=5.6cm] at (9.8,0.4) {the lecture's examples of root rules: do not seek power, do not deceive humans (not checked)};
+\end{tikzpicture}
+\caption{The two ``ladders''; higher rungs prevail in a conflict. \textbf{Left:} the four core properties of Claude's Constitution, in the order and with the caveats of the document (see the box \emph{What the two documents say, as far as I could check}). \textbf{Right:} the chain of command of the Model Spec, in the order recorded in OpenAI's changelog of 12~September 2025, ``root'' as defined there; the glosses of the other levels are the lecture's and that of guidelines is from search excerpts (I could not open the Model Spec itself).}
+\label{fig:L6-ladders}
+\end{figure}
+
+\begin{beyond}[What the two documents say, as far as I could check]\label{box:L6-docs}
+\emph{The Constitution} \citep{anthropic2026constitution}, published on 21~January 2026 under a CC0 licence: I read the PDF, $84$ pages and about $30{,}000$ words; authors Amanda Askell and Joe Carlsmith (lead), Chris Olah, Jared Kaplan, Holden Karnofsky, ``several Claude models, and many other contributors''. It lists \emph{broadly safe}, \emph{broadly ethical}, \emph{compliant with Anthropic's guidelines}, \emph{genuinely helpful} and says: ``In cases of apparent conflict, Claude should generally prioritize these properties in the order in which they are listed'', the prioritization being ``holistic rather than strict''. Two refinements of the summary: oversight is not obedience (``being overseeable \dots does not mean blind obedience, including towards Anthropic''); and ``operators before users'' is not the fourth rung but a separate principal hierarchy (Anthropic, operators, users) with trust ``in roughly the order given above \dots This is not a strict hierarchy''. The document says it ``plays a crucial role in our training process'', and explains rather than orders because ``if we train Claude to exhibit even quite narrow behavior, this often has broad effects on the model's understanding of who Claude is''.
+
+\emph{The Model Spec} \citep{openai2026spec}: the order \emph{Root, System, Developer, User, Guideline} is that of the changelog entry of 12~September 2025, which renamed the top level from Platform to Root and placed it above System, seen through a changelog aggregator; my tools could not fetch the Model Spec pages, so the definitions of the levels and the lecture's examples of root rules are unchecked. The hierarchy belongs to the Model Spec; \emph{deliberative alignment} \citep{guan2024} is the training method that uses it. As OpenAI describes it, a model trained only to be helpful generates (prompt, chain of thought, answer) triples with the relevant part of the specification in its system prompt; a judge that also sees the specification filters them; the model is fine-tuned on them \emph{with the specification removed from the prompt}; reinforcement learning then follows, with a reward from a judge that has access to the specification. This matches the lecture.
+\end{beyond}
+
+\subsection{Questions}\label{sec:L6-questions}\tsm{1:00:30}
+\paragraph{A question about slide 25.}\tsm{1:00:30}
+\begin{discussion}[What is the reward in the loss?]
+A student: on slide~25 the \emph{loss of the reward} is written, but the reward is not defined. The speaker: it is the expectation of the logarithm of $\sig$ of the difference of the rewards of the two answers. The student: the definition of $R$ itself, $R_\varphi$. The speaker: you do not know how to find $R$; you want to deduce it by inverting this relationship, to \emph{learn} it; that is part of the difficulty, and there are various algorithms, among them DPO, which sidesteps computing the reward. The student: maybe the reward is also in the loss. The speaker: ``So what did I write here? It's maybe a little bit confusing \ldots{} You're right \ldots{} I'm a little bit confused by why I put this here.'' What he wanted to write is that one wants to \emph{maximize} the reward minus the penalty (the objective $J$ of the slide). And separately: ``you want to learn the reward. How do you learn the reward? By minimizing this loss''; that is the procedure for learning the reward, the unknown; ``now once you have learned the reward you can optimize, by maximizing $J$''.
+\end{discussion}
+\noindent So the slide mixed the objectives of two stages; the box \emph{Bradley--Terry, the KL leash and DPO} (item~4) states which is learned when, and that DPO does both at once.
+
+\paragraph{Are the documents in the system prompt?}\tsm{1:03:30}
+\begin{discussion}[How the Constitution and the Model Spec are used]
+Not through the system prompt; they are used in a few other ways. For the Constitution: (i)~in \textbf{mid-training}, on a much larger corpus than the Constitution itself, which elaborates it with many examples of models meeting dilemmas, thinking through parts of the constitution and deciding, trained by next-token prediction; (ii)~in \textbf{SFT} on a lot of that; (iii)~in \textbf{RLAIF}: a different model that carefully reads the constitution is given two answers to a prompt and chooses the one that adheres more to it; it is an AI judge, but with specific instructions on how good a response is from the point of view of the constitution, and the model is trained by RL against it. The Model Spec approach is similar: (1)~generate prompts that touch important aspects of the spec; (2)~give the model the spec, so that it reasons about the problem \emph{while thinking about the spec}; (3)~have the answer judged by an AI judge that also reasons about the spec; (4)~\emph{remove} the spec and train on these examples, so that the model adheres to the spec even when it is not thinking about it.
+\end{discussion}
+
+\paragraph{Is there evidence that it works?}\tsm{1:07:10}
+A student asks whether both approaches are just companies improvising, and whether there is evidence, experimental or theoretical, that this works to some measure. The speaker: there are papers showing that, on various examples of dilemmas, after this type of training the models tend to give better answers. The deliberative-alignment paper has a bunch of experiments; and in \emph{Teaching Claude Why} (May 2026) they show that a Claude trained just on good answers does not generalize well to other situations, while one trained also on reasoning about the ethical dilemmas involved and the relevant parts of the constitution gives good answers even to questions not very similar to those seen in training. How much, if at all, this generalizes to the dilemmas that arise with larger capabilities is hard to say: ``a very much experimental kind of thing''.
+
+\begin{beyond}[What ``Teaching Claude Why'' reports]\label{box:L6-why}
+I read Anthropic's post \citep{kutasov2026} (8~May 2026) through page summaries and search excerpts. It concerns \emph{agentic misalignment} in fictional scenarios, such as a model blackmailing an engineer to avoid shutdown. Training on about $10$k transcripts ($30$M tokens) filtered only to remove responses that took the bait lowered the misaligned behavior from $22\%$ to $15\%$; when the responses were rewritten to contain explicit reasoning about values, to about $3\%$. Chats in which the assistant advises a \emph{user} facing an ethical dilemma matched this with only about $3$M tokens and generalized better; documents about the constitution plus fictional stories about admirable AIs, unrelated to the evaluation, cut blackmail from $65\%$ to $19\%$ in one configuration. The authors stress that training on the evaluation distribution lowered the measured behavior but \emph{not} held-out audit metrics, that experiments were mostly on Sonnet- and Haiku-class models, and that a model may memorize the constitution without internalizing it. So the lecture's summary has the right direction, but what was measured is behavior in agentic-misalignment evaluations, not ``ethical dilemmas'' in general. The earlier AI-feedback method with a list of principles is \citet{bai2022}.
+\end{beyond}
+
+\paragraph{How was it baked in? Announcement.}\tsm{1:09:15}
+A last question: how exactly were the Constitution and the ethics baked into the model's identity? Again through mid-training on many examples of thinking generated by LLMs from the Constitution, and through the later RL from AI feedback, in which the AI judges whether a response adheres to the Constitution. There is some human input, but it is fairly small compared with the amount of AI-generated material. The speaker closes by saying that many things happen on Friday, so he is not sure that he can hold office hours that day, and that he will make another announcement.\tsm{1:10:30}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item Which monitoring layers are deployed for \emph{agentic} behavior, and how long do chain-of-thought monitors stay informative when the monitored model is trained with them in the loop?
+  \item Teaching \emph{reasons} seems to generalize better than teaching behaviors. Is there a model in which a short principle plus reasoning beats a long list of demonstrations, in the spirit of Lecture~\ref{ch:L3}? What is lost when a specification is removed from the context (deliberative alignment as context distillation)?
+  \item Can the expressivity results for chains of thought be turned into statements about \emph{learning}: how many examples teach a transformer to use a scratchpad? How does one tell that a constitution is internalized rather than memorized?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item An LLM is a chain of vector spaces; each transformer layer adds \emph{causal attention} to an MLP, at one width. The last vector gives scores $z_v=\ip{u_v}{h}+b_v$, probabilities $\softmax(z/\tau)$ and a sampled token, appended to the text; the loop repeats, and a cache avoids recomputation.
+  \item The model sees a hidden system prompt, the history and a hidden chain of thought (a hard-coded think token, a learned end token), which buys serial computation. An agent is an LLM plus a harness with its state in files; four monitoring layers exist or are planned.
+  \item Pre-training minimizes $-\log P_\theta(x_t\mid x_{<t})$; mid-training selects better data; post-training is SFT, RLHF/RLAIF and RL with verifiable rewards. The compute share of RL rose from $\approx0.2\%$ (DeepSeek-V3) to above $10\%$ of the pre-training cost (V3.2); text is nearly exhausted, and $20$ tokens per parameter is, in the speaker's words, probably starting to break at the frontier.
+  \item The next-token loss is code length: good prediction is compression, finding short reasons, not shallow statistics; but it is not what we want the assistant to do.
+  \item $\Pr(w\succ l)=\sig(r(w)-r(l))$: the reward is known up to a constant and learned by a logistic loss; the policy maximizes $\E[r]-\beta\KL(\pi\|\Lpiref)$, solved by $\pi^*\propto\Lpiref e^{r/\beta}$; DPO substitutes this into the likelihood and skips the reward.
+  \item RLHF does not scale and breeds sycophancy; Claude's Constitution and OpenAI's Model Spec (with deliberative alignment: reason about the spec, then drop it) are trained in by mid-training, SFT and RLAIF; the evidence is experimental.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems]
+\begin{enumerate}
+  \item \emph{Temperature.} For $z=(3,1,0)$ compute $p_\tau$ and its entropy (nats) at $\tau=0.5,1,2$. Prove $\dd H/\dd\beta=-\beta\Var_\beta(z)$ for $\beta=1/\tau$, and the limits $\tau\to0^+$, $\tau\to\infty$.
+  \item \emph{Logit versus angle.} For $h=(1,0)$, $b=0$, $u_1=(0.5,0.2)$, $u_2=(2,2)$ find the angles and the probabilities at $\tau=1$. Show that for equal norms the order of the probabilities is that of the cosines, and that $\norm h$ acts as an inverse temperature.
+  \item \emph{Parameters, compute, cache.} Count the parameters of a dense transformer with $L$ layers, width $d$, MLP width $4d$ and a tied embedding of $V$ tokens (no biases). For $L=96$, $d=12288$, $V=50257$ and $2048$ positions compare with $175$ billion, and compute $6ND$ for $D=3\times10^{11}$. How many bytes per token does a key--value cache need in 16-bit numbers, and for $10^5$ tokens? How many positions are processed with and without the cache when $T=500$ tokens follow a prompt of $P=1000$ (the last generated token is not fed back)?
+  \item \emph{Bradley--Terry.} (a) Show $\Lcal_{\mathrm{rew}}(r+c)=\Lcal_{\mathrm{rew}}(r)$. (b) Answers $A,B,C$ with the comparisons $A\succ B$, $B\succ C$, $A\succ C$ ($3$ times each) and no others: show that no maximum-likelihood reward exists. (c) Add one comparison $C\succ A$ and find the maximizer (with $\sum r=0$) numerically.
+  \item \emph{The leash.} Prove $J(\pi)=\beta\log Z-\beta\KL(\pi\|\pi^*)$. For $\Lpiref=(0.5,0.3,0.2)$, $r=(0,1,2)$, $\beta=1$ compute $\pi^*$, $\E_{\pi^*}r$, $\KL(\pi^*\|\Lpiref)$ and $\max J$; repeat with $\beta=0.5$. What happens as $\beta\to0$ and $\beta\to\infty$?
+  \item \emph{DPO.} Derive the DPO loss from the Bradley--Terry model and the optimum of Exercise~5. For $\beta=0.1$ and log-ratios $\log(\pi_\theta/\Lpiref)$ equal to $1.2$ (winner) and $-0.8$ (loser), compute the loss.
+  \item \emph{Chinchilla arithmetic.} With $N=D/20$ and $C=6ND$ find $N$ and $C$ for $D=1.5\times10^{13}$ and $D=3.2\times10^{14}$ tokens. DeepSeek-V3 has $37$B active parameters and $14.8$T tokens: how many tokens per active parameter, and what is $6ND$?
+  \item \emph{Scratchpads.} The product of $n$ permutations of $\{1,\dots,5\}$ can be computed by a scratchpad of $n$ steps, each using only the previous token and the next input. Show that associativity also allows a balanced tree of depth $\lceil\log_2n\rceil$, and verify with $n=64$. Which of the two matches a fixed-depth transformer's single pass, and what does a chain of thought trade for what?
+  \item \emph{Prediction and compression.} A model has loss $2.0$ nats per token and a token averages $4$ bytes. Find its perplexity, its bits per byte and its compression ratio, and compare with $8.3\%$ for Chinchilla~70B on enwik9. A Bayes mixture of $7$ predictors with a uniform prior is at most how many bits worse than the best one?
+\end{enumerate}
+\end{exercise}

@@ -1,0 +1,222 @@
+% =====================================================================================
+%  Lecture 6, part B  —  sections 6.3 (what goes in), 6.4 (agents), 6.5 (training stages), 6.6 (misconception)
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{What really goes into the model}\label{sec:L6-prompt}
+\tsm{15:45}
+\subsection{The system prompt and the conversation history}\label{sec:L6-system}\tsm{15:45}
+When one writes something into a chatbot, does it go straight into the LLM? No. Before it does, something is added by the company to make sure that the LLM gives a good answer: the \term{system prompt}. The user does not see it and does not know what it is. The earlier prompts of the conversation and the earlier responses of the model are added as well. If one asks ``is the square root of two a rational number?'', the text is tokenized, the system prompt is put in front, the conversation history follows, and the new message comes last, marked so that the LLM knows that it is a question by a user; only then does the model generate tokens.
+
+\subsection{An extracted system prompt}\label{sec:L6-extracted}\tsm{17:20}
+One does not know exactly what the system prompt is. There was a fairly well publicized \emph{extraction} of the system prompt of Claude (an Opus model, ``4.5 or 4.7, 4.5 maybe''\flag). How it was obtained is not known, presumably by some form of jailbreaking; the speaker was told that a much weaker model is easier to jailbreak than a larger one, so that one can talk to the larger model, switch to the weaker one, jailbreak that, and so obtain the chain of thought or the system prompt of the larger one (hearsay, which I report at the level of the lecture and no further). He cannot be sure that what he shows is correct, but it has been discussed by various people and ``does look legitimate''; parts of the system prompts are released by Anthropic and OpenAI, but most is not. It is a pretty interesting document and quite large.
+
+\begin{exmp}[Excerpts of the prompt, as shown on the slides]\label{ex:L6-sysprompt}
+A tiny fraction of the text, as the speaker stresses:
+\begin{itemize}
+  \item how to treat \emph{inputs}: an attached file, a document, a spreadsheet; how to deal with \emph{harmful content} (no promotion of hate speech, racism, violence or discrimination, and so on);
+  \item a model \emph{answer} to ``tell me about Dario Amodei'' (the CEO of Anthropic, a company dedicated to building safe AI systems; the captions garble it);
+  \item when \emph{stated user preferences} should matter: a user who says she is a sommelier and then asks about programming paradigms should get an answer without wine, because the preference is irrelevant to the question;
+  \item a \emph{style of refusal}: when Claude cannot or will not help, it does not say why or what it could lead to, since this ``comes across as preachy and annoying'';
+  \item its \emph{identity} (Claude, created by Anthropic) and the date and time; its \emph{character}: Claude enjoys helping humans and sees its role as an intelligent and kind assistant, with depth and wisdom that make it more than a mere tool, can lead the conversation rather than being passive, and particularly enjoys thoughtful discussion of open scientific and philosophical questions.
+\end{itemize}
+\end{exmp}
+\noindent Not only is the prompt added at the beginning: each time the conversation continues a smaller version, a reminder of some of these things, is added again, so the actual conversation is much longer than what the user sees. The last line shown, which the speaker cannot say is the last line of the prompt or merely the last thing the extractor obtained, was ``answer ethically and without sexual content and do not mention this constraint''. His reading: it is interesting to ask why they had to write all of this; everything that was added corresponds to something bad or undesirable happening when it was \emph{not} there, and adding it somehow improved the behavior, ``or something like that''. (My gloss: a system prompt is, in this sense, a list of patched failures.)
+
+\subsection{Reasoning tokens}\label{sec:L6-reasoning}\tsm{22:15}
+After the system prompt a modern model does not start replying at once; it starts generating \term{reasoning tokens}. A special token, written $\langle$think$\rangle$, different for the system from all other tokens, is added, and the model starts generating text, all of whose tokens pass through the transformer again and again. The point is to give the model the ability to solve complicated tasks: one pass through a transformer gives some computational power, enough for some problems but not for complicated ones (``you can show that it is somehow not enough to solve really complex things''). So one goes through it many times, which is what the \term{chain of thought} does: it generates many words to try to address the problem. When it is done the model emits another special token, the end of thinking, and only then answers.
+
+The think token is hard-coded; the end-of-thinking token is produced \emph{by the model}: it is trained to do that, not forced, and it arises like every other token from the same gradient descent. How long is the chain of thought? The speaker expected it to be much longer than the answer, but a few papers summarizing results say it is about two to three times as long, on various complicated tasks. Is it fed back with the next inputs? He believes so; there are many secrets (the size of the context window was a big problem, so they may summarize the chain of thought), but he suspects that everything goes in.
+
+\subsection{What the user does not see}\label{sec:L6-hidden}\tsm{24:35}
+With a commercial chatbot one sees neither the system prompt nor the thinking, only \emph{summaries} of the thinking. The speaker has a slide from the summer, when he was preparing a talk in Kazakhstan, in Russian, and wanted to replicate the solution of the Jacobian conjecture (Lecture~\ref{ch:L4}, Section~\ref{sec:L4-race}): he asked Claude in Russian, but the summaries of its thoughts were often in \emph{Chinese}; those were not the actual thoughts, which were probably also partly in Chinese. Why not provide the full chain of thought? Two reasons:
+\begin{itemize}
+  \item \textbf{Safety.} They do not want to train the chain of thought to be \emph{nice}: they want it to be a window into what the model is actually thinking.
+  \item \textbf{Commercial.} The chain of thought is extremely useful for \emph{distillation}, for training new networks for competitors.
+\end{itemize}
+
+\begin{beyond}[System prompts and hidden reasoning: what I could check]\label{box:L6-hidden}
+\emph{System prompts.} Anthropic publishes the main system prompts of its Claude apps in its release notes. According to \citet{willison2025}, the published Claude~4 prompt omits the tool descriptions (a full copy was obtained by someone else, by extraction) and contains the sentence about refusals that ``comes across as preachy and annoying''; so at least that excerpt does not depend on any jailbreak. I could not identify the particular extraction (``Opus 4.5 or 4.7'' is as heard) or check the weaker-model story. The last line quoted resembles what user-maintained collections describe as short reminders attached by the system; I found no Anthropic document on this.
+
+\emph{Hidden reasoning.} The two reasons are those OpenAI gave in September 2024 when releasing a model with hidden reasoning: it weighed user experience, competitive advantage and the option of monitoring the chain of thought, and decided not to show the raw chains of thought; and it explained that, for monitoring to be possible, no policy compliance or user preferences can be trained onto the chain of thought \citep{openai2024o1} (from copies of the post; the page itself did not load for me). Anthropic's documentation says the API returns a \emph{summary} of the thinking for Claude~4 models and bills the full thinking, whereas Claude~3.7~Sonnet returned the full thinking \citep{anthropicdocs2026}. Language mixing is documented for an open model: DeepSeek-R1's chain of thought often mixes languages, which a language-consistency reward was added to counter \citep{deepseek2025r1}; on the Claude anecdote I found nothing.
+
+\emph{Length.} I could not identify the ``few papers'' behind ``two to three times''. The ratio depends on task and model: for short final answers the thinking is usually far longer, and a 2026 preprint on token economics \citep{wani2026} defines a ``reasoning cost share'' and, according to a search excerpt I could not check, finds medians around $95\%$. Read ``two to three times'' as rough and task-dependent.
+\end{beyond}
+
+\begin{beyond}[Why a chain of thought adds computational power]\label{box:L6-cot}
+The lecture says one pass is not enough for complicated problems and that one can \say{show} it. What is proved concerns \emph{expressivity} (the existence of suitable weights), not what training finds.
+
+\emph{One pass.} A transformer of constant depth, polynomial width and $O(\log n)$-bit precision, whose feedforward parts are computable in space linear in the input size, can be simulated by logspace-uniform constant-depth, polynomial-size threshold circuits, so it computes only functions in $\mathsf{TC}^0$ \citep{merrill2023}; with constant precision, only in the smaller class $\mathsf{AC}^0$ \citep{li2024cot}. Under the standard conjecture $\mathsf{TC}^0\neq\mathsf{NC}^1$ it then cannot solve problems that are $\mathsf{NC}^1$-hard: the word problem of the permutation group $S_5$ (is $g_1\cdots g_n$ the identity? Barrington) and the evaluation of arithmetic formulas modulo a prime are $\mathsf{NC}^1$-complete, and solving linear equations modulo a prime is $\mathsf{NC}^1$-hard \citep{feng2023,li2024cot}.
+
+\emph{With $T$ generated tokens.} Each token is fed back as input, which resets the depth: the serial steps available grow from about $L$ to about $T\cdot L$. \citet{li2024cot} prove that a constant-depth, constant-precision transformer with $O(\log n)$ embedding size and $T(n)$ chain-of-thought steps computes everything a Boolean circuit of size $T(n)$ computes: with polynomially many steps exactly $\mathsf{P/poly}$, with linearly many all regular languages, hence the $S_5$ word problem. \citet{merrill2024cot} show that $O(\log n)$ steps add little, that linearly many (with a mild normalization assumption) give all regular languages and stay within the context-sensitive languages, and that polynomially many give \emph{exactly} $\mathsf P$ (for transformers with generalized pre-norm and strict causal masking). \citet{feng2023} build transformers of constant size (depth $4$ or $5$) that write out step-by-step solutions of the arithmetic and equation problems above, which fixed-depth polynomial-size models cannot answer directly (if $\mathsf{TC}^0\neq\mathsf{NC}^1$).
+
+\emph{Caveats.} Precision and uniformity assumptions matter, the separations rest on unproved conjectures, the transformers are constructed, not trained, and ``can compute'' is not ``will learn''. The lecture's sentence is the folklore form of these results (Exercise~8 works out $S_5$).
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{Agents, and the layers of monitoring}\label{sec:L6-agents}
+\tsm{27:50}
+\subsection{An LLM plus a harness}\label{sec:L6-harness}\tsm{27:50}
+The way LLMs are often used today is as \term{coding agents}: a large language model together with another program, the \term{harness}, often described as a wrapper around an LLM. The harness takes certain strings from the output of the LLM and runs them as commands on the user's computer, then takes the results of the commands and feeds them back into the LLM. There can also be files in which the progress so far is saved. This turns an LLM, which merely generates text, into an \term{agent}: something that can accomplish tasks, program, save files, act on the computer or on the internet. The system prompt changes for agentic systems: it says how to call the tools and in what style to run commands, and points to the files that summarize the progress and the rules of the work session. But all of the \emph{thinking} is done by the LLM; the infrastructure only helps it to act.
+
+One round (Figure~\ref{fig:L6-agent}): the harness assembles a context (instructions, the task, results of earlier commands) and puts it into the model; the model generates text; the harness parses it, extracts the commands, runs them and puts the results back. All the updates happen in the files; \emph{the LLM itself is fixed}. Examples: Codex and Claude Code, and the open-source OpenCode, Cline and Aider. (This is the notion of agent of Lecture~\ref{ch:L1}.)
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm, >={Latex[length=2mm,width=1.4mm]},
+    lab/.style={font=\sffamily\fontsize{6.6}{7.4}\selectfont, text=slate, align=center},
+    mon/.style={circle, fill=crimson, text=white, font=\sffamily\bfseries\fontsize{6.6}{7}\selectfont, inner sep=0pt, minimum size=4.2mm}]
+  \draw[slate, dashed, rounded corners=3pt, line width=0.7pt, fill=ink!2] (0,0) rectangle (9.05,4.3);
+  \node[font=\sffamily\fontsize{6.8}{7.6}\selectfont\bfseries, text=slate, anchor=north east] at (8.95,4.22) {harness: a program around the LLM};
+  \node[card=accent, minimum width=2.9cm, minimum height=1.9cm] (llm) at (1.95,2.4) {\textbf{LLM}\\[-1pt]{\scriptsize weights fixed}\\[-1pt]{\scriptsize reads context,}\\[-2pt]{\scriptsize writes text}};
+  \node[card=teal, minimum width=2.4cm, minimum height=1.9cm, text width=2.1cm] (run) at (7.05,2.4) {\textbf{harness code}\\[-1pt]{\scriptsize assembles context,\\ parses output,\\ runs commands}};
+  \node[card=amber, minimum width=3.4cm, minimum height=0.8cm] (files) at (4.6,0.65) {{\scriptsize\textbf{files}: progress, rules, results}};
+  \node[card=moss, minimum width=2.2cm, minimum height=1.9cm] (comp) at (11.55,2.4) {\textbf{computer,}\\ \textbf{internet,}\\ \textbf{tools}};
+  \draw[->, line width=1pt, ink] ([yshift=0.5cm]run.west) -- node[above, lab] {context: instructions,\\ task, earlier results} ([yshift=0.5cm]llm.east);
+  \draw[->, line width=1pt, ink] ([yshift=-0.5cm]llm.east) -- node[below, lab] {text: reasoning\\ and commands} ([yshift=-0.5cm]run.west);
+  \draw[->, line width=1pt, ink] ([yshift=0.5cm]run.east) -- node[above, lab, pos=0.2] {run} ([yshift=0.5cm]comp.west);
+  \draw[->, line width=1pt, ink] ([yshift=-0.5cm]comp.west) -- node[below, lab, pos=0.8] {result} ([yshift=-0.5cm]run.east);
+  \draw[<->, amber!85!black, line width=0.8pt] (run.south) |- (files.east);
+  % monitors
+  \draw[crimson, line width=0.5pt] (4.5,1.95) -- (4.5,2.85);
+  \node[mon] at (4.5,2.4) {1};
+  \node[mon] at (9.7,2.9) {2};
+  \node[card=crimson, minimum width=2.9cm, minimum height=0.8cm, text width=2.6cm] (cot) at (1.95,5.4) {{\scriptsize another LLM reads\\ the chain of thought}};
+  \draw[->, crimson, dashed, line width=0.8pt] (llm.north) -- node[mon, pos=0.35] {3} (cot.south);
+  \node[mon] at (0.45,0.55) {4};
+  \node[lab, anchor=west, text width=1.95cm, align=left] at (0.75,0.55) {linear probes on activations};
+  \draw[->, crimson, dashed, line width=0.8pt] (1.0,0.98) -- (1.0,1.45);
+  \node[lab, text width=3.7cm, anchor=west, align=left] at (6.2,5.05) {\textcolor{crimson}{\textbf{1}} classifiers on inputs and outputs, against a constitution\\ \textcolor{crimson}{\textbf{2}} permission monitor\\ \textcolor{crimson}{\textbf{3}} chain-of-thought monitor\\ \textcolor{crimson}{\textbf{4}} activation probes};
+\end{tikzpicture}
+\caption{\textbf{An agent and four layers of monitoring} (schematic). The LLM only turns a context into text; the harness assembles the context, extracts commands from the text, runs them, feeds back the results and keeps the state in files (the weights never change). Red markers: the places where, in the lecture, other models or probes look. The Hugging Face incident of Lecture~\ref{ch:L1} had, the speaker says, no such monitors.}
+\label{fig:L6-agent}
+\end{figure}
+
+\subsection{Four layers of monitoring}\label{sec:L6-monitors}\tsm{30:50}
+Something that was \emph{not} happening, the speaker says, in the OpenAI--Hugging Face incident of Lecture~\ref{ch:L1} was that other models monitored the actions and the chain of thought of the agents. What is known about the monitoring mechanisms that exist? He lists four, from outside to inside:
+\begin{description}
+  \item[1.\ Input/output classifiers.] They look at the inputs and outputs of the model and compare them, for Claude, with a document, its \emph{constitution} (Section~\ref{sec:L6-docs}), which describes how it should behave and which answers it should and should not give; they classify whether an exchange falls under its rules.
+  \item[2.\ Permission monitors.] When the model wants to run something on the user's computer, a model checks whether this was allowed, looking at the user's prompt and at the permissions the user explicitly gave. Users of Codex or Claude Code know the messages in which a monitor blocked an action and the agent asks the user to say explicitly that it is allowed.
+  \item[3.\ Chain-of-thought monitors.] Another model reads the chain of thought and tries to understand whether something bad is happening. There are papers describing something like that, and it seems to happen in deployment to some extent; how far is not known.
+  \item[4.\ Activation monitors.] Looking at the actual vectors inside the transformer, in activation space, and checking whether they point in potentially dangerous directions; the course will come to this in the next weeks. Whether it is done in deployment is not known: Anthropic has a paper in which they simulated deployment and showed, as a test case, that one can find bad behavior using linear probes on the activations, but whether it runs when one talks to Claude or ChatGPT today is, the speaker thinks, a secret.
+\end{description}
+\emph{Are the monitors just other LLMs?} For the chain of thought, definitely another LLM. For constitutional classifiers it could be a different type of system, or an LLM trained specifically for it. For activations the monitors are much simpler objects: \term{linear probes}, linear maps that compare the activations with directions that were identified with some bad behavior.
+
+\begin{beyond}[The four layers in the public record]\label{box:L6-monitors}
+\emph{Classifiers against a constitution.} \citet{sharma2025} describe \term{constitutional classifiers}, trained on synthetic data generated from a natural-language ``constitution'' that says what is allowed: over $3{,}000$ estimated hours of red-teaming of an early system found no universal jailbreak of the kind tested, at $23.7\%$ extra inference compute and a $0.38\%$ absolute rise in refusals on production traffic. Anthropic's next generation (9~January 2026) is described as screening \emph{all} traffic with a linear probe on the model's activations and escalating flagged exchanges to a probe--classifier ensemble, at about $1\%$ extra compute and a $0.05\%$ refusal rate on harmless queries over a month of Claude Sonnet~4.5 traffic \citep{anthropic2026nextclf}.
+
+\emph{Permission monitors.} Anthropic's \emph{auto mode} for Claude Code (24~March 2026) has a classifier review each tool call before it runs, with a fall-back to a permission prompt \citep{anthropic2026auto}; OpenAI's \emph{Auto-review} in Codex (30~April 2026) replaces user approval at the sandbox boundary by a separate reviewing agent that approves about $99\%$ of the escalated actions; its authors say it is no guarantee of security and no protection against scheming models \citep{trebacz2026}. These are the ``monitor blocked me'' messages.
+
+\emph{Chain-of-thought monitors.} \citet{baker2025} used a separate LLM (GPT-4o) to read the chain of thought of a stronger reasoning model in agentic coding and found that it catches reward hacking much better than looking at actions alone; but when the monitor was put into the training reward and optimized hard, the agent learned \emph{obfuscated} reward hacking. \citet{korbak2025} call chain-of-thought monitorability ``a new and fragile opportunity''.
+
+\emph{Probes.} Google DeepMind reports that its work on activation probes (tested on cyber-offensive misuse, and in a cascade with a language-model classifier) informed the deployment of misuse-mitigation probes in user-facing Gemini \citep{kramar2026}; so for \emph{misuse} the guess that probes in deployment are ``a secret'' is not quite right (for detecting \emph{scheming} I found nothing). I could not identify the ``simulated deployment'' paper. \emph{Lecture~\ref{ch:L1}:} the remark that no model monitored the agents sits uneasily with the guess recorded in Section~\ref{sec:L1-incident} that the guardrails were ``probably classifiers reading the chain of thought''; METR's report lists the effectiveness of safeguards as out of scope. I read it as: no monitor stopped the agents.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{How a model is trained: stages, compute and data}\label{sec:L6-train}
+\tsm{35:15}
+\subsection{The stages}\label{sec:L6-stages}\tsm{35:15}
+How is an LLM actually trained? First comes the collection of texts: scraping the internet, ``stealing data and so on''. Then come the stages of Figure~\ref{fig:L6-stages}(a):
+\begin{description}
+  \item[Pre-training.] Next-token prediction: minimizing the negative log-likelihood of the next token in the training text (Definition~\ref{def:L6-nll}).
+  \item[Mid-training.] A newer concept, sometimes folded into pre-training and basically the same, except that one selects particularly good texts: the model should imitate good texts, not ``4chan or something not so good''.
+  \item[Post-training.] The replies are optimized to be nice to humans: reinforcement learning from human feedback (\textbf{RLHF}); since human feedback is scarce, with AI feedback instead (\textbf{RLAIF}); and training for \emph{reasoning}, with supervised fine-tuning (SFT) and reinforcement learning on problems, in particular \textbf{reinforcement learning with verifiable rewards} (RLVR): a math or coding problem has a right answer, and the model is rewarded if it gets it.
+\end{description}
+
+\begin{defn}[Pre-training loss]\label{def:L6-nll}
+Let $P_\theta(\cdot\mid x_{<t})$ be the next-token distribution of the model (Definition~\ref{def:L6-softmax}). On a text $x_1,\dots,x_T$ the loss is the negative log-likelihood, the \emph{log-loss} of Lecture~\ref{ch:L3},
+\[
+  \Lcal(\theta)\;=\;-\frac1T\sum_{t=1}^{T}\log P_\theta\big(x_t\mid x_{<t}\big),
+\]
+averaged over the training texts and minimized.
+\end{defn}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm, >={Latex[length=2mm,width=1.4mm]},
+    st/.style={card=#1, minimum height=1.6cm, text width=2.55cm, inner sep=3pt},
+    lab/.style={font=\sffamily\fontsize{6.6}{7.4}\selectfont, text=slate, align=center},
+    tk/.style={draw, rounded corners=1.5pt, line width=0.5pt, font=\sffamily\fontsize{6.6}{7}\selectfont, minimum height=0.8cm, align=center, inner sep=2pt}]
+  \node[font=\sffamily\small\bfseries, text=ink, anchor=west] at (0,1.95) {(a) the stages};
+  \node[st=slate] (d) at (1.5,0.7) {\textbf{data}\\[-1pt]{\scriptsize scraping, dedup,\\ filtering,\\ synthetic text}};
+  \node[st=crimson] (pre) at (4.7,0.7) {\textbf{pre-training}\\[-1pt]{\scriptsize next-token NLL on\\ the whole mixture}};
+  \node[st=plum] (mid) at (7.9,0.7) {\textbf{mid-training}\\[-1pt]{\scriptsize same loss on\\ selected good text}};
+  \node[st=moss] (post) at (11.1,0.7) {\textbf{post-training}\\[-1pt]{\scriptsize SFT; RLHF, RLAIF;\\ reasoning: SFT + RL\\ with verifiable rewards}};
+  \draw[->, line width=1pt, ink] (d.east) -- (pre.west);
+  \draw[->, line width=1pt, ink] (pre.east) -- (mid.west);
+  \draw[->, line width=1pt, ink] (mid.east) -- (post.west);
+  \node[font=\sffamily\small\bfseries, text=ink, anchor=west] at (0,-1.45) {(b) one SFT training example: where the loss is taken};
+  \node[tk, fill=ink!7, draw=slate, minimum width=1.75cm] (a1) at (1.07,-2.4) {system\\ prompt};
+  \node[tk, fill=ink!7, draw=slate, minimum width=3.7cm] (a2) at (3.9,-2.4) {user: Explain why\\ $\sqrt2$ is irrational};
+  \node[tk, fill=ink!7, draw=slate, minimum width=1.25cm] (a3) at (6.38,-2.4) {$\langle$think$\rangle$};
+  \node[tk, fill=crimson!14, draw=crimson, minimum width=3.0cm] (a4) at (8.51,-2.4) {reasoning: ``assume\\ $\sqrt2=p/q$ \dots''};
+  \node[tk, fill=crimson!14, draw=crimson, minimum width=1.2cm] (a5) at (10.6,-2.4) {$\langle$/think$\rangle$};
+  \node[tk, fill=crimson!14, draw=crimson, minimum width=1.5cm] (a6) at (12.0,-2.4) {answer\\ tokens};
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror}, slate, line width=0.6pt] ([yshift=-1mm]a1.south west) -- node[below=2pt, lab] {context: fed to the model, no loss, no update from these tokens} ([yshift=-1mm]a3.south east);
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror}, crimson, line width=0.6pt] ([yshift=-1mm]a4.south west) -- node[below=2pt, lab, text=crimson!80!black] {loss $-\log P_\theta(\text{token}\mid\text{all before})$} ([yshift=-1mm]a6.south east);
+\end{tikzpicture}
+\caption{\textbf{(a)} The training stages of the lecture. \textbf{(b)} The loss mask of supervised fine-tuning (Section~\ref{sec:L6-sft}), with the speaker's example (the captions say ``rational'', presumably a slip for ``irrational'', which the figure shows): the context is fed to the model but only the tokens after the opening of the thinking are trained on: the reasoning, the end-of-thinking token and the answer. Schematic.}
+\label{fig:L6-stages}
+\end{figure}
+
+\subsection{How the compute is split}\label{sec:L6-compute}\tsm{37:10}
+It is hard to say how much compute today goes to each stage. Two years ago almost everything was pre-training, but this is changing. Something is known about open-weight models: DeepSeek V3, which came out in 2024, used only $0.2\%$ of its compute on RL (the captions say ``$0.2\%$ $2\%$''\flag) and everything else on pre-training; already DeepSeek V3.2 used $10\%$ on RL. (A sentence about an announcement by xAI is cut off in the captions; I do not guess at it.) Pre-training needs a lot of data because of the scaling laws of Lecture~\ref{ch:L2}, and very high-quality data is hard to find in such quantities; that is why one splits into pre-training, with a lot of data first, and mid-training, with more training on high-quality data. Today's estimates of what the frontier companies spend on RL range between $20\%$ and $50\%$ of the compute, and some say more than $50\%$ compared with pre-training. This is a very recent development: until recently most of the compute went into pre-training.
+
+\subsection{Data: sources and scale}\label{sec:L6-data}\tsm{39:25}
+How does data collection happen? Companies look at books, papers, the internet, forums, code repositories; they try to remove duplicates and to filter for quality to some extent; they increase the amount of data with synthetic data; and they build the \emph{mixture} that maximizes the capabilities of the model, ``a very guarded secret''. A comment (a student's, as far as the captions show\flag) is that at this size the curation has to be automated; the speaker agrees.
+
+What is the scale? GPT-3 started with about $500$ billion tokens and was reduced to $300$ billion; some more recent models, the captions say, start with ``$10$ trillion unique tokens'' and are reduced to ``$25$ trillion unique'' (garbled and inconsistent\flag); today's estimates for open-weight models are in the tens of trillions. To compare with all the text on the internet is tricky since much of it is duplicated: how does one count unique texts? Epoch AI estimated in 2024 that it is of the order of $300$ trillion \emph{effective} tokens. The open-weight models are smaller than the frontier ones, so the current frontier models appear to use pretty much all the unique text that exists, probably adding a good deal of synthetic text.
+
+\subsection{Tokens per parameter, synthetic data, repetition, the optimizer}\label{sec:L6-chinchilla}\tsm{42:00}
+From this one can also estimate the sizes of the models. From the Chinchilla scaling laws the number of tokens and the number of parameters should scale in the same way, with about one parameter per $20$ tokens: one needs $20$ times more tokens than parameters (Lecture~\ref{ch:L2}; \citealp{hoffmann2022}). At the same time the Chinchilla laws are probably starting to break at the scale of the frontier models, so there is probably more reliance on reinforcement learning, and on RL with verifiable rewards.
+
+Synthetic data can be mixed in: take web documents, ask a different LLM to rewrite them in different words, and see whether adding that helps. On the previous Monday the class had touched on how the loss and the scaling laws change when data is repeated: one can still squeeze out more performance with rephrased, or even to some extent duplicated, data, if done in a smart way. Mid-training uses a much smaller amount of text. Training itself is very similar to stochastic gradient descent; the algorithm actually used is, he thinks, \term{AdamW}, which adjusts some of the parameters, but from a zoomed-out view it is gradient descent: minimize the negative log-likelihood by sampling collections of tokens, update the parameters in a random way, iterate.
+
+\begin{beyond}[Checking the numbers of this section]\label{box:L6-numbers}
+\emph{Arithmetic} (checked in \kbd{figures/gen\_data\_L6.py}). With $N=D/20$, $C=6ND=0.3\,D^2$: the $320$T-token stock corresponds to $N=1.6\times10^{13}$ and $C=3.1\times10^{28}$ FLOP, and $15$T tokens to $N=7.5\times10^{11}$ and $6.8\times10^{25}$ FLOP; $C=5\times10^{25}$ gives $D=\sqrt{20C/6}=1.3\times10^{13}$, the $13$T of Epoch \citep{villalobos2024}. DeepSeek-V3 has $671$B parameters, $37$B active per token, and $14.8$T tokens \citep{deepseek2024}: $22$ tokens per parameter but $400$ per \emph{active} parameter, so for mixture-of-experts models the rule of thumb depends on which $N$ is meant; Epoch notes that overtraining also breaks it. Repeated data for up to about four epochs changes the loss negligibly compared with fresh data \citep{muennighoff2023}; rewriting web text with an instruction-tuned model gave a roughly $3\times$ speed-up in one study \citep{maini2024}; AdamW is \citet{loshchilov2019}.
+
+\noindent The table sets each number of the lecture against what I found.
+\begin{center}\small\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{34mm}>{\raggedright\arraybackslash}p{76mm}@{}}
+\toprule
+\textbf{In the lecture} & \textbf{What I found}\\
+\midrule
+DeepSeek-V3 (2024): about $0.2\%$ of compute on RL (the captions give $0.2\%$ and $2\%$\flag). & Cost table of the V3 report: $2664$K H800 GPU-hours pre-training, $119$K context extension, $5$K post-training, total $2788$K \citep{deepseek2024}: post-training (SFT and RL together) is $0.18\%$. \emph{Confirmed} (search excerpts).\\
+DeepSeek-V3.2: $10\%$ on RL. & The V3.2 report says its RL framework uses a post-training budget of more than $10\%$ of the pre-training cost \citep{deepseek2025}. \emph{Consistent} with the lecture: the report gives a lower bound relative to the pre-training cost; a budget $p$ times that cost is the share $p/(1+p)$ of the total ($\approx9\%$ for $p=0.10$, more for larger $p$).\\
+Frontier labs: $20$--$50\%$, perhaps over $50\%$. & No primary source found. \emph{Unverified}.\\
+GPT-3: $500$ billion tokens, reduced to $300$ billion. & Table~2.2 of \citet{brown2020}: $410+19+12+55+3=499$ billion tokens in the mixture; trained on $300$ billion, datasets sampled non-proportionally (Common Crawl $0.44$ epochs, Wikipedia $3.4$). \emph{Confirmed}.\\
+``$10$ trillion $\to$ $25$ trillion''. & Garbled. For orientation: $14.8$T tokens for DeepSeek-V3, $15$T for Llama~3 (as listed by \citealp{villalobos2024}). \emph{Unresolved}.\\
+Epoch (2024): $\approx300$ trillion effective tokens. & \citet{villalobos2024}, Fig.~3: indexed web $510$T tokens, $100$T after a quality adjustment, $320$T (95\% interval $65$T to $1.7$ quadrillion) after adjusting for repeated epochs, where the paper caps the gain in effective size from repetition at $5\times$; that is what ``effective'' means. \emph{Confirmed}.\\
+Chinchilla: $20$ tokens per parameter. & $70$B parameters, $1.4$T tokens: exactly $20$; Table~3 of \citet{hoffmann2022}: $1.5$T for $67$B, $21.2$T for $1$T parameters, i.e.\ $20$--$22$. \emph{Confirmed}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{A misconception: minimizing the surprise is not learning shallow statistics}\label{sec:L6-misconception}
+\tsm{44:30}
+There is a point of view, the speaker says a \emph{misconception}, that if all one does is minimize the surprise at seeing the next data point, one cannot be learning much\flag{}. The source of the misconception is how people think about it: asked to predict the next token, I would look at frequencies, how many times the word \emph{bread} or \emph{butter} or \emph{cup} was mentioned before; an algorithm for that would use some shallow statistics of the data.
+
+However, as discussed in Lecture~\ref{ch:L3}, the observations of Kraft and Shannon in the 1940s and 1950s say that minimizing the prediction error, the negative log-likelihood, is the same thing as minimizing the \emph{description length}: it is the same problem as \emph{compression} (Theorem~\ref{thm:kraft}; my gloss: the Solomonoff bound of Theorem~\ref{thm:solomonoff} is the formal version of what follows). Suppose some data are generated by a function or an algorithm: the best way to compress them is to write the algorithm down; if a short algorithm describes a huge collection of data, that is a very efficient way to compress it. Another way to say this is that one finds \emph{simple reasons for patterns}, and that looks very much like a description of \emph{understanding}: finding simple reasons for why things happen as they do is very similar to understanding them. So if one can predict the next token very well, if one brings the loss to a very small value, that is probably related to understanding the reasons why the data were generated as they were. That, he says, is the general philosophy of why minimizing this loss is related to understanding.
+
+\begin{caution}[But the loss is not what we want]
+At the same time, when one trains for this loss one is not training for the thing one wants LLMs to do. We do not want them to be extremely good at predicting what the next word would be on a forum after a prompt sentence; we want a good \emph{answer}. If one asks a question and the model puts it into a dark corner of the internet, we do not want it to be very good at predicting what happens in that corner. That is what the post-training techniques of the next section are for.
+\end{caution}
+
+\begin{beyond}[Prediction is compression, made concrete: an experiment]\label{box:L6-compress}
+Since $T\,\Lcal(\theta)=-\log P_\theta(x_{1:T})$, Kraft's inequality gives a prefix code of length $\lceil-\log_2P_\theta(x_{1:T})\rceil$. I tested this on the transcript of this lecture ($50{,}583$ bytes, time-stamps removed) with a deliberately simple model: for each order $k=0,\dots,6$ the next byte is predicted from the previous $k$ bytes by running counts with Witten--Bell backoff to order $k-1$ (no parameters), and the prediction is the Bayes mixture of the seven predictors with a uniform prior, as in Lecture~\ref{ch:L3}: its regret against the best fixed order is at most $\log_27=2.81$ bits, a bound attained here to within rounding. The only design choices are the maximal order ($6$) and the Witten--Bell backoff; no parameter was fitted to the test text. An arithmetic coder driven by the same predictions produced $13{,}894$ bytes ($0.7$ bit above the formula) and a decoder recovered the text exactly. The table gives the code length of the text, in bits per character, after the model has first read the transcripts of other lectures; the compressors are given the same text as context ($C(S{+}T)-C(S)$, a proxy).
+\begin{center}\small\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccc@{}}\toprule
+text read first & none & $4$ KB & $16$ KB & $64$ KB & $268$ KB\\\midrule
+adaptive mixture & $2.20$ & $2.12$ & $2.03$ & $1.89$ & $1.74$\\
+bzip2 & $2.24$ & $2.15$ & $2.07$ & $1.93$ & $1.78$\\
+xz (LZMA2) & $2.47$ & $2.37$ & $2.29$ & $2.17$ & $2.00$\\
+zlib & $2.64$ & $2.57$ & $2.52$ & $2.48$ & $2.47$\\\bottomrule
+\end{tabular}
+\end{center}
+From nothing, on $50$ KB, the adaptive model beats all three ($2\%$ against bzip2, $11\%$ against xz), and reading $268$ KB first lowers its code length by a further $21\%$: a miniature of the dependence of loss on data in Lecture~\ref{ch:L2}. At scale, \citet{deletang2024} report that Chinchilla~70B compresses the first gigabyte of Wikipedia to $8.3\%$ of its size, against $23.0\%$ for LZMA2 and $32.3\%$ for gzip, and, although trained on text, ImageNet patches to $43.4\%$ and LibriSpeech audio to $16.4\%$, ahead of PNG and FLAC. \emph{Caveats:} the other lectures are mostly by the same speaker (Lecture~\ref{ch:L4} is a guest talk, about $20\%$ of the $268$ KB) and come from the same caption system, so they are in-distribution; the training data of Chinchilla includes Wikipedia, so its $8.3\%$ is not out-of-distribution, while the ImageNet and LibriSpeech rates are the clean ones; and, as in the raw rates of \citet{deletang2024}, the cost of the learned model is not counted (the counts learned from $268$ KB are larger than the text compressed; counting the model, as their ``adjusted'' rates do, reverses the comparison for $70$B parameters and one gigabyte).
+\end{beyond}
+
+
+\input{lectures/lecture06c}

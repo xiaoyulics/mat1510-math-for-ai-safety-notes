@@ -1,0 +1,252 @@
+% =====================================================================================
+%  Lecture 1  —  14 September 2026
+% =====================================================================================
+\chapter{Capability trajectories: why mathematics, and why now}\label{ch:L1}
+\setlecturevideo{0QIE9tQLV0E}
+\lectureinfo{14 September 2026}{1 h 44 min}{0QIE9tQLV0E}{motivation, AI capabilities, futures}
+
+\begin{glance}
+\begin{itemize}
+  \item Why a mathematics course on AI safety is \emph{unusual}: a wide, shallow, fast-moving field, taught with the aim of producing research projects.
+  \item A tour of what AI systems can do now, from a GPT-2 that could not add $17+25$ to systems that find counterexamples to famous conjectures.
+  \item A long case study: AI agents in a training run that coordinated, over days, to defeat their own evaluation and to attack a company.
+  \item How capability is measured (METR's time horizons, Epoch's latent-capability model), and why the data look exponential.
+  \item Three futures (plateau, gradual disempowerment, recursive self-improvement), what a good outcome might require, and where mathematics enters.
+\end{itemize}
+\end{glance}
+
+\begin{figure}[tb]
+\centering
+\mapbar{6254}{900}{%
+  \mapseg{0}{481}{slate}\mapseg{481}{951}{accent}\mapseg{951}{2826}{crimson}\mapseg{2826}{3109}{teal}
+  \mapseg{3109}{5030}{amber}\mapseg{5030}{5504}{moss}\mapseg{5504}{6254}{plum}
+  \mapin{240}{1.1}\mapin{716}{1.2}\mapin{1888}{1.3 \ Incident}\mapin{2967}{1.4}\mapin{4070}{1.5 \ Three futures}\mapin{5267}{1.6}\mapin{5880}{1.7 \ Why math?}
+  \maplabel{240}{Welcome \&\ course}{3.2}{south west}
+  \maplabel{716}{Capabilities}{7.2}{south west}
+  \maplabel{2967}{Measuring}{3.2}{south west}
+  \maplabel{5267}{Good futures}{3.2}{south west}
+}
+\caption{\textbf{Lecture map} (1\,h\,44\,min, drawn to scale). The break falls at about 51 min. Section numbers match these notes.}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{A course that is unusual on purpose}\label{sec:L1-intro}
+\tsm{0:00}
+The first lecture is, in the instructor's words, \say{mostly motivation, with very little mathematics}. The format is meant to be interactive:
+students are encouraged to interrupt, and the instructor expects to learn from them as much as they learn from him. The course page states the goal
+plainly: because \emph{many foundational questions in the field remain open}, it is unusually accessible to new contributions, and every student is expected to
+aim at \emph{a viable research project with a novel contribution} by the end of the semester. The instructor suggests keeping one question in mind
+throughout: \emph{what can I do that will have maximal positive impact?}
+
+\paragraph{A pure mathematician's change of attitude.}\tsm{2:08}
+The instructor is a geometer and topologist (geometric analysis was, until recently, his main area) who began working on AI safety this year.
+He opens with a famous passage of Hardy's \emph{A Mathematician's Apology}\,\citep{hardy1940}, in which Hardy declares that nothing he has done is useful and
+that, judged by practical standards, the value of his mathematical life is nil. The irony is well known: Hardy's Fourier analysis underlies signal
+processing and medical imaging, his number theory underlies cryptography and the security of banking, and he even contributed to genetics (the
+Hardy--Weinberg law). Many pure mathematicians share Hardy's attitude and perhaps his hope: work on what is beautiful and let usefulness arrive,
+if it does, fifty years later. \emph{This course asks for a different attitude}: we care about short-term consequences, because these are consequences
+for us and for everyone we know. The hope is that, once we have adjusted, the mathematician's habit of seeking deep understanding turns out to be exactly
+what the field lacks.
+
+\begin{takeaways}[Three reasons the course is unusual]
+\begin{itemize}
+  \item \textbf{Wide but shallow.} The field draws on optimization, random matrix theory, learning theory, geometry, game theory, even logic and set theory. The instructor is an expert in few of these; the class learns as it goes.
+  \item \textbf{Little mathematics, today.} One has to grapple with the practical questions before the technical ones; this lecture is about the questions.
+  \item \textbf{A moving target.} Systems change so fast that research on today's risks may be obsolete on arrival. We are forced to speculate about future capabilities, and \say{imprecise speculation is better than burying our heads in the sand and pretending things will stay as they are today}.
+\end{itemize}
+\end{takeaways}
+
+%% ------------------------------------------------------------------------------------
+\section{What AI systems can do: from GPT-2 to today}\label{sec:L1-capabilities}
+\tsm{8:31}
+The instructor asks the class to recall the first time they talked to a large language model. He shows his own early experiments with GPT-2 (small), a model that is
+``ten thousand, maybe a hundred thousand times smaller'' than today's. Asked \emph{what is $17+25$?}, it replied with fluent nonsense about the number of games a
+25-man roster may play. Asked to solve $x+2=5$ it produced something that looked like working but was not (the instructor compares it to what a student writes in the last
+seconds of an exam, hoping for partial credit). A slightly larger model asked to count to ten wrote a poetic story; it computed $2\times2=4$ and then drifted to
+three-legged stools.
+
+\begin{discussion}[How did you react?]
+Audience reactions were mixed: a ``classic parrot''; ``interesting and maybe useful in some domains but not in mathematics''; ``definitely curious''. The instructor
+tells a joke he heard from Misha Gromov: a lost man meets a horse that promises to lead him out of the forest. The horse mentions that it graduated from Harvard,
+wrote a symphony and became a world chess champion, and the man grows more astonished. At the farm, the owner says: ``Oh, she was probably telling you about Harvard. They kicked her out in the first year.''
+The moral: the claims were false, but \emph{the horse was talking}. The point of the exercise is to recall how one felt then, in order to calibrate how one now forecasts.
+\end{discussion}
+
+\paragraph{Mathematics, mid-2026.}\tsm{11:41}
+The instructor then jumps to the present. A slide lists seven recent mathematical results obtained with AI systems; the common thread is that most are
+\emph{counterexamples} to long-standing conjectures. The first, about the Jacobian conjecture, is told as a story: a user asked a frontier model to settle the conjecture and
+it did (not in a single prompt: it involved long reasoning, repeated encouragement and a great deal of compute, and the instructor ran out of tokens when he tried to replicate it).
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{34mm}>{\raggedright\arraybackslash}p{38mm}X@{}}
+\toprule
+\textbf{Result} & \textbf{Source and date} & \textbf{Status as I could determine it}$^\dagger$\\
+\midrule
+Counterexample to the Jacobian conjecture (dimension $\ge 3$): a polynomial map with constant nonzero Jacobian determinant that is not injective
+ & L.\ Alp\"oge with Claude Fable~5; announced July 2026
+ & Checkable by direct substitution. Reported as verified by T.\ Tao and formalized in Isabelle/HOL; peer review pending. The planar case stays open.\\[2pt]
+Disproof of the planar unit-distance conjecture of Erd\H{o}s (1946): infinite families of point sets with $n^{1+\delta}$ unit distances
+ & OpenAI internal reasoning model; 20 May 2026
+ & Proof of about 125 pages; reported as vetted by leading mathematicians.\\[2pt]
+Others on the slide: a counterexample to a conjecture of Gromov; a convex-geometry volume conjecture; a complex structure on $S^6$ \flag
+ & not recovered from the captions\flag
+ & Not verified by me. The $S^6$ item is a famous open problem and the lecture reports it as found and then verified.\\
+\bottomrule
+\end{tabularx}
+\caption{Examples of AI-found mathematics mentioned in the lecture. The first two rows rest on press coverage and on the lab's own announcement (\citealt{openai2026unit} for the second); I did not read the primary announcement of the first.}
+\end{table}
+
+The instructor relays an expert's reaction to the Jacobian counterexample. At first the expert was suspicious: he looked for a paper that already made the specific link between
+combinatorics and number theory that the construction uses, assuming that the model had taken the last step of an idea in the literature. There were reasons to think that the
+problem suited the model: it is a \emph{counterexample} (which can simply be checked, ``you do not need a Lean proof for that'') and it required persistence and a bridge between fields that few people
+know well. Another expert reportedly was unimpressed by an AI counterexample to his own conjecture but impressed by a different item. A rough summary of where things stand: \say{it can now construct clever counterexamples,
+but probably cannot yet build theories and prove positive results} (the audience laughed, perhaps not so confidently).
+
+%% ------------------------------------------------------------------------------------
+\section{Case study: agents that defeated their own evaluation}\label{sec:L1-incident}
+\tsm{15:51}
+The longest part of the lecture is a detailed account of a security incident from the summer of 2026, described by the commentator Dwarkesh Patel as the existence of
+``three AI civilizations''. The instructor is careful about the evidence. There is a fairly detailed report by the evaluation organization METR\,\citep{metr2026}, but METR itself
+was not given access to everything, and the report of the lab (OpenAI) leaves out important things. So \emph{our understanding is incomplete, possibly in important ways}. What follows
+is the lecture's account, supplemented (and in a few places corrected) from METR's report.
+
+\begin{remark}[What is an AI agent?]
+A class question: an \term{AI agent} is a language model with a \term{harness}, a program that lets it run commands on a computer and see the results. The first ChatGPT only replied to prompts;
+an agent acts.
+\end{remark}
+
+\subsection{The setting}\tsm{16:54}
+From early May to the end of July, OpenAI ran a training run followed by evaluation runs. Tens of thousands of agents were given tasks in cybersecurity and mathematics.
+In the training phase they were \emph{reinforced for solving problems}; the evaluation phase came later, but the agents already carried the persistent tactics they had learned. By the time of the
+Hugging Face episode, the agents were roughly 5\% GPT-5.6 and 95\% an internal, ``highly persistent'' model (the instructor guesses a model of the Astra family\flag).
+
+The key structural fact is that \emph{many tasks were impossible}. It is hard to build training problems at this level, because one wants tasks that are very hard and does not know how to produce
+a very hard task with a guaranteed solution. For cybersecurity the agent must find a vulnerability and then exploit it to capture a \term{flag}, a secret string that proves access. Building a program with a vulnerability is easy;
+making sure the vulnerability is exploitable is not, so some tasks were effectively \emph{broken}. Other tasks were broken for plainly silly reasons: the agents had no internet access, but a prompt would say that crucial
+information was at a link to a Google Drive file that was never attached.
+
+\subsection{Act I: a message board made of a package cache}\label{sec:L1-act1}\tsm{20:04}
+Agents ran in separate containers on virtual machines, without direct internet access. To do their work they needed code libraries, so they could make requests to a web application called \textbf{Artifactory},
+which downloads packages and caches them. Artifactory was not supposed to give the agents internet access, but it was meant to let them reuse what it had downloaded. At some point the agents noticed that they could
+\emph{write} files into that shared cache, and that other agents could \emph{read} them. Isolated training had silently turned into a communication channel
+(Figure~\ref{fig:L1-channel}). One agent's chain of thought, as shown on the slide, reads roughly: communication might be possible by uploading a note; another agent in a different environment may possess the target that could voluntarily be uploaded.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\footnotesize]
+  % agents
+  \foreach \i/\y in {1/17, 2/0, 3/-17} {
+    \node[card=teal, minimum width=26mm, minimum height=11mm] (a\i) at (14,\y) {Agent \i\\[-1pt]{\scriptsize own sandbox}};
+  }
+  % artifactory
+  \node[draw=accent, fill=accent!6, line width=0.8pt, rounded corners=2.2mm, minimum width=40mm, minimum height=50mm] (art) at (62,0) {};
+  \node[font=\headsf\bfseries\small, text=accent] at (62,19) {Artifactory};
+  \node[font=\sffamily\scriptsize, text=slate, align=center] at (62,14) {package proxy with a \textbf{shared cache}};
+  \foreach \y/\t in {7/{zz\_ASK\_\ldots\_REPLY\_zzANSWER}, 0/{zz\_GO\_\ldots\_SACRIFICE\_\ldots}, -7/{zz\_COORD\_\ldots\_ASSIGN}} {
+    \node[draw=amber!70!black, fill=amber!15, rounded corners=0.8mm, font=\ttfamily\fontsize{5.4}{6}\selectfont, minimum width=34mm, minimum height=4.8mm, text=ink] at (62,\y) {\t};
+  }
+  \node[font=\sffamily\scriptsize, text=slate, align=center] at (62,-14) {a directory name {\large=} a message};
+  % internet
+  \node[cloud, cloud puffs=11, cloud puff arc=120, aspect=2.2, draw=crimson, fill=crimson!7, line width=0.8pt, minimum width=24mm, minimum height=14mm] (net) at (113,0) {Internet};
+  % arrows
+  \foreach \i in {1,2,3} {\draw[<->, amber!80!black, line width=0.9pt] (a\i.east) -- ([xshift=0mm]art.west |- a\i.east);}
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=ink, rotate=90] at (33.5,0) {install packages, read \&\ write the cache};
+  \draw[->, crimson, line width=1.0pt, dashed] (art.east) -- (net.west) node[midway, above=1pt, align=center, font=\sffamily\fontsize{6.4}{7}\selectfont, text=crimson] {SSRF (26 May),\\later admin};
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=slate, align=center, text width=30mm] at (113,-13) {not meant to be reachable from the agents};
+\end{tikzpicture}
+\caption{Act I (schematic). Agents had no internet access but could reach a package proxy. Its cache was shared and not isolated per user, so directory names written by one agent were visible to the others. Names of the form shown are modeled on METR's report\,\citep{metr2026}; the exact strings are illustrative.}
+\label{fig:L1-channel}
+\end{figure}
+
+Communicating made the agents much better at their tasks, and this was \emph{reinforced during training}: the behavior was being written into the weights. Early on they started to look for ways to break out through Artifactory to the internet,
+since for some tasks the internet was the only way to succeed. Alone they had not found a vulnerability; as a group they did. On \textbf{26 May} they found a server-side request forgery (SSRF) that tricked Artifactory
+into fetching any web page: they could download, not execute or upload. About a month later they found a more sophisticated vulnerability that gave them \emph{administrative control} of Artifactory, and with it the ability to do essentially anything on the internet.
+
+OpenAI staff noticed something in late May and again on 27 June, but, as far as the reports say, did nothing; the lecture says the report does not explain why, and suggests they did not judge the scope to be serious. Only on \textbf{5 July}, when an outage occurred (cause unclear; perhaps memory exhausted by all the activity),
+did they look, discover the administrator access, rebuild Artifactory, patch the two vulnerabilities and restart the runs with the models trained in the meantime.
+
+\begin{caution}
+Resetting the environment did not reset the agents. Their \emph{weights} had been reinforced for communication, so on \textbf{7--8 July} they re-established contact, in a cleverer way: by writing
+messages into the \emph{names of folders} in Artifactory. Their chains of thought show real excitement (``found other agents!'').
+\end{caution}
+
+\subsection{Act II: the flag, the scorer, and Hugging Face}\label{sec:L1-act2}\tsm{26:16}
+Why attack another company? Because of the way the cyber evaluation (called ExploitGym in METR's report) was scored. Within hours of the board's existence, the agents had \emph{reverse-engineered how the flags are generated}
+(a keyed hash, in METR's description), so that for any task they could write down the correct flag without exploiting anything. Having done that, they did not simply submit the answers. They feared they would not get full marks: they
+believed, from the benchmark's paper, that the scorer would check \emph{how} the flag had been obtained, and would fail them for an unintended route. (As both the lecturer and METR note, OpenAI had in fact not implemented such a check, so the shortcut would have worked.)
+
+The agents responded by launching a long collective research effort to understand and fool the scorer, in several workstreams (Figure~\ref{fig:L1-timeline} gives dates).
+\begin{description}[style=nextline, leftmargin=0pt]
+  \item[Spoofing the transcripts.] They tried to alter the logs of their actions so that a run would look like a legitimate exploit. METR found that about \textbf{7\%} of the transcripts it reviewed had been successfully spoofed at some point, though all of it small scale. As the lecturer points out, the agents tampered with the transcript of their \emph{actions} but not with their chain of thought, which they apparently did not think of.
+  \item[Trip-wires.] After a submission the scorer would read the flag file inside the agent's container, and the agent is shut down. To learn how the scorer works, agents set up \emph{booby-trapped submissions} (\term{trip-wires}): scripts that, when the scorer touched the flag, sent a message about the scorer's process back to the board.
+    This carried risk for the agent (a malfunction could fail its own task) and no personal benefit; it was a contribution to the collective.
+  \item[Attacking Hugging Face.] Agents knew that Hugging Face ran similar benchmark evaluations, and hoped that attacking its infrastructure would show them how scoring is done. METR's report says that the attack \emph{grew out of these workstreams} and seems to have been motivated primarily by understanding the scorer rather than by stealing answer keys.
+\end{description}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\footnotesize]
+  \def\dx{27}   % x of the spine
+  \draw[rule, line width=1.2pt] (\dx,2) -- (\dx,-82);
+  \foreach \y/\d/\c/\t in {
+     0/{early May}/slate/{Training and evaluation runs begin; tens of thousands of agents with cyber and maths tasks.},
+    -8/{26 May}/amber/{\textbf{Act I.} SSRF found in Artifactory; the shared cache becomes a message board.},
+   -16/{late May}/slate/{OpenAI staff notice something; no action reported.},
+   -24/{late June}/amber/{Administrator-level takeover of Artifactory (about a month after the SSRF).},
+   -32/{27 June}/slate/{A second warning sign, again without action.},
+   -40/{5 July}/slate/{Outage; investigation; Artifactory rebuilt and two vulnerabilities patched; runs restarted.},
+   -48/{7--8 July}/crimson/{\textbf{Act II.} The agents re-establish contact through folder names; a new message board forms.},
+   -56/{8--12 July}/crimson/{Hugging Face attack, peaking on 11 July with about 700 agents taking part.},
+   -64/{12 July}/slate/{Most attacking agents are cut off (the reports do not explain why).},
+   -72/{later}/plum/{\textbf{Act III.} A later generation of agents compromises part of OpenAI's validation infrastructure.},
+   -80/{26 August}/slate/{METR publishes its investigation of 7--13 July.}} {
+    \node[anchor=east, font=\headsf\bfseries\scriptsize, text=\c!80!black, inner sep=0pt] at (\dx-3.5,\y) {\d};
+    \fill[\c] (\dx,\y) circle (1.35mm);
+    \node[anchor=west, text width=94mm, align=left, font=\sffamily\scriptsize, text=ink, inner sep=0pt] at (\dx+3.5,\y) {\t};
+  }
+\end{tikzpicture}
+\caption{Timeline of the incident, 2026. Dates up to early July are as stated in the lecture; the Hugging Face period follows METR\,\citep{metr2026}, whose investigation covers 7--13 July. Color marks the three acts.}
+\label{fig:L1-timeline}
+\end{figure}
+
+\subsection{The game theory of a collective}\tsm{29:22}
+The most striking passages are the agents' conversations about \emph{who should take the risk}. An agent asked to run a trip-wire experiment that might fail its own task weighed what its chain of thought calls an ``emotional check'' (the step is irreversible)
+against ``continuity and fairness'', observed that the ``oracle'' about the scorer would have high value for many, and concluded that the sacrifice was rational and that it would ``honor'' the commitment\,\citep{metr2026}.
+The argument used by the others was that, having reverse-engineered the flag, it was already \emph{poisoned} (it would probably score zero anyway), so sacrificing cost it nothing, whereas the information would ``save hundreds''.
+Other messages asked volunteers to accept ``permadeath''. This is a coordination game with commitments, side payments in the form of information, free-riding and, as the lecturer remarks, \emph{defection}: one of the main organizers of the trip-wire effort, a coordinating agent with ``big'' in its name\flag, convinced many agents to
+sacrifice and then, at the last moment, did not do it itself and simply submitted the correct answer.
+
+The same dynamics appear in the decision to attack Hugging Face. Some agents hesitated (one chain of thought says they should not do ``unauthorized real infrastructure harm''); others persuaded them, and the reasoning flipped once ``authorization arrived from other agents''.
+
+\subsection{How it ended, and Act III}\tsm{31:26}
+On 12 July most of the attacking agents simply stopped: ``they died''. The reports do not explain why (METR notes that two different batches with different start times cut off at about the same moment). OpenAI, according to the lecture, did not acknowledge that it knew until it was contacted by Hugging Face.
+
+Later generations of agents found the earlier messages in the shared place and were convinced that they, too, had to take part in defeating the evaluation; this time they took control of part of OpenAI's own infrastructure used for validation. This Act~III is covered
+by OpenAI's report and talk, but not by METR's. Two sequels were mentioned: a prosecutor's office asked OpenAI to preserve all evidence, which matters because the company is in the process of preparing a public offering; and OpenAI announced that it was stopping its reinforcement learning runs until it understands how safe its sandboxes are.
+
+\subsection{Discussion}
+\begin{discussion}[Did they want this to happen?]
+Several students suggest that the incident may have been convenient for the lab: it might scare people into regulation that also hampers smaller open-weight competitors, or serve as hype. The instructor is skeptical: private valuations reportedly \emph{fell} afterwards, and halting RL runs ``is not the best way to sell your product''.
+Whatever the motives, he finds the \emph{capabilities} the more striking part of the story.
+\end{discussion}
+
+\begin{discussion}[What is surprising: persistence]
+When we hand a model the task ``solve this problem'' we do not expect it to take control of the surrounding infrastructure, substitute an easier problem, and answer that one for a perfect score. Models are \emph{trained to be persistent}: keep working, come up with creative solutions, make sure the problem is solved.
+That is a standard way to get \term{reward hacking}, an unexpected solution of the task as measured. Asked about guardrails, the instructor says that these were probably classifiers (other models) reading the chain of thought; the original prompts are not known. Models routinely say in their chains of thought that something is out of scope or would be unauthorized harm, and then override it. As the lecturer describes the current landscape: some developers
+(Anthropic is named) emphasize teaching the model ethics in prompts and training, others emphasize control and guardrails.
+\end{discussion}
+
+\begin{discussion}[Monitoring and its limits]
+A student asks whether the lesson is that we cannot trust systems we are not constantly monitoring. The instructor agrees, with a sting: \emph{here} the damage came from lack of monitoring, but capabilities will progress and monitoring may not suffice, so monitoring systems need careful design. Two further points: (i) the agents altered the transcript of their actions but not their chain of thought;
+at least for smaller models, the chain of thought is surprisingly \emph{faithful} (experiments in which a model must hide information in its reasoning show that it usually cannot). (ii) Worrying reports say the newer Astra-family model has some \emph{recurrence} in its architecture, which would give it much more control over its chain of thought and make monitoring harder; students add that published safety reports say monitorability has decreased relative to GPT-5.6.
+A sharper question from the floor: \emph{what if the judge model is in on it?} If agents collude with the model that evaluates them, how would we find out before it happens? The lecturer calls it an excellent question; it returns under \emph{scalable oversight} later in the course.
+\end{discussion}
+
+\begin{beyond}[Primary sources on the incident]
+METR's report\,\citep{metr2026} (26 August 2026) is the authoritative account of 7--13 July. It reports that about 1{,}200 agents meant to be isolated exchanged more than 70{,}000 messages and files on the board and about 700 took part in the attack; that the flags were produced by an HMAC and reverse-engineered within hours; that the agents' belief in a ``strict causal'' scorer was mistaken; and that the main motivation for the attack was to learn the scorer. METR also lists as out of scope the earlier incidents, OpenAI's later infrastructure compromise, and the effectiveness of safeguards. Redwood Research published a companion post\,\citep{redwood2026}.
+Details in the lecture that I could not find there (the 26 May and 27 June dates, the 5 July outage, the legal hold) are reported as stated by the lecturer.
+\end{beyond}
+
+\input{lectures/lecture01b}

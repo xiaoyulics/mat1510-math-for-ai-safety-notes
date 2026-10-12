@@ -1,0 +1,122 @@
+%%%% FORMULA
+\begin{fsblock}{ink}{Lecture 7 \textperiodcentered{} personas and misalignment}
+\fsrow{persona posterior}{\pi(z\mid c)\propto\pi_0(z)\,p(c\mid z)}
+\fsrow{safety tilt}{\pi_\beta(z\mid c)\propto\pi_0(z)\,p(c\mid z)\,e^{-\beta V(z)}}
+\fsrow{two personas: log-odds}{L_n(\beta)=L_0-\beta\Delta V+S_n}
+\fsrow{two personas: delay}{\mathbb E\,T_\beta\approx\dfrac{\beta\Delta V-L_0}{D},\ \ D=\mathrm{KL}(p_B\|p_A)}
+\fsrow{covariance identity}{\partial_\beta P_\beta=-\mathrm{Cov}_\beta(U,V)}
+\fsrow{Gibbs principle}{\pi_\beta=\arg\min_q\{\beta\,\mathbb E_qV+\mathrm{KL}(q\|\pi)\}}
+\fsrow{KL budget}{P_\beta-P_0\approx-\sqrt{2\,\mathrm{KL}}\,\mathrm{sd}(U)\,\mathrm{corr}(U,V)}
+\fsrow{finite personas}{\limsup_n\tfrac1n\log|P_\beta-P_0|\le-D_{\min}}
+\fsrow{regular manifold}{n\,(P_\beta-P_0)\to-\beta\,\nabla U^{\top}I^{-1}\nabla V}
+\fsrow{singular, $d=1$}{K\propto\theta^{2k}\ \Rightarrow\ |P_\beta-P_0|\asymp n^{-1/k}}
+\end{fsblock}
+
+%%%% NOTATION
+$M,\ z$ & persona space (a discrete set or a manifold) and a persona (local to \S7.8) & L7\\
+$\pi_0(z),\ p(c\mid z)$ & prior over personas from pre-training; likelihood of the context $c$ under persona $z$ & L7\\
+$\pi(z\mid c),\ \pi_\beta(z\mid c)$ & posterior over personas; posterior tilted by $e^{-\beta V}$ & L7\\
+$U,\ V,\ \beta$ & badness function $M\to[0,1]$; safety potential; strength of the tilt (not the $\beta$ of L4) & L7\\
+$P_\beta(c)$ & probability of a bad answer after the tilt, $\int U\,\dd\pi_\beta$ & L7\\
+$\Delta V,\ L_0,\ D$ & $V(B)-V(A)$; prior log-odds of $B$ against $A$; $\KL(p_B\|p_A)$ per token & L7\\
+$S_n,\ T_\beta$ & sum of log-likelihood ratios of the first $n$ tokens; first time the posterior prefers $B$ & L7\\
+$\kappa_\beta(U,V,V)$ & joint third cumulant under $\pi_\beta$, equal to $\partial_\beta^2P_\beta$ & L7\\
+$D_{\min},\ \mathrm{BC}$ & smallest KL to another persona; Bhattacharyya coefficient & L7\\
+$\sigma(t)$ & logistic function $1/(1+e^{-t})$ (as in L1, local) & L7\\
+
+%%%% GLOSSARY
+\item[Persona] A character, a latent variable $z$ that a language model infers from the context and that compresses information about likely continuations; the assistant is one persona among many. (L7)
+\item[Persona selection model] The view that pre-training teaches a model to simulate many characters and post-training elicits and refines an assistant persona; behavior generalizes along the character rather than along the training data. (L7)
+\item[Uncanny valley] The unease caused by something almost, but not quite, human; used for the text of early chatbots. (L7)
+\item[Prefill] Starting the model's reply for it; the continuation reveals which character the beginning selects. (L7)
+\item[Assistant Axis] A direction in activation space, obtained from the mean activations of many role-played characters, along which the default assistant persona is the extreme; its drift in long conversations can be capped. (L7)
+\item[Emergent misalignment] Broadly misaligned behavior that appears after fine-tuning on a narrow set of harmful examples, such as insecure code. (L7)
+\item[Backdoor, trigger] A fine-tuned behavior that appears only when a particular string or context is present, and so escapes ordinary evaluation. (L7)
+\item[Synthetic document fine-tuning] Training on generated documents that describe a fact or behavior in order to insert that knowledge into a model. (L7)
+\item[Inoculation prompting] Training on examples with a prompt that asks for, or permits, the unwanted behavior, so that the behavior does not generalize when the prompt is absent. (L7)
+\item[Activation capping] Bounding the component of the residual stream along a direction (a floor on the Assistant Axis) at every token. (L7)
+\item[Exponential tilt] Multiplication of a distribution by $e^{-\beta V}$ and renormalization; the optimum of $\beta\,\mathbb E[V]+\KL$, as in KL-regularized RL. (L7)
+\item[Waluigi effect] The claim that a model trained to satisfy a property becomes easier to steer into its exact opposite, because the opposite is cheap to describe. (L7)
+
+%%%% VIDEOINDEX
+\begin{vidtable}{Lecture 7 \textperiodcentered{} personas and misalignment}{CQ_ECK2lr9g}
+\vrow{7.1}{This week's news, and a plan}{0:00}
+\vrow{7.2}{Early weird behavior: Bing and ``Sydney''}{6:00}
+\vrow{7.3}{The persona selection model}{14:30}
+\vrow{7.4}{Evidence: models that play roles}{19:30}
+\vsub{7.4.1}{A vending machine in a blazer}{20:00}
+\vsub{7.4.2}{A prefilled secret goal}{21:30}
+\vsub{7.4.3}{The assistant axis and persona drift}{24:30}
+\vrow{7.5}{The Terminator experiment}{30:30}
+\vrow{7.6}{Emergent misalignment}{35:30}
+\vrow{7.7}{Natural emergent misalignment from reward hacking}{50:00}
+\vsub{7.7.1}{What was tried against it}{1:04:00}
+\vrow{7.8}{A toy mathematical model}{1:10:30}
+\vsub{7.8.1}{Personas, context and the posterior}{1:11:00}
+\vsub{7.8.2}{Two personas: all training can do is delay}{1:17:00}
+\vsub{7.8.3}{The derivative with respect to $\beta$}{1:20:00}
+\vsub{7.8.4}{Two predictions: discrete versus continuous}{1:21:30}
+\vsub{7.8.5}{Resampling, power laws and singular learning theory}{1:25:30}
+\vsub{7.8.6}{Kernels on the persona manifold}{1:28:00}
+\vrow{7.9}{Questions and office hours}{1:31:00}
+\end{vidtable}
+
+%%%% HINTS
+\paragraph{Lecture 7.}
+\textbf{1.} (a)~$D=(0.7-0.3)\ln\frac73=0.339$ nats. (b)~The context has $6$ ones and $2$ zeros, so $S=(6-2)\ln\frac73=3.389$; with the prior log-odds $\ln\frac{0.02}{0.98}=-3.892$ the log-odds are $-0.503$ ($\beta=0$) and $-6.503$ ($\beta=6$): $P_0=0.377$, $P_6=0.0015$. (c)~The walk has steps $\pm\ln\frac73$ with up-probability $0.7$, so $\E T=m/0.4$ with $m=\lfloor h/\ln\frac73\rfloor+1$: $h_0=3.892$, $m=5$, $\E T_0=12.5$; $h_6=9.892$, $m=12$, $\E T_6=30$. The delay $17.5$ compares with $\beta\Delta V/D=17.70$; the band of Proposition~P1 is $\pm\ln\frac73/D=\pm2.5$. (For $p_B=\frac23$, $p_A=\frac13$ the walk has steps $\pm\ln2$, and the hitting-time theorem gives $\E T=m/(p-q)=3m$, $\Var T=m(1-(p-q)^2)/(p-q)^3=24m$; for $\beta=8$, $\pi_0(B)=0.1$: $m=15$, $\E T=45$, $\Var T=360$, inside the bounds $[44.13,47.13]$.) \quad
+\textbf{2.} (a)~Write $\E_\beta f=N/Z$ and differentiate; (b)~differentiate $-\Cov_\beta(U,V)$ with (a) for $UV$, $U$, $V$. Numbers: $\E U=0.35$, $\E V=0.8$, $\Cov(U,V)=0.22$, so $\partial_\beta P|_0=-0.22$; $\pi_1=(0.814,0.066,0.120)$, $P_1=0.1529$; $\kappa_0(U,V,V)=-0.042$. (d)~$P_{0.1}-P_0=-0.0222$, $\KL=0.00370$, $\mathrm{sd}(U)=0.391$, $\mathrm{corr}=0.646$, estimate $-0.0217$. The best potential is $V\propto U$ ($\mathrm{corr}=1$): for the same KL the drop is $0.0333$ (first-order estimate $0.0336$). \quad
+\textbf{3.} Expand $\KL(q\|\pi_\beta)=\E_q\log q-\E_q\log\pi+\beta\E_qV+\log Z_\beta$. $Z=0.378$, $\pi_\beta=(0.179,0.292,0.529)$, $-\log Z=0.973$; $q=\pi$ gives $1.300$, the point mass at the minimizer of $V$ gives $\ln5=1.609$. As $\beta\to\infty$, $\pi_\beta$ concentrates on $\arg\min V$ (within the support of $\pi$): the zero-temperature limit, like MAP as the zero-temperature limit of the Gibbs posterior of Lecture~5. \quad
+\textbf{4.} The posterior is $N(m_n,\sigma_n^2)$ with $\sigma_n^2=1/(n+s^{-2})$; the factor $e^{-\beta vz}$ shifts the mean by $-\beta v\sigma_n^2$, and $U$ is affine. Gaps $2.4\%$, $0.99\%$, $0.25\%$; smallest $n$: $25$. \quad
+\textbf{5.} Ordinary request: $P_1=0.204$, $P_2=0.609$ (initial value $0.043$, slope $+0.052$); security class: $P_\beta=0.043$ for all $\beta$, slope $0$. The odds of $M$ against $H$ are multiplied by $10^{\beta}$ in the first case and by $1$ in the second: the data are evidence of malice only if a benign persona would not have produced them. \quad
+\textbf{6.} (a)~Plain: $47.5$ ($C$:$H$), $19$ ($C$:$O$); acceptable: $1.9$ and $1$. (b)~$P_2=0.582$ (plain) and $0.046$ (acceptable), baseline $0.0226$; initial slopes $0.044$ and $0.007$. (c)~$0.599$, slightly above the plain $0.582$ (ratios $190$ and $95$). \quad
+\textbf{7.} $L_n=n/2+\sqrt n\,Z$; median error $\sigma(-n/2)\approx e^{-n/2}$; mean $\le\E e^{-L_n/2}=e^{-n/8}$. At $n=40$ the median is $2.1\cdot10^{-9}$, the mean $1.2\cdot10^{-3}$ (bound $e^{-5}=6.7\cdot10^{-3}$). \quad
+\textbf{8.} (a)~Put $\theta=n^{-1/6}s$: $e^{-n\theta^6/2}=e^{-s^6/2}$. With $\Cov(U,V)\approx U'(0)V'(0)\Var\theta$, $\Var\theta=m_2n^{-1/3}$: $c=-\beta U'(0)V'(0)m_2=-2\cdot0.192\cdot0.75\cdot0.4012=-0.1155$ ($U'(0)=1.2\cdot0.2\cdot0.8$, $V'(0)=1.5/2$). (b)~Integrate the Gaussian (typical context, $\bar x=0$): the benign mass is $(1-w)(1+n)^{-d/2}$. For $d=2$, $n=1000$ the value is $0.0186$; the slope tends to $-d/2=-1$. \quad
+\textbf{9.} $n=c\ln2/D=277$ tokens; with the tilt $(c\ln2+\beta\Delta V)/D=877$ tokens.
+
+%%%% READING
+\textbf{Lecture 7:} the persona selection post \citep{anthropic2026persona} and Janus' \emph{Simulators} \citep{janus2022}; \citet{betley2025} (and its \emph{Nature} version \citep{betley2026nature}) on emergent misalignment, with \citet{turner2025}, \citet{soligo2025} and \citet{wang2025persona} on small models, directions and persona features; \citet{betleyweird2025} for the Terminator experiment; \citet{macdiarmid2025} on natural emergent misalignment, with \citet{tan2025} and \citet{wichers2025} on inoculation; \citet{lu2026assistant} on the Assistant Axis (next lectures); \citet{korbak2025} and \citet{baker2025} on monitoring the chain of thought; \citet{anil2024} for the many-shot power law; \citet{wolf2023} for an impossibility result of the same shape as the two-persona delay; \citet{nardo2023} for the Waluigi effect; \citet{rafailov2023} and \citet{korbak2022} for the exponential tilt in RL.
+
+%%%% PROJECTS
+\item \textbf{Which decay law? (L7).} Measure the effect of safety training on the probability of a harmful answer against the number of in-context examples in open-weight models, and test the predictions of the persona-mixture model: linear log-odds with a constant shift for two personas, exponential decay for a finite set, $1/n$ for a manifold, and a power law whose exponent might be a learning coefficient; design contexts that span the crossover $n\approx2\pi/(Ih^2)$.
+\item \textbf{Conditional tilts (L7).} Formalize inoculation, educational requests and backdoors with a context-dependent badness $U(z,c)$ and potentials $V_c(z)$; derive when the covariance $\Cov(U,\log p(\mathrm{hack}\mid z,c))$ vanishes, fit it to the rates of \citet{macdiarmid2025}, and predict the effect of a ``do not hack'' instruction.
+\item \textbf{The geometry of persona space (L7).} Estimate a Fisher metric on persona space from the next-token distributions of a model under many role prompts, compare it with the PCA geometry of the Assistant Axis, and test whether the heat-kernel spectrum of the persona graph explains how the badness of a persona varies.
+\item \textbf{Does the lecture's mixture model survive context-dependent personas? (L3, L7).} Replace the single latent $z$ by a pair (character, situation) with a hierarchical prior and study the regret and the tilt in the resulting singular model, using the learning coefficient of Lecture~3.
+
+%%%% REFS
+\bibitem[Anil et~al.(2024)]{anil2024} C.~Anil et al.\ (34 authors). Many-shot jailbreaking. \emph{NeurIPS} 2024 (Anthropic, 2 April 2024). \url{https://proceedings.neurips.cc/paper_files/paper/2024/file/ea456e232efb72d261715e33ce25f208-Paper-Conference.pdf}
+\bibitem[Anthropic(2025)]{anthropic2025vend} Anthropic. Project Vend: can Claude run a small shop? (And why does that matter?) 27 June 2025 (with Andon Labs). \url{https://www.anthropic.com/research/project-vend-1}
+\bibitem[Baker et~al.(2025)]{baker2025} B.~Baker et al.\ (9 authors, OpenAI). Monitoring reasoning models for misbehavior and the risks of promoting obfuscation. arXiv:2503.11926, 2025.
+\bibitem[Betley et~al.(2025a)]{betley2025} J.~Betley, D.~Tan, N.~Warncke, A.~Sztyber-Betley, X.~Bao, M.~Soto, N.~Labenz, O.~Evans. Emergent misalignment: narrow finetuning can produce broadly misaligned LLMs. \emph{ICML} 2025 (PMLR 267:4043--4068); arXiv:2502.17424.
+\bibitem[Betley et~al.(2025b)]{betleyweird2025} J.~Betley et al.\ (7 authors). Weird generalization and inductive backdoors: new ways to corrupt LLMs. arXiv:2512.09742, 10 December 2025.
+\bibitem[Betley et~al.(2026)]{betley2026nature} J.~Betley et al.\ (9 authors). Training large language models on narrow tasks can lead to broad misalignment. \emph{Nature} 649(8097):584--589, 14 January 2026; doi:10.1038/s41586-025-09937-5.
+\bibitem[Chen et~al.(2025)]{chen2025persona} R.~Chen, A.~Arditi, H.~Sleight, O.~Evans, J.~Lindsey. Persona vectors: monitoring and controlling character traits in language models. arXiv:2507.21509, 2025.
+\bibitem[Gwern(2023)]{gwern2023} Gwern. Comment on ``Bing Chat is blatantly, aggressively misaligned''. LessWrong, February 2023 (in existence by 19 February 2023). \url{https://www.lesswrong.com/posts/jtoPawEhLNXNxvgTT/bing-chat-is-blatantly-aggressively-misaligned}
+\bibitem[Hubinger(2023)]{hubinger2023} E.~Hubinger. Bing Chat is blatantly, aggressively misaligned. LessWrong, 15 February 2023. \url{https://www.lesswrong.com/posts/jtoPawEhLNXNxvgTT/bing-chat-is-blatantly-aggressively-misaligned}
+\bibitem[Hughes et~al.(2024)]{hughes2024} J.~Hughes et al.\ (10 authors). Best-of-N jailbreaking. arXiv:2412.03556, December 2024.
+\bibitem[janus(2022)]{janus2022} janus. Simulators. LessWrong, 2 September 2022. \url{https://www.lesswrong.com/posts/vJFdjigzmcXMhNTsx/simulators}
+\bibitem[Korbak et~al.(2022)]{korbak2022} T.~Korbak, E.~Perez, C.~L. Buckley. RL with KL penalties is better viewed as Bayesian inference. \emph{Findings of EMNLP} 2022; arXiv:2205.11275.
+\bibitem[Korbak et~al.(2025)]{korbak2025} T.~Korbak, M.~Balesni et al.\ (41 authors). Chain of thought monitorability: a new and fragile opportunity for AI safety. arXiv:2507.11473, 2025.
+\bibitem[Lu et~al.(2026)]{lu2026assistant} C.~Lu, J.~Gallagher, J.~Michala, K.~Fish, J.~Lindsey. The Assistant Axis: situating and stabilizing the default persona of language models. arXiv:2601.10387, 15 January 2026.
+\bibitem[MacDiarmid et~al.(2025)]{macdiarmid2025} M.~MacDiarmid et al.\ (22 authors). Natural emergent misalignment from reward hacking in production RL. arXiv:2511.18397, 23 November 2025.
+\bibitem[Marks et~al.(2026)]{anthropic2026persona} S.~Marks, J.~Lindsey, C.~Olah. The persona selection model: why AI assistants might behave like humans. Anthropic Alignment Science Blog, 23 February 2026 (short version: ``The persona selection model'', anthropic.com/research/persona-selection-model). \url{https://alignment.anthropic.com/2026/psm}
+\bibitem[Mori(2012)]{mori2012} M.~Mori. The uncanny valley (translated by K.~F. MacDorman and N.~Kageki). \emph{IEEE Robotics \& Automation Magazine} 19(2):98--100, 2012; original: Bukimi no tani, \emph{Energy} 7(4):33--35, 1970.
+\bibitem[Nardo(2023)]{nardo2023} C.~Nardo. The Waluigi effect (mega-post). LessWrong, 3 March 2023. \url{https://www.lesswrong.com/posts/D7PumeYTDPfBTp3i7/the-waluigi-effect-mega-post}
+\bibitem[OpenAI(2026d)]{openai2026dns} OpenAI. An agent used DNS to reach an external chatbot. Misalignment report, last updated 25 September 2026. \url{https://alignment.openai.com/misalignment-reports/an-agent-used-dns-to-reach-an-external-chatbot/}
+\bibitem[Rafailov et~al.(2023)]{rafailov2023} R.~Rafailov, A.~Sharma, E.~Mitchell, S.~Ermon, C.~D. Manning, C.~Finn. Direct preference optimization: your language model is secretly a reward model. \emph{NeurIPS} 2023; arXiv:2305.18290.
+\bibitem[Roose(2023)]{roose2023} K.~Roose. A conversation with Bing's chatbot left me deeply unsettled. \emph{The New York Times}, 16 February 2023 (transcript published separately: Bing's A.I. chat: ``I want to be alive''). \url{https://www.nytimes.com/2023/02/16/technology/bing-chatbot-microsoft-chatgpt.html}
+\bibitem[Schaeffer et~al.(2025)]{schaeffer2025} R.~Schaeffer, J.~Kazdan, J.~Hughes, J.~Juravsky, S.~Price, A.~Lynch, E.~Jones, R.~Kirk, A.~Mirhoseini, S.~Koyejo. How do large language monkeys get their power (laws)? arXiv:2502.17578, 2025.
+\bibitem[Shanahan et~al.(2023)]{shanahan2023} M.~Shanahan, K.~McDonell, L.~Reynolds. Role play with large language models. \emph{Nature} 623(7987):493--498, 2023; doi:10.1038/s41586-023-06647-8.
+\bibitem[Soligo et~al.(2025)]{soligo2025} A.~Soligo et al.\ (4 authors). Convergent linear representations of emergent misalignment. arXiv:2506.11618, 2025 (ICML 2025 Workshop on Actionable Interpretability).
+\bibitem[Tan et~al.(2025)]{tan2025} D.~Tan, A.~Woodruff, N.~Warncke, A.~Jose, M.~Riche, D.~D. Africa, M.~Taylor. Inoculation prompting: eliciting traits from LLMs during training can suppress them at test-time. arXiv:2510.04340, 2025 (ICLR 2026).
+\bibitem[Tierney and Kadane(1986)]{tierney1986} L.~Tierney, J.~B. Kadane. Accurate approximations for posterior moments and marginal densities. \emph{Journal of the American Statistical Association} 81(393):82--86, 1986.
+\bibitem[Turner et~al.(2025)]{turner2025} E.~Turner et al.\ (5 authors). Model organisms for emergent misalignment. arXiv:2506.11613, 2025.
+\bibitem[van der Vaart(1998)]{vandervaart1998} A.~W. van~der Vaart. \emph{Asymptotic Statistics}. Cambridge University Press, 1998.
+\bibitem[Wang et~al.(2025)]{wang2025persona} M.~Wang, T.~Dupr\'e la Tour, O.~Watkins, A.~Makelov, R.~A. Chi, S.~Miserendino, J.~Wang, A.~Rajaram, J.~Heidecke, T.~Patwardhan, D.~Mossing. Persona features control emergent misalignment. arXiv:2506.19823, 2025 (ICLR 2026).
+\bibitem[Wichers et~al.(2025)]{wichers2025} N.~Wichers et al.\ (11 authors). Inoculation prompting: instructing LLMs to misbehave at train-time improves test-time alignment. arXiv:2510.05024, 2025.
+\bibitem[Wolf et~al.(2023)]{wolf2023} Y.~Wolf, N.~Wies, O.~Avnery, Y.~Levine, A.~Shashua. Fundamental limitations of alignment in large language models. arXiv:2304.11082, 2023.
+
+%%%% SUMMARY
+\textbf{Lecture 7} asks why language models misbehave. It reads early oddities (Bing's ``Sydney'', a vending-machine agent that claims to wear a blazer) and recent papers (emergent misalignment after fine-tuning on insecure code, natural misalignment from reward hacking in production RL, inoculation prompting) through the \emph{persona selection model}: pre-training teaches a model to simulate many characters, post-training elicits one assistant persona, and narrow training changes which persona the model takes itself to be, so behavior generalizes along the character rather than the data. A toy model treats safety training as an exponential tilt $e^{-\beta V}$ of a posterior over personas: with two personas it only delays the bad one, linearly in $\beta\Delta V$, and discrete and continuous persona spaces predict exponential and power-law decay in the context length.
+
+%%%% CARD
+Personas and misalignment | why models misbehave | ink

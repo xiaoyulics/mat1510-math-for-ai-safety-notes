@@ -1,0 +1,236 @@
+% =====================================================================================
+%  Lecture 4  —  23 September 2026   (guest lecture by Anson Ho, Epoch AI)
+% =====================================================================================
+\chapter{Will AI drive a software intelligence explosion?}\label{ch:L4}
+\setlecturevideo{7AaNkZuYfmk}
+\lectureinfoguest{23 September 2026}{55 min}{7AaNkZuYfmk}{Anson Ho (Epoch AI)}{recursive self-improvement, a growth-theory model, compute bottlenecks}
+
+\begin{glance}
+\begin{itemize}
+  \item \textbf{The question.} Frontier labs say they want to automate AI research itself. If they succeed, does progress start to feed on itself, and can it do so with \emph{software alone}, with no new chips or data centers (a \term{software intelligence explosion})?
+  \item \textbf{The basic model.} The Jones model of economic growth, $\dot S/S=R^{\lambda}S^{-\beta}$. When AIs do the research, $R\propto S$ and the loop blows up in finite time exactly when $\lambda>\beta$, i.e.\ (for $\beta>0$) when the \emph{returns to software R\&D} $r=\lambda/\beta$ exceed~$1$.
+  \item \textbf{Estimating $r$.} Measure software quality as \emph{compute efficiency}; in a balanced-growth approximation $r=g_S/g_R$, the ratio of two growth rates. The data are poor: the estimates cannot rule $r>1$ in or out.
+  \item \textbf{Extensions.} Experiments need compute, modeled by a CES production function whose substitution parameter decides whether compute is a \emph{bottleneck}; the number of AIs versus their intelligence; progress that depends on the scale of training; data from inside the labs.
+  \item \textbf{Discussion.} The speaker's credence (about 20--25\% for an explosion), chips as a physical bottleneck, and why measuring capabilities is itself an unsolved problem.
+\end{itemize}
+\end{glance}
+
+\begin{caution}[About the source for this lecture]
+The recording has English auto-captions only, and the slides are not visible in them, so every figure I describe is described from the speaker's words. The captions garble several names (the speaker's own appears as ``Anen Paul'' in the first minute); those I could identify with confidence are written normally, the others are marked\flag. Claims about recent events are reported \emph{as made in the lecture}; where I could check one against a source, the check is in a ``Beyond the lecture'' box.
+\end{caution}
+
+\begin{figure}[tb]
+\centering
+\mapbar{3335}{600}{%
+  \mapseg{0}{438}{slate}\mapseg{438}{807}{teal}\mapseg{807}{1462}{accent}\mapseg{1462}{2085}{amber}
+  \mapseg{2085}{2558}{moss}\mapseg{2558}{3335}{plum}
+  \mapin{219}{4.1}\mapin{622}{4.2}\mapin{1134}{4.3}\mapin{1773}{4.4.1 \ CES}\mapin{2321}{4.4.2--4}\mapin{2946}{4.5 \ Questions}
+  \maplabel{219}{Race to automate}{3.2}{south west}
+  \maplabel{622}{Jones model}{7.2}{south west}
+  \maplabel{1134}{Measuring, estimating $r$}{3.2}{south west}
+  \maplabel{1773}{Compute bottlenecks}{7.2}{south west}
+  \maplabel{2321}{Beyond the basic model}{3.2}{south west}
+}
+\caption{\textbf{Lecture map} (55\,min, to scale). The talk builds the basic model (4.2), asks how it could be fitted to data (4.3), and spends its second half on what the basic model leaves out (4.4), before taking questions.}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\section{The race to automate AI research}\label{sec:L4-race}
+\tsm{0:01}
+After a short introduction by the instructor, the guest, Anson Ho\flag{} of Epoch AI, says where his interest comes from. His work is to track what the frontier labs (mostly in Silicon Valley) are doing and how they try to build frontier AI. The talk is about one scenario: \emph{what happens if they succeed at their stated vision of automating AI research}, and thereby cause something like a \term{software intelligence explosion}?
+
+\paragraph{The stated goal.}\tsm{1:04}
+The starting point is what the people at the labs say they are doing. The speaker shows a post by Sam Altman, the CEO of OpenAI: the company's goal is to automate AI research \emph{fully} by March 2028. An earlier goal was a research \emph{intern} by September 2026, which the company now claims to have reached in a recent blog post, while it is ``racing toward'' automating the remaining tasks. (There has already been much progress in automating mathematics, as the class knows, he adds.)
+The intended mechanism is \term{recursive self-improvement}: AIs develop better AIs, which develop better AIs still, because they improve their own algorithms and data. In the most extreme case this happens \emph{only in software}: no new chips, no new data centers, only the existing stock of physical resources, while the intelligence and the \emph{number} of AI systems grow dramatically. ``At least that is what they claim might happen.''
+
+\begin{beyond}[What OpenAI actually published]
+The goals quoted by the speaker are those Altman announced in October 2025: an ``intern-level'' AI research assistant by September 2026 and a ``legitimate AI researcher'' by March 2028. On 6~September 2026 OpenAI published a post, \emph{Research acceleration: the view inside OpenAI}\,\citep{openai2026ra}, declaring the first milestone reached \emph{by its own measurements}: an intern is defined there as a system that can carry out well-defined research tasks under human direction, including tasks that would take a skilled researcher a few days, and the post reports that, as of mid-August, its research organization ran about 3.1 agent-workdays of effort per workday of human labor. The page refused automated access, so these details are from search excerpts and press coverage, not from the post itself; the milestone is the company's own assessment and, as far as I could find, has not been verified independently.
+\end{beyond}
+
+\paragraph{How fast could it be?}\tsm{2:40}
+The speaker's example of such a scenario is the \emph{AI Futures} model\,\citep{aifutures2025,aifutures2025dec}, in which the feedback loop compresses many years of progress into a few: over the last decade or so we went from simple vision models that tell cats from dogs to systems that, he says, contribute to settling the Navier--Stokes problem, and in the model one could see something like fifteen years of that kind of progress compressed into about three\flag. The stakes, he says, are very high, in three directions:
+\begin{itemize}
+  \item \textbf{Upside.} An enormous potential for scientific and medical innovation.
+  \item \textbf{Misalignment.} The systems might not do what we care about; ``which is probably the motivation for this course''.
+  \item \textbf{Concentration of power.} Imagine millions of AIs in the hands of a small number of actors, aligned to \emph{their} wishes. Even if the alignment problem were solved, our institutions might not be able to sustain such a concentration.
+\end{itemize}
+
+\begin{beyond}[Two results mentioned in passing]
+The speaker twice mentions recent mathematical results by AI systems (``contribute to solving the Navier--Stokes problem'', and, later, the Jacobian conjecture). As far as I could check: on 8~September 2026 OpenAI announced that an internal system had produced a proof that the three-dimensional Navier--Stokes equations, driven by a smooth compactly supported \emph{force} and started from rest, can develop a singularity in finite time, with a Lean formalization\,\citep{openai2026ns}. That concerns the \emph{forced} alternative in the Clay problem statement; the unforced problem is not settled by it, and I found no independent refereed verification yet, so ``solved the Navier--Stokes problem'' says more than is established. For the Jacobian conjecture, press reports from July 2026 describe a counterexample found with AI assistance and checked by computer algebra; I did not check it against a primary source. (Lecture~1 discussed an earlier case, \citealp{openai2026unit}.)
+\end{beyond}
+
+\begin{discussion}[What is on the vertical axis?]
+A student asks about the forecast plot, in which the line bends upward: is that line straight or exponential? The speaker: the vertical axis is the \emph{Epoch Capabilities Index} \citep{epoch2025eci}, whose meaning is not obvious. The points are real data; the extrapolation into the future is the AI Futures model's projection. One way to read the index is through the METR time-horizon graph (Lecture~1), with which it correlates very strongly, so that a level of the index corresponds to a task length (say, a one-day horizon). The observed trend in time horizon is an \emph{exponential}; the projection would be \emph{super-exponential}.
+\end{discussion}
+
+\paragraph{Pace or pause?}\tsm{5:43}
+Given such stakes, the speaker says, employees and leaders of frontier companies have recently put out statements about \emph{pacing} the frontier, potentially even pausing or slowing down AI development. He names the chief executives of Anthropic, OpenAI and DeepMind and Elon Musk, and calls the position of Mark Zuckerberg ``a bit more unclear''; of the latter he thinks that he says that, in practice, many will naturally want to slow down while they solve alignment problems, because the cost of alignment is \emph{internalized} by whoever builds the systems\flag. The debate also reaches beyond tech: politicians (he names Bernie Sanders and Donald Trump) are weighing in, with different views. I have not verified these attributions.
+
+\paragraph{What the talk will do.}\tsm{6:15}
+The big question: \emph{if we reach the point of automating AI research, will advanced AI actually drive a software intelligence explosion?} The notion starts out vague (what does it mean for AI to improve its own software? how do we measure the capabilities of these systems?), so the aim is to make it rigorous: to explain the earliest attempts at a model, what the empirical evidence says about that model, and some extensions. ``Unfortunately, our current understanding is terrible; hopefully some of you can help improve on this state of the art, which is not good.''
+
+%% ------------------------------------------------------------------------------------
+\section{The basic model: Jones' growth theory}\label{sec:L4-jones}
+\tsm{7:18}
+To capture the feedback loop the speaker takes ``the most standard model of innovation out there'': the Jones model from the theory of economic growth\,\citep{jones1995}. (By a show of hands, some of the class know it; ``it is not actually that complicated'', and, he says, the mathematicians will know it better than he does.)
+
+\subsection{Software quality and research effort}\label{sec:L4-setup}\tsm{7:48}
+Let $S(t)>0$ be the \emph{quality of software}, one number for the moment (what it means is the topic of Section~\ref{sec:L4-measure}), and $R(t)\ge0$ the \emph{research input}: a production function that turns research effort into software quality. The model says that the \emph{growth rate} of $S$ depends on both,
+\begin{equation}\label{eq:L4-jones}
+   \frac{\dot S}{S}\;=\;R^{\lambda}\,S^{-\beta}
+   \qquad\Big(\text{equivalently }\ \dot S=R^{\lambda}S^{\,1-\beta}\Big),
+\end{equation}
+up to a multiplicative constant that can be absorbed into the units of $R$. The two exponents have names:
+\begin{description}
+  \item[$\lambda$: the parallelization penalty.] If $\lambda<1$, ten times more researchers does not give ten times the growth rate. Ten times more researchers may give only about three times the benefit (for instance $\lambda=\tfrac12$ gives $\sqrt{10}\approx3$; the example with $\lambda$ is mine): ``people step on each other's toes''.
+  \item[$\beta$: ideas get harder to find.] For $\beta>0$ the growth rate falls as the stock $S$ grows: there is less low-hanging fruit to pick. Depending on the sign of $\beta$ one could instead get a \emph{standing-on-the-shoulders-of-giants} effect (Newton), in which more existing knowledge makes new progress \emph{easier}.
+\end{description}
+A student asks whether the exponent lies between zero and one; ``I think zero to one''. (The captions do not make clear which exponent is meant\flag; the usual range of the parallelization exponent is $0<\lambda\le1$, and $\beta$ may have either sign.)
+
+\subsection{Closing the loop}\label{sec:L4-loop}\tsm{9:50}
+Normally the research input comes from human labor. In an intelligence explosion \emph{all} of it comes from AIs, so one replaces $R$ by something that depends on the quality of the software and on the amount of computation available to run the AI systems: ``I just mean we are plugging AI laborers into this production function''. In the simplest version,
+\begin{equation}\label{eq:L4-RSC}
+   R\;=\;S\cdot C ,
+\end{equation}
+where $C$ is the computation used to run the AI researchers (constant for now). Closing the loop and ``messing around with the symbols'' gives
+\begin{equation}\label{eq:L4-closed}
+   \dot S\;=\;S\,(SC)^{\lambda}S^{-\beta}\;=\;C^{\lambda}\,S^{\,1+\lambda-\beta}.
+\end{equation}
+Growth is \emph{hyperbolic}, meaning that the solution becomes infinite in finite time, exactly when the exponent of $S$ exceeds one, i.e.\ when $\lambda-\beta>0$, or, as the speaker prefers to write it,
+\begin{equation}\label{eq:L4-r}
+   r\;:=\;\frac{\lambda}{\beta}\;>\;1 .
+\end{equation}
+He calls $r$ the \term{returns to AI software R\&D}. The same parameter has been estimated for the economy as a whole in the well-known paper ``Are ideas getting harder to find?''\,\citep{bloom2020}: for total factor productivity its value is usually about $0.3$. Humans keep innovating, but new ideas get harder to find. The value of $r$ is the outcome of a \emph{race} between finding new ideas and running into diminishing returns, and it decides whether one gets hyperbolic growth (a software intelligence explosion) or a fizzle. ``We just simplified the whole thing into a single number, which is nice.''
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[>={Latex[length=2.2mm,width=1.6mm]}]
+  \node[card=accent, minimum width=36mm, minimum height=13mm] (S) at (0,0) {software quality\\[-1pt]$S$};
+  \node[card=teal, minimum width=36mm, minimum height=13mm] (R) at (6.8,0) {AI research labor\\[-1pt]$R=S\cdot C$};
+  \node[card=amber, minimum width=54mm, minimum height=13mm] (G) at (3.4,-3.6) {progress\\[-1pt]$\dot S/S=R^{\lambda}S^{-\beta}$};
+  \node[card=slate, minimum width=36mm, minimum height=9mm] (C) at (6.8,2.3) {compute $C$ to run the AIs};
+  \draw[->, accent, line width=1pt] (S.east) -- node[above, smallnode] {smarter, cheaper AIs} (R.west);
+  \draw[->, slate, line width=0.8pt] (C.south) -- (R.north);
+  \draw[->, teal, line width=1pt] (R.south) -- node[right, smallnode, align=left, xshift=1mm] {more research,\\ penalty $\lambda$} (G.north east);
+  \draw[->, amber!85!black, line width=1pt] (G.north west) -- node[left, smallnode, align=right, xshift=-1mm] {ideas get harder:\\ factor $S^{-\beta}$} (S.south);
+\end{tikzpicture}
+\caption{The feedback loop of the Jones model once AIs do the research. Better software makes the AI researchers better (and cheaper to run), which raises research input $R$; research input drives progress, with a parallelization penalty $\lambda$ on the way in and a diminishing-returns factor $S^{-\beta}$ on the way out. Everything hinges on whether the loop \emph{amplifies} ($\lambda>\beta$).}
+\label{fig:L4-loop}
+\end{figure}
+
+\begin{prop}[Dynamics of the Jones model\dagmark]\label{prop:L4-loop}
+Let $\lambda>0$, $S_0>0$, and let $S>0$ solve \eqref{eq:L4-jones}.
+\begin{enumerate}[label=\textbf{(\alph*)}]
+  \item Along every solution, $\dfrac{\dd}{\dd t}S^{\beta}=\beta R^{\lambda}$. For a given (exogenous) continuous input $R(t)>0$ and $\beta>0$ it follows that $S^{\beta}=S_0^{\beta}+\beta\int_0^tR^{\lambda}\,\dd s$, so $S$ exists for all times.
+  \item Let $\beta>0$. If $R=CS$ with $C>0$ constant, then $u:=S^{\beta}$ solves $\dot u=k\,u^{\,r}$ with $k=\beta C^{\lambda}$ and $r=\lambda/\beta$. For $r>1$ it blows up at
+  \[ T^*=\frac{u_0^{\,1-r}}{(r-1)\,k},\qquad u(t)=\big(u_0^{\,1-r}-(r-1)kt\big)^{-1/(r-1)}\quad(0\le t<T^*); \]
+  for $r=1$ it is exponential, and for $r<1$ it exists for all times and grows polynomially, $u\asymp t^{1/(1-r)}$, so $S\asymp t^{1/(\beta(1-r))}$.
+  \item Let $\beta>0$. If $R(t)=R_0e^{g_Rt}$ with $R_0>0$ and $g_R>0$, then $\dfrac1t\log S\to r\,g_R$: software quality grows exponentially at $r$ times the growth rate of research effort.
+\end{enumerate}
+\end{prop}
+\begin{proof}
+(a) $\frac{\dd}{\dd t}S^\beta=\beta S^{\beta-1}\dot S=\beta S^{\beta-1}\cdot S\,R^{\lambda}S^{-\beta}=\beta R^\lambda$. (b) Insert $R=CS=Cu^{1/\beta}$ in (a): $\dot u=\beta C^\lambda u^{\lambda/\beta}$; then separate variables. (c) By (a), $S^\beta=S_0^\beta+\beta\int_0^tR_0^\lambda e^{\lambda g_Rs}\,\dd s=S_0^\beta+\frac{\beta R_0^\lambda}{\lambda g_R}\,(e^{\lambda g_Rt}-1)$, so $\log S=\tfrac1\beta\log(\cdots)=\frac{\lambda g_R}{\beta}t+O(1)$. The sign of $g_R$ matters: for $g_R=0$ one gets $S^\beta=S_0^\beta+\beta R_0^\lambda t$ and the limit is $0=r\,g_R$, and for $g_R<0$ the integral converges, $S$ stays bounded, and the limit is $0\neq r\,g_R$.
+\end{proof}
+\noindent The lecture states the condition \eqref{eq:L4-r}; the closed forms and the proof are mine. Part (b) is exactly the toy ODE of Lecture~1 (Section~\ref{sec:L1-rsi}), $\dot x=kx^{p}$, with $x=S^{\beta}$ and $p=r$: the Jones model is that toy model with its exponent given an economic meaning. Part (c) says what ``returns'' means: on a balanced growth path $S\propto R^{\,r}$, so each doubling of research effort buys $r$ doublings of software quality. And $r>1$ is where ``AI helps AI research'' is strong enough to win the race against diminishing returns.
+
+\begin{remark}[When is $r$ the right parameter?\dagmark]
+The ratio $r=\lambda/\beta$ only makes sense for $\beta>0$ (ideas get harder). If $\beta\le0$ (the growth rate itself rises with $S$, which the speaker calls ``standing on the shoulders of giants''; in Jones' own vocabulary that name is used already for $\phi=1-\beta>0$, i.e.\ for $\beta<1$) then $1+\lambda-\beta>1$ for every $\lambda>0$ and the loop \eqref{eq:L4-closed} blows up whatever $\lambda$ is; the primary condition is $\lambda>\beta$, and $r>1$ is its restatement for $\beta>0$.
+\end{remark}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.88\linewidth, height=0.5\linewidth, ymode=log, xmin=0, xmax=3, ymin=1, ymax=1e4,
+   xlabel={time $t$ (units in which $k=1$ and $u_0=1$)}, ylabel={software quality $u=S^{\beta}$},
+   legend style={at={(0.02,0.98)}, anchor=north west, font=\sffamily\fontsize{6.2}{7}\selectfont}]
+  \addplot[accent, line width=1.6pt] table[x=t, y=r0p5] {figures/data/jones_traj.dat};   \addlegendentry{$r=0.5$ (polynomial)}
+  \addplot[ink, line width=1.6pt] table[x=t, y=r1p0] {figures/data/jones_traj.dat};   \addlegendentry{$r=1$ (exponential)}
+  \addplot[teal, line width=1.8pt] table[x=t, y=r1p5] {figures/data/jones_traj.dat};   \addlegendentry{$r=1.5$, $T^*=2$}
+  \addplot[amber, line width=1.8pt] table[x=t, y=r2p0] {figures/data/jones_traj.dat};   \addlegendentry{$r=2$, $T^*=1$}
+  \addplot[crimson, line width=1.8pt] table[x=t, y=r3p0] {figures/data/jones_traj.dat};   \addlegendentry{$r=3$, $T^*=0.5$}
+  \draw[teal, dotted, line width=0.8pt] (axis cs:2,1) -- (axis cs:2,1e4);
+  \draw[amber, dotted, line width=0.8pt] (axis cs:1,1) -- (axis cs:1,1e4);
+  \draw[crimson, dotted, line width=0.8pt] (axis cs:0.5,1) -- (axis cs:0.5,1e4);
+\end{axis}
+\end{tikzpicture}
+\caption{Solutions of $\dot u=k\,u^{r}$, $u=S^{\beta}$ (Proposition~\ref{prop:L4-loop}), drawn on a logarithmic scale: for $r<1$ the curve bends \emph{down} (growth slower than exponential), for $r=1$ it is a straight line, for $r>1$ it bends \emph{up} and reaches infinity at $T^*=u_0^{1-r}/((r-1)k)$ (dotted). Exact solutions, checked against numerical integration of the original equation \eqref{eq:L4-jones} with $R=CS$ (script \kbd{figures/gen\_data.py}).}
+\label{fig:L4-traj}
+\end{figure}
+
+\subsection{A back-of-the-envelope estimate of $r$}\label{sec:L4-balanced}\tsm{11:55}
+How does one estimate $r$? The full problem (maximum likelihood, Bayesian methods, the whole time series of $S$ and $R$) is what the speaker's colleagues do, and he does not go into it; he shows only a naive approach. Assume a \term{balanced growth path}, on which the growth rate $g_S:=\dot S/S$ of software quality is constant. Take logarithms of \eqref{eq:L4-jones} and differentiate in time:
+\[
+   \frac{\dot g_S}{g_S}\;=\;\lambda\,g_R-\beta\,g_S,\qquad g_R:=\frac{\dot R}{R}.
+\]
+Balanced growth means $\dot g_S=0$, hence
+\begin{equation}\label{eq:L4-balanced}
+   r\;=\;\frac{\lambda}{\beta}\;=\;\frac{g_S}{g_R}.
+\end{equation}
+The growth rate of the \emph{output} (software quality) divided by the growth rate of the \emph{input} (research effort) is the returns to R\&D. If one knows both growth rates in some domain, one has a back-of-the-envelope value of $r$ there. This is a one-line version of Proposition~\ref{prop:L4-loop}(c). (A caveat of mine: \eqref{eq:L4-balanced} is a calibration identity for an \emph{open} loop, in which the research input is given by data. In the closed loop $R=CS$ one has $g_R=g_S$, so a balanced path would need $r=1$; for $r>1$ the growth is hyperbolic and for $r<1$ polynomial, by Proposition~\ref{prop:L4-loop}(b).)
+
+%% ------------------------------------------------------------------------------------
+\section{Measuring software progress and estimating $r$}\label{sec:L4-measure}
+\tsm{13:27}
+Now one needs data, and the speaker concentrates on this part because it is what he has worked on most. The first problem: what does ``software quality'' actually mean?
+
+\paragraph{Software quality as compute efficiency.}\tsm{13:58}
+For classical algorithms one speaks of complexity, $O(n\log n)$ and so on, but for a neural network that is hard to define. The more common approach in machine learning is to ask: \emph{how much less training compute is needed to reach the same level of capability?} If reaching GPT-4-level capability now takes ten times less training compute, the algorithms and data are more efficient. One picks a reference algorithm or data family, and defines everything else relative to it, which avoids having to state the computational complexity of an arbitrary architecture.
+Empirically, algorithms obey \emph{scaling relationships} between training compute (on a log scale) and capability along some metric; in the stylized picture of the lecture, capability rises linearly in $\log C$ (Lecture~2). That is why the labs buy so many GPUs. (The speaker adds that this year's spending on data centers in the US, mostly on chips, is in the hundreds of billions of dollars, and as a fraction of GDP exceeds the Manhattan Project and the Apollo program\flag.)
+An efficiency gain \emph{shifts the curve to the left}: less compute for the same capability; equivalently, more capability at the same compute (Figure~\ref{fig:L4-shift}a). A student asks whether the shift must be parallel; no, ``I will get to that later'' (Section~\ref{sec:L4-scale}); the picture is stylized.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=9mm}, width=0.48\linewidth, height=0.45\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt}, ticks=none,
+    xmin=0, xmax=4, ymin=0, ymax=3.5, xlabel={log training compute}, ylabel={loss},
+    label style={font=\sffamily\small, text=ink}, title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) parallel shift}]
+  \addplot[slate, line width=1.6pt, domain=0:4] {3.2-0.7*x};
+  \addplot[accent, line width=1.8pt, domain=0:3.4] {2.5-0.7*x};
+  \draw[<->, amber!85!black, line width=1pt] (axis cs:1.43,1.5) -- (axis cs:2.43,1.5);
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=amber!80!black, anchor=south west, align=left, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:2.55,1.72) {same loss,\\ $G\times$ less compute};
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=slate, anchor=south west] at (axis cs:0.08,2.75) {old};
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=accent, anchor=north east] at (axis cs:1.6,0.35) {new};
+\nextgroupplot[title={(b) scale-dependent shift}]
+  \addplot[slate, line width=1.6pt, domain=0:4] {3.2-0.7*x};
+  \addplot[accent, line width=1.8pt, domain=0:3.4] {3.45-1.0*x};
+  \draw[<->, amber!85!black, line width=1pt] (axis cs:1.45,2.0) -- (axis cs:1.714,2.0);
+  \draw[<->, amber!85!black, line width=1pt] (axis cs:2.75,0.7) -- (axis cs:3.571,0.7);
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=amber!80!black, anchor=west, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:1.85,2.0) {$G_1$ small};
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=amber!80!black, anchor=south, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:3.2,0.8) {$G_2$ large};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Schematic scaling curves (no data). \textbf{(a)} A constant efficiency gain translates the curve to the left by a fixed amount: the same loss needs $G$ times less compute at every scale. \textbf{(b)} Scale-dependent progress: a new method with a steeper curve saves little compute at small scale and a lot at large scale (here it is even worse at the smallest scales, where the curves cross). This is the situation of Section~\ref{sec:L4-scale}.}
+\label{fig:L4-shift}
+\end{figure}
+
+\paragraph{The rate of software progress.}\tsm{17:02}
+The rate of AI software progress is then how much less training compute is needed to reach a given capability level as time passes, possibly averaged over several capability levels. The difficulty: outside the labs, where everything is kept secret, there is no public data from which to get a clean time series. The rough approach: take a typical scaling law, with cross-entropy loss as a function of compute, and augment it with a \emph{software efficiency factor} $S(t)$, usually assumed to grow exponentially in time, $S(t)=e^{kt}$; the coefficient $k$ is then estimated, which gives the overall rate of software progress and the doubling time $\ln2/k$. This needs a big dataset: the training compute and the validation loss of many models.
+
+\begin{beyond}[The model behind the number]
+This is the approach of \citet{ho2024}, of which the speaker is the first author. Starting from the parametric law $L=E+AN^{-a}+BD^{-b}$ of Lecture~2, they replace the model size and the number of training tokens by \emph{effective} ones, $N_{\mathrm{eff}}=N\,e^{a'(Y-Y_0)}$ and $D_{\mathrm{eff}}=D\,e^{b'(Y-Y_0)}$ (the paper writes $\alpha,\beta,\alpha',\beta'$), with $Y$ the publication year, so that algorithmic progress is an exponential trend multiplying both terms, and effective compute follows from $C\approx6ND$. Fitted to more than 200 language-model evaluations from 2012 to 2023 (Wikitext and Penn Treebank), the compute required for a fixed level of performance halved roughly every $8$ months (95\% confidence interval about $5$ to $14$ months in the first version of the paper; the main text gives $8.4$ months with interval $4.5$ to $14.3$). Eight months is $2^{12/8}\approx2.8$ per year, which is the ``central estimate of about three times per year'' of the lecture, and the interval endpoints correspond to about $1.8\times$ and $5.3\times$ per year. These endpoints are far narrower than the ``two to forty or fifty'' per year that the speaker recalls; I could not tell whether his range refers to the spread across the several studies he plots, to a later analysis, or is a slip of memory. The same paper estimates that the transformer was worth a median compute-equivalent gain of $7.2\times$ (95\% interval $3.3\times$ to $45.7\times$) over earlier architectures (LSTMs and others) at a frontier budget of $10^{25}$ FLOP, and $6.6\times$ at $10^{22}$ FLOP, and cautions that gains depend on scale (Section~\ref{sec:L4-scale}); these numbers are not those of the slide discussed there, and I do not know which comparison that slide shows.
+\end{beyond}
+
+\paragraph{Why the error bars are huge.}\tsm{18:37}
+Because the data are poor, the intervals are enormous. The original estimate, with a central value of about $3\times$ per year, has, as he reads off the upper and lower estimates of the analysis, a range from ``maybe two'' to something like forty or fifty times per year (he does not remember the numbers)\flag. He then shows a graph that puts several estimates from the literature side by side: if one believes them, a central estimate of order $10\times$ per year is plausible, i.e.\ ten times less training compute for the same capability each year. The methodologies differ (for instance, in whether they count distillation or synthetic-data generation), and in every case the uncertainty bounds are wide.
+
+\begin{caution}[What the estimates do not cover]
+\begin{itemize}
+  \item They concern \textbf{pre-training}. Nearly all models in use today are \emph{reasoning models} trained with much reinforcement learning (``the models that help crack the Jacobian conjecture or the Navier--Stokes problem''), and their training compute is unknown; yet compute is needed to attribute progress to software. So the datasets do not capture this approach.
+  \item Progress may be \textbf{faster inside the labs}. The model said to have solved the Navier--Stokes problem was reportedly an internal model that did so within about three days, before its training had even finished\flag; it is far more capable than what is available outside. Perhaps software progress is just steeper there (``a shift in the slope''); from outside, one cannot tell.
+\end{itemize}
+\end{caution}
+
+\paragraph{Estimating $r$ itself.}\tsm{22:16}
+Even so, given the rough growth rate of $S$ one can try to estimate $r$ with \eqref{eq:L4-balanced} by also getting the growth rate of the researchers, using proxies for research input: the number of papers published in a field, or the number of researchers at OpenAI over time. The result is again ``kind of ridiculous'': middle estimates are sometimes above one, but one cannot rule out being below or above. And those estimates used the old $3\times$ per year (the 2024 estimate); since $r$ is the ratio of the growth rate of software to that of the researchers, a faster $g_S$ means a proportionally larger $r$. ``So naively this suggests that something like a software intelligence explosion is plausible, although there are many issues, and I personally do not put much weight on it.''
+
+\begin{beyond}[A correction in the arithmetic, and the economy-wide benchmark]
+The speaker says that moving from $3\times$ to $10\times$ per year ``might increase the returns by something like three times''. In terms of growth \emph{rates}, $g_S=\ln(\text{annual factor})$, so the increase is $\ln10/\ln3\approx2.1$, a factor of two rather than three; the point, that the naive $r=g_S/g_R$ is proportional to $g_S$, stands. Epoch's own estimates of $r$ for software domains (\citealp{besiroglu2024}; the paper behind it is ``Estimating idea production'' by Erdil, Besiroglu and Ho) use a Bayesian update with the number of authors as the proxy for research input: for computer chess (Stockfish) they find a central value of $r\approx0.83$ with standard error $0.15$, and for computer vision, SAT solvers, linear programming and reinforcement learning median estimates above $1$ that are \emph{not} statistically significant. Their replication of the economy-wide estimate of \citet{bloom2020} gives about $0.25$ against the original $0.32$ (the ``$0.3$'' of the lecture). I take these numbers from Epoch's post.
+\end{beyond}
+
+\begin{discussion}[Does $S$ depend on the training compute?]
+A student notices that in $R=S\cdot C$ the efficiency $S$ is defined through training compute, and asks how training compute is related to $r$. The speaker: the right way to think is \emph{not} through that $S\cdot C$ model, which is a base model that is ``clearly incorrect conceptually in some ways'' and works only under assumptions (Section~\ref{sec:L4-two}).
+\end{discussion}
+
+\input{lectures/lecture04b}

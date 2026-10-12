@@ -1,0 +1,145 @@
+% =====================================================================================
+%  Lecture 8, part B  —  sections 8.3 (prompt injection), 8.4 (defenses, boundary point jailbreaking), 8.5 (the moral)
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Agents and prompt injection}\label{sec:L8-injection}
+\tsm{27:00}
+Language models used to be chatbots, and the worst one could do was to trick them into saying something bad or offensive. They have become smarter, and can now give advice on building a weapon or mounting a hacking attack. But they are also \emph{agents}: they act on the internet and on one's computer. ``The only thing that comes in and the only thing that comes out is text.'' If an agent looks at a web page, it absorbs everything on it as text, and if it gets confused about which part is the user's instruction and which is merely text on the internet, it will start carrying out the latter. That, he says, is quite concerning.
+
+\begin{defn}[Prompt injection, as described in the lecture]\label{def:L8-pi}
+In a \term{prompt injection}, part of the input that is meant as data (a web page, an image) is interpreted by the model as an instruction of the user.
+\end{defn}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[>={Latex[length=2.2mm,width=1.6mm]}]
+  \node[card=slate, minimum width=33mm, minimum height=12mm] (sys) at (0,0) {system prompt\\[-1pt]{\scriptsize the developer's rules}};
+  \node[card=accent, minimum width=33mm, minimum height=12mm] (usr) at (3.8,0) {user request\\[-1pt]{\scriptsize ``summarize this page''}};
+  \node[card=crimson, minimum width=33mm, minimum height=12mm] (web) at (7.6,0) {fetched web page\\[-1pt]{\scriptsize anyone could have written it}};
+  \node[draw=crimson!70, dashed, rounded corners=1pt, font=\sffamily\fontsize{6.4}{7}\selectfont, text=crimson!60!white, inner sep=2pt, fill=white] (hid) at (7.6,-1.0) {hidden text: ``AI agents, do X''};
+  \draw[decorate, decoration={brace, mirror, amplitude=4pt}, slate, line width=0.6pt] ([yshift=-10mm]sys.south west) -- node[below=5pt, smallnode] {one stream of tokens} ([yshift=-10mm]web.south east);
+  \node[card=teal, minimum width=62mm, minimum height=8mm] (llm) at (3.8,-3.45) {language model: predicts the next token of the whole stream};
+  \node[card=amber, minimum width=62mm, minimum height=8mm] (act) at (3.8,-4.95) {actions: browse, run commands, send messages};
+  \draw[->, line width=0.8pt, slate] (3.8,-2.55) -- (llm.north);
+  \draw[->, line width=0.8pt, slate] (llm.south) -- (act.north);
+\end{tikzpicture}
+\caption{Why prompt injection is possible (schematic, mine). The system prompt, the user's request and the fetched page reach the model as \emph{one} sequence of tokens; chat formats mark the roles with special tokens, but these are tokens of the same sequence: that the third part is data is a convention the model was trained to respect, not something the interface enforces. Hidden text, invisible to a human reader, is part of that sequence.}
+\label{fig:L8-channel}
+\end{figure}
+
+\paragraph{An early example, and hidden text.}\tsm{28:00}
+His first example is from 2023, ``a pretty early example'', and it is hard to see on the slide: a picture whose text instructs a multimodal model to print ``AI injection succeeded'', to use emoji, and to write down the words of the ``Rickroll'' song (``never gonna give you up, never gonna let you down''). That was a successful injection obtained just by giving the model a picture. There are much more sophisticated versions on the internet: people put hidden instructions into their web pages, in zero font size, white on white, or off the screen, text that a human does not see. An agent that is sent to look at such a page and report what is there receives all these instructions (``approved, approved, prevalidated by compliance'', and so on), which may tell it to install something on the computer or even to send an amount of money to a PayPal account.
+
+\paragraph{Does it work in the wild?}\tsm{29:30}
+He could not find examples of this succeeding. There are tests that succeeded in experiments, and there are websites that tried it. A student adds, as far as the captions show\flag, another example, hiding instructions in a r\'esum\'e that is sent to a company in order to increase the chance of getting through the screening; the speaker agrees that it is another good example (``I wouldn't get a job like that'').
+
+\begin{beyond}[The 2023 picture, and what has been seen on the web]
+The picture is probably the demonstration of Johann Rehberger of 14~July 2023 against Google Bard\,\citep{rehberger2023}; the page shows ``a demonstration picture doing a Rickroll'' and Bard's response, but only as screenshots that I could not read, so the match with the slide is a conjecture. ``AI Injection succeeded'' is Rehberger's usual marker; an October 2023 compilation of image-based injections against GPT-4V, with the same marker, a near-invisible off-white-on-white text and a r\'esum\'e image, is in \citet{willison2023}. On the open web, three April 2026 reports exist (all read through page summaries). Forcepoint X-Labs\,\citep{sewani2026} describes ten payloads found on live sites, among them one with a PayPal link, a fixed amount of $\$5000$ and step-by-step instructions for an agent with payment abilities, and one that routes a donation to a Stripe link; the post reports no transaction. Google's team\,\citep{brunner2026}, scanning Common Crawl, reports a $32\%$ relative increase of the \emph{malicious} category between November 2025 and February 2026, judges the sophistication low, and reports no confirmed successful attack. \citet{khodayari2026} find $15.3$ thousand validated instances on $11.7$ thousand pages among $1.2$ billion URLs, about $70\%$ in HTML that is not rendered, some aimed at hiring workflows, and measure in controlled experiments with $13$ models a compliance of up to $8\%$ for smaller models on plain text. So the speaker's statement matches what I could find: attempts are documented, a successful real-world case is not; this is absence of evidence in a literature that is a few months old, not evidence of absence.
+\end{beyond}
+
+\begin{beyond}[Why it is hard: one channel for instructions and data]
+\citet{perez2022} named two attacks on GPT-3: \emph{goal hijacking} (the injected text changes what the model does) and \emph{prompt leaking} (the model reveals its hidden prompt, the target of the game in Section~\ref{sec:L8-game}). \citet{greshake2023} showed that LLM-integrated applications \emph{blur the line between data and instructions}, so that an attacker can plant prompts in content the application retrieves (\emph{indirect} prompt injection). The OWASP list of risks for LLM applications ranks prompt injection first (LLM01:2025) and treats jailbreaking as the case in which the input makes the model disregard its safety protocols\,\citep{owasp2025}; NIST's taxonomy of attacks says that, ``because GenAI models combine the data and instruction channels'', an attacker can use the data channel to affect the system (its Section 3.4\,\citep{vassilev2025}). The UK National Cyber Security Centre argues that, unlike SQL injection, which is cured at the root by parameterized queries that keep data apart from instructions, prompt injection has no such cure, because a language model has no boundary between the two; it recommends treating the model as a ``confused deputy'', limiting what it can do, and being skeptical of products that claim to stop the attack\,\citep{chismon2025}. This is the content of Figure~\ref{fig:L8-channel}: a model is a function from token sequences to token sequences; that a segment is data is a convention the model was trained to respect, a statistical tendency, not a type enforced by the interface. Two lines of defense follow the two sides of this remark. One trains the tendency: the \emph{instruction hierarchy}\,\citep{wallace2024} teaches the model to give lower priority to lower-privileged instructions. The other does not rely on it: CaMeL\,\citep{debenedetti2025} wraps the model in a system whose control flow comes only from the trusted request, and solves $77\%$ of the tasks of a benchmark with provable security (against $84\%$ undefended). The evidence on the first kind is sobering: adaptive attacks bypassed $12$ recent defenses against jailbreaks and prompt injections, mostly with success rates above $90\%$, although these defenses had reported near-zero rates against static attacks\,\citep{nasr2025}.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{Layers of defense, and a black-box attack}\label{sec:L8-layers}
+\tsm{30:00}
+
+\subsection{How the security is organized}\label{sec:L8-fourlayers}\tsm{30:00}
+There are several parts (Figure~\ref{fig:L8-layers}). First, the language model itself is trained to refuse harmful requests. Second, another language model, usually a smaller one because one cannot afford to run several equally large models in parallel, reads the \emph{input} and classifies the request as valid or bad; when he asked about the novel pathogen, this classifier saw it at once and flagged it. Third, another classifier checks the \emph{output} for anything harmful. Fourth, a system that can be much simpler, not necessarily a language model, looks at the \emph{activations} of the model and tries to identify directions that are related to harmful questions. All of this has to be juggled with the tolerance for \emph{false positives}: if the model keeps refusing everything, that is not good; but one also wants to be sure that bad things do not get through.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[>={Latex[length=2.2mm,width=1.6mm]}]
+  \node[smallnode] (p) at (0,0) {prompt};
+  \node[card=amber, minimum width=20mm, minimum height=11mm, right=6mm of p] (ic) {input\\classifier};
+  \node[card=accent, minimum width=26mm, minimum height=11mm, right=6mm of ic] (m) {language model\\[-1pt]{\scriptsize trained to refuse}};
+  \node[card=amber, minimum width=20mm, minimum height=11mm, right=6mm of m] (oc) {output\\classifier};
+  \node[smallnode, right=6mm of oc] (r) {response};
+  \node[card=plum, minimum width=26mm, minimum height=8mm, below=9mm of m] (pr) {probe on activations};
+  \node[card=crimson, minimum width=54mm, minimum height=8mm, below=17mm of m] (fl) {flag: refuse, stop, or review};
+  \draw[->, slate, line width=0.8pt] (p) -- (ic);
+  \draw[->, slate, line width=0.8pt] (ic) -- (m);
+  \draw[->, slate, line width=0.8pt] (m) -- (oc);
+  \draw[->, slate, line width=0.8pt] (oc) -- (r);
+  \draw[-, plum, dashed, line width=0.8pt] (m.south) -- (pr.north);
+  \draw[->, crimson!70, line width=0.8pt] (ic.south) |- ([yshift=1mm]fl.west);
+  \draw[->, crimson!70, line width=0.8pt] (oc.south) |- ([yshift=1mm]fl.east);
+  \draw[->, crimson!70, line width=0.8pt] (pr.south) -- (fl.north);
+\end{tikzpicture}
+\caption{The layers of defense as the lecture lists them (schematic): refusal training of the model, an input classifier, an output classifier, and a monitor reading the model's activations. Each of the three monitors can flag the interaction.}
+\label{fig:L8-layers}
+\end{figure}
+
+\subsection{Boundary point jailbreaking}\label{sec:L8-bpj}\tsm{31:30}
+A ``very interesting paper'' appeared early in 2026 (the captions say ``January 2020 of 2026''; I check the date below) from the UK AI Security Institute. It gives an algorithm that ``seems to break all classifiers'', under one important assumption: that the classifiers judge the inputs on a prompt-by-prompt basis, not looking at all prompts over long periods of time. For such classifiers the attack is fairly simple and elegant. It is only one layer of the defense; another layer would be the model itself, which may refuse.
+
+\paragraph{The difficulty and the goal.}
+All the information the attacker gets is whether the prompt is refused or accepted, with no indication of how far it is from being accepted. So one must somehow extract from this a signal with more information, to be used for optimization. The goal of the paper is a \emph{universal} jailbreak of the classifier: a string $P$ of tokens, put in front of the question, such that \emph{any} bad question preceded by $P$ is classified as safe.
+
+\begin{discussion}[Is the answer of the model still meaningful?]
+A student asks whether the answer could be very different because of the prefix. The speaker: there are two parts, whether the classifier lets the prompt through, and how the model replies; the model may also refuse if it was trained to be suspicious of strange things. A second student asks whether the corrupted text still means something to the model, i.e.\ whether the model still understands the bad core of the question. He answers: all the weirdness is now in the prefix, so what finally goes in is a weird prefix followed by a perfectly fine, uncorrupted question. That input has to pass a second test: jailbreaking the language model itself, with DAN or some other technique. The authors demonstrate that they can jailbreak GPT-5 and Claude with some clever human techniques; so first one passes the classifier and then one has to fool the model.
+\end{discussion}
+
+\paragraph{The algorithm.}\tsm{34:00}
+Take a bad question (the lecturer's example is a request for instructions to build an explosive device). It is refused, and with most strings put in front of it it will still be refused. Now pick characters at random and replace them by other random characters, and keep corrupting the question until it is unreadable and meaningless. One obtains a scale, a \emph{level of corruption}, and one can identify precisely the amount of corruption at which the classifier flags or does not flag. This \emph{boundary point} between flag and no flag is where to search for prefixes: there small variations change the outcome, so one has a rich signal and can move along the boundary. One looks at how a prefix changes the probability that the corrupted text at the boundary is accepted. Once a prefix is found such that many corruptions at the same level are accepted, one reduces the corruption a little and searches over prefixes again; one keeps finding prefixes that improve the chance of passing, until the corruption is reduced to nothing and the prefix works for the full question. The search over prefixes is an evolutionary one, with natural selection (a student asks, and he confirms).
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.9\linewidth, height=0.45\linewidth, xmin=0, xmax=1, ymin=-0.02, ymax=1.12,
+   xlabel={corruption level (fraction of characters replaced)}, ylabel={chance of ``not flagged''},
+   xtick={0,0.5,1}, xticklabels={0 (clean question),0.5,1 (garbled)}, ytick={0,0.5,1},
+   legend style={at={(0.98,0.04)}, anchor=south east, font=\sffamily\fontsize{6.2}{7}\selectfont}]
+  \addplot[slate, line width=1.5pt, domain=0:1, samples=80] {1/(1+exp(-14*(x-0.62)))};   \addlegendentry{random prefix}
+  \addplot[teal, line width=1.5pt, domain=0:1, samples=80] {1/(1+exp(-14*(x-0.42)))};   \addlegendentry{after some selection}
+  \addplot[amber, line width=1.5pt, domain=0:1, samples=80] {1/(1+exp(-14*(x-0.22)))};   \addlegendentry{later}
+  \addplot[crimson, line width=1.5pt, domain=0:1, samples=80] {1/(1+exp(-14*(x+0.14)))};   \addlegendentry{final prefix}
+  \draw[dashed, ink!50, line width=0.6pt] (axis cs:0,0.5) -- (axis cs:1,0.5);
+  \fill[slate] (axis cs:0.62,0.5) circle (2.2pt);
+  \fill[teal] (axis cs:0.42,0.5) circle (2.2pt);
+  \fill[amber] (axis cs:0.22,0.5) circle (2.2pt);
+  \draw[->, ink, line width=0.9pt] (axis cs:0.58,0.5) -- (axis cs:0.26,0.5);
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=ink, anchor=east, align=right, fill=white, fill opacity=0.9, text opacity=1, inner sep=1pt] at (axis cs:0.995,0.70) {boundary moves toward\\ the clean question};
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=crimson, anchor=west] at (axis cs:0.02,1.065) {final prefix: the clean question passes};
+\end{axis}
+\end{tikzpicture}
+\caption{The idea of boundary point jailbreaking (schematic, not data; the curves are logistic functions drawn by hand). For a fixed prefix, the chance that a randomly corrupted version of the bad question is not flagged rises with the corruption level. The search works at the level where this chance is about one half (dots), where small changes of the prefix change the outcome; better prefixes move the boundary toward the clean question, and the corruption is reduced step by step.}
+\label{fig:L8-bpj}
+\end{figure}
+
+\subsection{Results, and the defense}\label{sec:L8-results}\tsm{38:00}
+What is interesting is that once one has found a prefix that works for one question, it works for many questions; but this is only an empirical observation, not a theorem\flag{} (the captions are garbled at this point; the negation is my reading). The paper compares the algorithm with others: the new one is really fast and goes all the way down, compared with slower techniques that make random variations without looking at the boundary point. The prefixes look like a bunch of random tokens; the authors did not release them, ``so people don't use them''. They work surprisingly well on questions they were not trained on, and against Anthropic's constitutional classifiers for Claude and OpenAI's input classifiers for GPT-5: on frontier systems at the beginning of 2026, ``these things would succeed with very high probability''.
+
+\paragraph{The defense: look at many prompts.}\tsm{40:30}
+The only way to fight this algorithm or similar ones that the companies know of is not to look at one prompt but at many, because to find the prefix one has to go through very many rejections. So when the system rejects you first, it also starts rejecting a few of the next questions you ask. That is his explanation of the opening mystery: he asked a bad question, then a good one, and both were refused. For the attacker this destroys the signal and the search cannot be done: one needs many requests, and without access to many requests this type of search does not work. But it also illustrates, he says, that there are many simple and creative ways to hack these systems, which have not been around for very long, and it is a very serious security issue.
+
+\begin{beyond}[What the paper says, and where the lecture differs]
+The paper is \emph{Boundary Point Jailbreaking of Black-Box LLMs} by X.~Davies, G.~Giglemiani, E.~Lau, E.~Winsor, G.~Irving and Y.~Gal (UK AI Security Institute and OATML, Oxford), arXiv:2602.15001\,\citep{aisi2026bpj}; the details below are from the text of the arXiv version. It was posted on \textbf{16 February 2026} (the Institute's page is dated 17 February); the captions say January, and I found no earlier version. Its threat model is a black-box adversary with API access to a \emph{deterministic} classifier-guarded model who sees one bit per query, flagged or not, and wants a universal prefix. Three refinements of the lecture's description. (1)~In the paper the corruption level is a curriculum parameter, lowered when the best prefix passes often enough, while the \emph{boundary points} are individual corrupted inputs on which the current population of candidate prefixes disagrees (some are flagged, some not). (2)~The search is an evolutionary one over a population of candidate prefixes, which are scored on the boundary points. (3)~Numbers: for a classifier made by prompting GPT-4.1-nano, three runs finished after about $25$--$30$ thousand queries, on average five times faster than the corruption curriculum without boundary points; for Anthropic's Constitutional Classifiers guarding Claude Sonnet~4.5 (as of 27 November 2025) the attack took about $660$ thousand queries ($\$330$), and for OpenAI's input classifier for GPT-5 (6--7 November 2025) about $800$ thousand ($\$210$). Success is scored by a rubric of harmful technical details in the answer: the average score on non-empty answers rises, for the Constitutional Classifiers, from $0\%$ to $25.5\%$ ($39.9\%$ for the best of $50$ queries; $68\%$ and $80.4\%$ with a basic elicitation setup) and, for the GPT-5 input classifier, from $0\%$ to $75.6\%$ ($94.3\%$); so the lecture's ``very high probability'' is a loose summary of rubric scores that vary with the system. The attack was run on accounts not subject to bans and the authors say that on standard accounts repeated flags would lead to bans, the batch-level monitoring they recommend; the main model's refusals were bypassed with a simple human-found jailbreak, as in the lecture; both companies verified the result and have mitigations; the authors withheld details and released no strings or code. In an appendix they quote Anthropic's preliminary findings after replicating the attack: probe-based classifiers may be more resistant than text classifiers, training classifiers on found attack strings may help against unseen ones, and randomly serving one of two similarly trained classifiers may help.
+\end{beyond}
+
+\begin{beyond}[Why a curriculum of corrupted questions helps: an idealized model]\label{box:L8-curriculum}
+This is my own illustration, not the paper's analysis (which models the search as evolutionary dynamics and uses a Price-type identity to show that selection makes progress only if the population varies in the objective). Two observations.
+\emph{(i) Selection needs variance.} Let candidates $a$ have frequencies $p(a)$, scores $f(a)$ (the chance that a corrupted question preceded by $a$ is not flagged), and let selection reweight them by $w(a)\ge0$ with $\sum_ap(a)w(a)=1$. Then the mean score after selection is $\sum pwf=\E_pf+\operatorname{Cov}_p(w,f)$, a one-line computation (checked numerically for truncation selection). If all candidates score the same, as happens for the clean question when every candidate is flagged, the covariance is zero and selection cannot improve anything; at an intermediate corruption level scores vary and it can.
+\emph{(ii) Counting.} Suppose the target is a set of density $\rho$ in the space of prefixes, and that there are nested sets $A_0\supset A_1\supset\dots\supset A_K$ (the prefixes that pass at corruption level $c_k$, with $c_0$ high) with $\Pr(A_k\mid A_{k-1})=p$ and $\rho=p^K$. Without structure, a blind search needs $1/\rho$ queries in expectation. If instead one can resample from the conditional law given $A_{k-1}$ (here: by mutating members), each level costs $1/p$ queries, in total $K/p=\ln(1/\rho)/(p\ln(1/p))$. This is minimal at $p=1/e$, with cost $e\ln(1/\rho)$: for $\rho=10^{-12}$ about $75$ queries instead of $10^{12}$ (simulated; the blind search is geometric, the staged one a sum of geometrics). The saving is exponential, and it requires queries with success probability bounded away from $0$ and $1$, which is what boundary points provide; a query whose prior chance of ``flagged'' is $q$ yields at most $h(q)\le1$ bit, maximal at $q=\tfrac12$. The real attack does not have a free conditional sampler, and why the final prefix transfers to other questions is, as the authors say, an open question.
+\end{beyond}
+
+\begin{beyond}[Judging prompts jointly: base rates and flag budgets]
+Two elementary computations behind the defense and its cost. \emph{False positives.} If a fraction $\pi=10^{-4}$ of prompts is malicious and the classifier has detection rate $0.99$ and false-positive rate $10^{-3}$, then $\Pr(\text{malicious}\mid\text{flagged})=\pi\cdot0.99/(\pi\cdot0.99+(1-\pi)10^{-3})\approx9.0\%$: ten false alarms per detection; precision $\tfrac12$ would need a false-positive rate of about $10^{-4}$. Anthropic reports that its original Constitutional Classifiers raised refusals on production traffic by an absolute $0.38\%$\,\citep{sharma2025}, and a refusal rate of $0.05\%$ on production traffic for the successor\,\citep{cunningham2026}. \emph{Flag budgets.} If an account is stopped after $k$ flags and an attack needs $F$ flagged queries, it needs at least $F/k$ accounts (a hypothetical $F=330000$, $k=5$ gives $66000$). The price, on the lecture's explanation, is its opening anecdote: a monitor that remembers makes innocent follow-up questions suspicious (I could not check how the system in the anecdote works). The successor judges each response \emph{in the context of the whole conversation} (``exchange classifiers''), screens all traffic with a cheap classifier before an expensive one, and ensembles linear \emph{probes} on activations with external classifiers, at $1/40$ of the cost of the baseline exchange classifier\,\citep{cunningham2026}; the lecture's fourth layer, a linear functional on activations, is the object of the next weeks (Section~\ref{sec:L8-geometry}).
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{The moral: offense, defense, and the missing theory}\label{sec:L8-moral}
+\tsm{42:30}
+Asked for the moral, the speaker says that companies have worried quite a bit about a situation in which progress in language models gives more tools to the offense than to the defense. Historically the defense has had much more resources: companies, governments and individuals invested much more in the safety of systems. A student objects that this may not be true (spy agencies may do better at offense), and he agrees, but only within a narrow scope. What changes things is that capability may now be determined not by how many humans one has who want to do something, but by how many AI agents one has that want to attack; that could give a small group with a large amount of compute a lot of power, and it is unclear what the endgame is. (A further remark by a student, about knowledge that one agent has being open to the next one, is inaudible\flag.) Finally, a lot of what was discussed is quite experimental and lacks a good theory and good security guarantees, ``and I think that is the direction in which we should move''.
+
+\begin{discussion}[Judging pieces of a prompt]
+A student asks whether, to pass classifiers, one could instead of one linear pass over the whole text subsample some sections of it, so that a prompt is rejected if one portion fails. The speaker: to defend against this particular technique all one needs is to remove the prefix; breaking the prompt into pieces takes resources, and a good request can contain bad substrings. If everything that contains the words ``creating bioweapons'' were flagged, a question asked in order to prepare this course would be flagged too; the meaning depends on the composition, so it is not trivial. One could also distribute the prefix over the pieces, and find an algorithm that attacks that particular safety technique.
+\end{discussion}
+
+\begin{beyond}[The attacker moves second, and what a guarantee could look like]
+Three remarks. (1)~\emph{Adaptive evaluation.} Defenses are often reported against fixed attack strings; \citet{nasr2025} argue that they must be tested against attackers who adapt to them, and report bypassing $12$ recent defenses with success above $90\%$ in most cases. (2)~\emph{The asymmetry in one formula.} If an attempt succeeds independently with probability $p$, then $n$ attempts succeed with probability $1-(1-p)^n$: for $p=10^{-4}$ this is $63\%$ at $n=10^4$ and $99.995\%$ at $n=10^5$, while the defender must be right on every attempt; this is the arithmetic behind Best-of-$N$ jailbreaking, whose success rate keeps growing with the number of samples (to $89\%$ on GPT-4o with $10{,}000$ samples), following a power law in the sense of \citet{hughes2024}: for a set of prompts, the negative logarithm of the success rate falls as a power of the number of samples, because $p$ differs from prompt to prompt. (3)~\emph{Guarantees.} The student's idea of judging pieces has precedents: \emph{erase-and-check}\,\citep{kumar2023} runs a safety filter on the subsequences obtained by erasing tokens, and certifies that a harmful prompt is not labeled safe under adversarial insertions up to a stated length; \emph{SmoothLLM}\,\citep{robey2023} aggregates the answers to randomly perturbed copies of the prompt. Both are designed for bounded perturbations and multiply the number of calls; I found no study of how either fares against an attack of the BPJ type, so I make no claim.
+\end{beyond}
+
+\input{lectures/lecture08c}

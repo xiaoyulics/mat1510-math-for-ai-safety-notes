@@ -1,0 +1,286 @@
+% =====================================================================================
+%  Lecture 2, part B  —  sections 2.4 – 2.5
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{From gradient flow to the neural tangent kernel}\label{sec:L2-ntk}
+\tsm{18:00}
+The rest of the lecture is a blackboard derivation of a power law from first principles. The setting is deliberately simple; the instructor flags each simplification as it is made.
+
+\subsection{The setting}\tsm{18:32}
+Let $\mathcal X$ be the input space with a probability measure $\mu$ (the data distribution), and let $f^*:\mathcal X\to\R$ be the function we want to learn, the \term{target}. A neural network is a family $f_\theta:\mathcal X\to\R$ indexed by weights $\theta\in\R^n$, with $n$ large; we assume throughout that $\theta\mapsto f_\theta\in\Hil$ is continuously differentiable (so that $\partial_{\theta_i}f_\theta\in\Hil$).
+Its quality is measured by the squared error
+\begin{equation}\label{eq:mse}
+  L(\theta)\;=\;\tfrac12\,\norm{f_\theta-f^*}^2_{\Hil}\;=\;\tfrac12\int_{\mathcal X}\big(f_\theta(x)-f^*(x)\big)^2\,\dd\mu(x).
+\end{equation}
+
+\begin{remark}[This is not the loss of a language model]
+Language models minimize the \emph{negative log-likelihood} of the next token. The squared error is its Gaussian cousin: if the model outputs the normal law $p_\theta(y\mid x)=\mathcal N(f_\theta(x),\sigma^2)$, then
+$-\log p_\theta(y\mid x)=\frac{(y-f_\theta(x))^2}{2\sigma^2}+\frac12\log(2\pi\sigma^2)$, which for noiseless targets $y=f^*(x)$ equals $\sigma^{-2}L$ up to an additive constant. So the MSE is a convenient proxy for which computations are much easier.
+A student asks whether it is a realistic assumption for text: \say{not really}, the very idea of one correct continuation is suspect. It is an assumption.
+\end{remark}
+
+Training is by gradient descent; in the small-step limit (the instructor ignores the ``stochastic'' in SGD) this is \term{gradient flow}:
+\begin{equation}\label{eq:flow}
+  \dot\theta_t\;=\;-\nabla_\theta L(\theta_t).
+\end{equation}
+Write $\theta_t$ for the solution and, for convenience, define the \term{residual} $g_t:=f_{\theta_t}-f^*\in\Hil$, so that the loss is $\frac12\norm{g_t}^2$ (equivalently, one can imagine trying to learn the zero function).
+
+\subsection{The residual obeys a linear equation}\label{sec:L2-resid}\tsm{23:35}
+We want to know how the \emph{function} computed by the network evolves, rather than the weights. Differentiating inside the integral (legitimate under the regularity assumption above), the gradient of the loss is
+\[
+  \nabla_\theta L(\theta)=\int g(x')\,\nabla_\theta f_\theta(x')\,\dd\mu(x').
+\]
+By the chain rule, $\partial_t g_t(x)=\ip{\nabla_\theta f_{\theta_t}(x)}{\dot\theta_t}$, and substituting \eqref{eq:flow},
+\begin{equation}\label{eq:resid}
+  \partial_t g_t(x)\;=\;-\int K_{\theta_t}(x,x')\;g_t(x')\,\dd\mu(x'),\qquad K_\theta(x,x'):=\ip{\nabla_\theta f_\theta(x)}{\nabla_\theta f_\theta(x')}.
+\end{equation}
+
+\begin{defn}[Neural tangent kernel and its operator]\label{def:ntk}
+The \term{neural tangent kernel} (NTK) of the network at weights $\theta$ is
+\[
+   K_\theta(x,x')=\ip{\nabla_\theta f_\theta(x)}{\nabla_\theta f_\theta(x')}\qquad(x,x'\in\mathcal X),
+\]
+and the associated integral operator on $\Hil$ is $(T_\theta s)(x)=\int K_\theta(x,x')\,s(x')\,\dd\mu(x')$. Write $K_t=K_{\theta_t}$, $T_t=T_{\theta_t}$.
+\end{defn}
+
+Equation \eqref{eq:resid} then reads, simply,
+\begin{equation}\label{eq:linear}
+  \boxed{\;\partial_t g_t\;=\;-\,T_t\,g_t\;}
+\end{equation}
+The kernel $K_\theta(x,x')$ measures how similar the sensitivities of the network's output to its weights are at two inputs: large $K$ means that moving the weights to change the output at $x$ also moves it at $x'$ in the same direction. The two inputs are ``pushed together''.
+The point of the reformulation is that \emph{the dynamics of the function is linear in the residual}; all the nonlinearity of the network is hidden in the way $T_t$ changes with time. Note that $T_t$ depends on the network and on time (a student notes this; the instructor agrees, and calls it ``a time-dependent operator'').
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\scriptsize]
+  % ------------------------------------------------------------ weight space
+  \draw[rounded corners=3mm, fill=ink!4!white, draw=ink!40] (0,0) rectangle (47,44);
+  \node[anchor=north west, font=\headsf\bfseries\scriptsize, text=ink] at (2.5,42.5) {weights $\theta\in\R^n$};
+  \begin{scope}
+    \clip[rounded corners=3mm] (0,0) rectangle (47,44);
+    \begin{scope}[rotate around={28:(25,24)}]
+      \foreach \r in {3.5,7,10.5,14} \draw[teal!65, line width=0.55pt] (25,24) ellipse ({\r*1.9} and {\r*0.75});
+    \end{scope}
+  \end{scope}
+  \fill[ink] (25,24) circle (0.7mm);
+  \draw[amber, line width=1.4pt, ->] plot[smooth] coordinates {(7,6) (11,12) (15.5,17) (20,21) (23.4,23.2)};
+  \fill[ink] (7,6) circle (0.9mm); \node[below right, text=ink, inner sep=1pt] at (7,6) {$\theta_0$};
+  \node[anchor=west, text=amber!80!black, inner sep=1.2pt, fill=ink!4!white, fill opacity=0.9, text opacity=1] at (26,9) {$\dot\theta=-\nabla L$};
+  % ------------------------------------------------------------ arrow
+  \draw[->, line width=1.0pt, ink] (49,22) -- (79,22) node[midway, above=1pt, font=\sffamily\scriptsize] {$\theta\mapsto f_\theta$};
+  \node[text=slate, align=center, font=\sffamily\fontsize{6.4}{7.2}\selectfont] at (64,13) {the loss is the squared\\distance to $f^*$};
+  % ------------------------------------------------------------ function space
+  \draw[rounded corners=3mm, fill=ink!4!white, draw=ink!40] (81,0) rectangle (128,44);
+  \node[anchor=north west, font=\headsf\bfseries\scriptsize, text=ink] at (83.5,42.5) {functions in $\Hil$};
+  \node[anchor=north east, text=slate, inner sep=1pt] at (126,42.5) {$\partial_tg=-Tg$};
+  \begin{scope}
+    \clip[rounded corners=3mm] (81,0) rectangle (128,44);
+    \foreach \r in {6,12,18} \draw[teal!65, line width=0.55pt] (110,23) circle (\r);
+  \end{scope}
+  \node[star, star points=5, star point ratio=2.2, fill=crimson, draw=none, inner sep=1.2pt] at (110,23) {};
+  \node[anchor=south west, text=crimson, inner sep=1pt] at (111.2,24.2) {$f^*$};
+  \draw[crimson, line width=1.4pt, ->] plot[smooth] coordinates {(88,7) (101.9,10.5) (107,13.3) (109.6,17.1) (110,19.6) (110,21.2)};
+  \fill[ink] (88,7) circle (0.9mm); \node[above left, text=ink, inner sep=1pt] at (88,7) {$f_0$};
+  \node[text=crimson!80!black, anchor=north, align=center, font=\sffamily\fontsize{6}{6.8}\selectfont, inner sep=1pt, fill=ink!4!white, fill opacity=0.9, text opacity=1] at (99,6.2) {fast along stiff\\eigenfunctions ($\lambda_k$ large)};
+  \node[text=crimson!80!black, anchor=west, align=left, font=\sffamily\fontsize{6}{6.8}\selectfont, inner sep=1pt, fill=ink!4!white, fill opacity=0.9, text opacity=1] at (112.5,13) {slow along flat\\eigenfunctions};
+\end{tikzpicture}
+\caption{The same flow seen in two spaces. Gradient flow moves the weights; the induced motion of the \emph{function} $f_{\theta_t}$ in $\Hil$ obeys $\partial_tg=-Tg$. In weight space the contours of the (linearized) loss are ellipsoids with semi-axes $\propto\lambda_k^{-1/2}$ (the Hessian is $GG^*$, see below). In function space the loss $\frac12\norm{f-f^*}^2$ has \emph{spherical} contours, but the flow contracts the residual fast along stiff eigenfunctions (large $\lambda_k$) and slowly along flat ones. Schematic.}
+\label{fig:L2-spaces}
+\end{figure}
+
+\subsection{The operator \texorpdfstring{$T$}{T} is a nice operator}\label{sec:L2-Tprops}\tsm{35:00}
+\begin{lem}[Properties of $T_\theta$]\label{lem:T}
+Assume $\nabla_\theta f_\theta\in L^2(\mu;\R^n)$, i.e.\ $\int K_\theta(x,x)\,\dd\mu(x)<\infty$. Then $K_\theta$ is symmetric and $T_\theta$ is a bounded, self-adjoint, positive semidefinite operator on $\Hil$, of rank at most $n$, hence compact. (For a kernel \emph{not} coming from finitely many parameters, such as the infinite-width limit, compactness holds as soon as $\iint K^2\,\dd\mu\,\dd\mu<\infty$, for example if $K$ is bounded and $\mu$ finite.)
+\end{lem}
+\begin{proof}
+Symmetry of $K_\theta$ is clear from the definition. For $s\in\Hil$,
+\[
+  \ip{T_\theta s}{s}_{\Hil}=\iint K_\theta(x,x')\,s(x)\,s(x')\,\dd\mu(x)\,\dd\mu(x')=\Big\lVert\int s(x)\,\nabla_\theta f_\theta(x)\,\dd\mu(x)\Big\rVert^2_{\R^n}\;\ge\;0,
+\]
+because the double integral is the squared norm of the vector $\int s\,\nabla_\theta f_\theta\,\dd\mu\in\R^n$ (expand the inner product). A symmetric kernel gives a symmetric operator, hence self-adjoint; boundedness follows from the assumption (see the remark below, where $T_\theta=G_\theta^*G_\theta$ with $G_\theta:\Hil\to\R^n$ bounded). A bounded operator of finite rank is compact. In the infinite-width setting, $\iint K^2<\infty$ says that $T$ is a Hilbert--Schmidt operator, and those are compact.
+\end{proof}
+
+By the spectral theorem for compact self-adjoint operators, $\Hil$ contains an orthonormal family of eigenfunctions of $T$ (the lecture writes $\varphi_k$) with eigenvalues
+\[
+   \lambda_1\ \ge\ \lambda_2\ \ge\ \lambda_3\ \ge\ \dots\ \ge\ 0,\qquad \lambda_k\to0,
+\]
+each non-zero eigenvalue of finite multiplicity, and $\Hil=\ker T\oplus\overline{\operatorname{span}}\{\varphi_k:\lambda_k>0\}$.
+
+\begin{beyond}[Where the eigenvalues come from]
+Define $G_\theta:\Hil\to\R^n$ by $G_\theta s=\int s\,\nabla_\theta f_\theta\,\dd\mu$. Its adjoint is $(G_\theta^*v)(x)=\ip{v}{\nabla_\theta f_\theta(x)}$ and one checks that $T_\theta=G_\theta^*G_\theta$. Two consequences.
+(i) $T_\theta$ has \emph{rank at most $n$}, the number of parameters, so a genuinely infinite sequence $\lambda_k\to0$ appears only in the infinite-width limit, which is where the lecture's kernel comes from.
+(ii) The non-zero eigenvalues of $G^*G$ coincide with those of the $n\times n$ matrix $GG^*=\int\nabla_\theta f_\theta\,\nabla_\theta f_\theta^{\!\top}\dd\mu$, the \emph{Gauss--Newton matrix}. The Hessian of $L$ is $\nabla^2L=GG^*+\int g\,\nabla_\theta^2f_\theta\,\dd\mu$, so it equals $GG^*$ where the residual vanishes ($g=0$, e.g.\ at an interpolating minimizer) or when $f_\theta$ is linear in $\theta$; in those cases the spectrum of $T$ \emph{is} the curvature spectrum of the loss.
+(iii) A bounded kernel makes $T$ trace class, with $\sum_k\lambda_k=\int K(x,x)\,\dd\mu<\infty$; for a power-law spectrum this forces $\alpha>1$. Proposition~\ref{prop:powerlaw} below is a statement about sequences and holds for every $\alpha>0$, but for an NTK of this kind only $\alpha>1$ can occur.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{The spectral solution and the scaling law}\label{sec:L2-spectral}
+\tsm{38:40}
+\subsection{The frozen kernel: neural tangent regime}
+Equation \eqref{eq:linear} would be solved at once if $T_t$ did not depend on $t$. The instructor now makes \emph{a serious simplifying assumption}: $K_t=K$ and $T_t=T$ for all $t$. This happens in particular regimes of training:
+the width of the network is very large (compared with the amount of data) and the learning rate is small compared with the width; then the kernel at initialization converges to a deterministic constant kernel, the \term{neural tangent kernel} of \citet{jacot2018}.
+(The lecturer remarks that the observation that wide networks behave like kernel machines goes back to the 1990s, to colleagues at his own university.\dagmark{} I take this to refer to the Gaussian-process limit of infinitely wide networks of \citet{neal1996}.) In this \term{NTK regime}, also called \emph{lazy} training\,\citep{chizat2019}, the learning is just kernel learning with a fixed kernel, and all one needs to know is
+how different eigenfunctions of the kernel are learned.
+\begin{discussion}[Features and the frozen kernel]\tsm{44:00}
+The eigenfunctions of $T$ (suitably scaled by $\sqrt{\lambda_k}$) are the \term{features}. The regime in which the operator \emph{moves} with time is the \term{feature-learning regime}: it is the more interesting one, and it is known to matter in practice, but the usual first step toward a theory is the frozen case, to which perturbations are then added. The lecture associates the frozen regime with \emph{memorization} and feature learning with \emph{generalization} (a loose slogan).
+A student asks when the frozen approximation is valid; the answer is: when the width is very large compared with the amount of data. In that setting the training time $t$ is used as a proxy for the amount of data (see the heuristic below).
+\end{discussion}
+
+\subsection{Solving the equation}\tsm{46:37}
+Assume $T_t\equiv T$ is compact, self-adjoint and positive semidefinite, with eigenpairs $(\lambda_k,\varphi_k)$ for the non-zero eigenvalues. Expand the target in the eigenbasis,
+\[
+   f^*=\sum_{k\ge1}a_k\,\varphi_k+P_{\ker T}f^*,\qquad a_k=\ip{f^*}{\varphi_k}_{\Hil}.
+\]
+The lecture takes $f^*$ to lie in the closure of the range of $T$, i.e.\ $P_{\ker T}f^*=0$; we keep the general case, which only adds a constant. Let $r_k(t)=\ip{g_t}{\varphi_k}$ be the coefficient of the residual along $\varphi_k$. Taking the inner product of $\partial_tg=-Tg$ with $\varphi_k$ and using self-adjointness, $\partial_tr_k=-\ip{g}{T\varphi_k}=-\lambda_kr_k$, so
+\[
+   r_k(t)=r_k(0)\,e^{-\lambda_kt},
+\]
+while the component of $g_t$ in $\ker T$ is constant, since $P_{\ker T}Tg=0$. Start, for simplicity, from the zero function, $f_{\theta_0}\equiv0$ (for another initialization there is a correction term). Then $g_0=-f^*$, $r_k(0)=-a_k$, and we have proved:
+
+\begin{prop}[Spectral solution]\label{prop:solution}
+In the frozen-kernel regime with $f_{\theta_0}\equiv0$,
+\[
+  f_{\theta_t}=\sum_{k}a_k\big(1-e^{-\lambda_kt}\big)\varphi_k,\qquad
+  L(\theta_t)=\tfrac12\sum_{k}a_k^2\,e^{-2\lambda_kt}\;+\;L_\infty,\quad L_\infty=\tfrac12\norm{P_{\ker T}f^*}^2 .
+\]
+\end{prop}
+\noindent Each mode converges exponentially to the target's component along it, \emph{at a rate set by its eigenvalue}: stiff modes ($\lambda_k$ large) are learned first, flat modes last. (In the lecture, $L_\infty=0$.)
+
+\subsection{A power law in the training time}\label{sec:L2-power}\tsm{54:46}
+To get a scaling law one needs to know how $\lambda_k$ and $a_k$ decay in $k$. The lecture assumes power laws. (Throughout, $f\asymp g$ means $c\,g\le f\le C\,g$ for positive constants.)
+
+\begin{prop}[Power-law scaling in training time]\label{prop:powerlaw}
+Let $\alpha,\beta>0$ and suppose that, for all $k\ge1$,
+\[
+  c_1\,k^{-\alpha}\le\lambda_k\le c_2\,k^{-\alpha},\qquad c_3\,k^{-1-\alpha\beta}\le a_k^2\le c_4\,k^{-1-\alpha\beta}.
+\]
+Then there are constants $0<A_-\le A_+$, depending only on $\alpha,\beta,c_1,\dots,c_4$, such that for all $t\ge1$
+\[
+   A_-\,t^{-\beta}\;\le\;L(\theta_t)-L_\infty\;\le\;A_+\,t^{-\beta}.
+\]
+\end{prop}
+(The lecture writes the second assumption as ``$a_k^2$ decays like $k^{-1-s}$'' and gets $t^{-s/\alpha}$; the two statements agree with $s=\alpha\beta$. Note that $\sum_ka_k^2<\infty$ holds for every $\beta>0$, so the target is in $\Hil$ as required.)
+
+\begin{proof}
+Put $m=\lceil t^{1/\alpha}\rceil$, the index at which $\lambda_kt$ passes through $1$: modes with $k<m$ are \emph{learned} (their factor $e^{-2\lambda_kt}$ is small), modes with $k\ge m$ are \emph{not yet learned}. This split is the lecture's idea and it gives both bounds. We drop the constant $L_\infty$, write $\Lambda(t)=\tfrac12\sum_ka_k^2e^{-2\lambda_kt}$ and compare sums with integrals.
+
+
+\emph{Lower bound (the unlearned tail).} For $k\ge m$ we have $k^\alpha\ge t$, hence $\lambda_kt\le c_2$ and $e^{-2\lambda_kt}\ge e^{-2c_2}$. Since $k\mapsto k^{-1-\alpha\beta}$ is decreasing,
+\[
+   \Lambda(t)\ \ge\ \tfrac12e^{-2c_2}c_3\sum_{k\ge m}k^{-1-\alpha\beta}\ \ge\ \tfrac12e^{-2c_2}c_3\int_m^\infty x^{-1-\alpha\beta}\dd x=\frac{e^{-2c_2}c_3}{2\alpha\beta}\,m^{-\alpha\beta}\ \ge\ \frac{e^{-2c_2}c_3}{2\alpha\beta\,2^{\alpha\beta}}\;t^{-\beta},
+\]
+using $m\le t^{1/\alpha}+1\le2t^{1/\alpha}$ for $t\ge1$.
+
+\emph{Upper bound (tail and head).} For the tail $k\ge m$ bound the exponential by $1$:
+\[
+  \tfrac12\sum_{k\ge m}a_k^2e^{-2\lambda_kt}\le\tfrac{c_4}2\Big(m^{-1-\alpha\beta}+\int_m^\infty x^{-1-\alpha\beta}\dd x\Big)\le C\,m^{-\alpha\beta}\le C\,t^{-\beta}.
+\]
+For the head $k<m$ use $\lambda_k\ge c_1k^{-\alpha}$: the sum is at most $\tfrac{c_4}2\sum_kg(k)$ with $g(x)=x^{-1-\alpha\beta}\exp(-2c_1t\,x^{-\alpha})$. This function increases and then decreases on $(0,\infty)$ (the sign of $g'$ is that of $2c_1\alpha t\,x^{-\alpha}-(1+\alpha\beta)$), so $\sum_kg(k)\le\int_0^\infty g\,\dd x+\max g$. Substituting $u=2c_1t\,x^{-\alpha}$ gives
+\[
+  \int_0^\infty g\,\dd x=\frac1\alpha\,(2c_1t)^{-\beta}\int_0^\infty u^{\beta-1}e^{-u}\dd u=\frac{\Gamma(\beta)}{\alpha\,(2c_1)^{\beta}}\;t^{-\beta},
+\]
+while $\max g=C(\alpha,\beta,c_1)\,t^{-\beta-1/\alpha}\le C\,t^{-\beta}$ for $t\ge1$. Adding head and tail yields the upper bound.
+\end{proof}
+
+\begin{intuition}
+At time $t$ the network has essentially learned the modes with eigenvalue at least $1/t$, that is, roughly the first $m(t)=t^{1/\alpha}$ modes (the cutoff is a smoothed step, Figure~\ref{fig:L2-anatomy}b), and has learned little of the rest. The remaining loss is, up to a constant factor, the \emph{energy of the target in the unlearned modes},
+$\tfrac12\sum_{k>m(t)}a_k^2\asymp m(t)^{-\alpha\beta}=t^{-\beta}$. A faster-decaying spectrum (large $\alpha$) makes the cutoff $m(t)=t^{1/\alpha}$ move slowly; a target concentrated on the first few eigenfunctions (large $\beta$) makes the remaining energy small. In the vocabulary of kernel regression,
+$\alpha$ measures the ``capacity'' of the kernel and $\beta$ the ``difficulty'' (alignment) of the task.
+\end{intuition}
+
+\paragraph{Time as a proxy for data (heuristic).} The statement is about the deterministic gradient flow in \emph{training time} $t$. If every gradient step uses fresh data (one pass), then after $s$ steps with batch size $B$ and learning rate $\eta$ the network has seen $D=Bs$ examples and the elapsed gradient-flow time is $t=\eta s$. So
+$t\propto D$ at a fixed ratio $\eta/B$, and one reads the proposition as a \emph{data scaling law}, $L\asymp D^{-\beta}$. This identification is heuristic: it needs one-pass training and negligible gradient noise (the flow is the small-step limit of SGD). It is why the lecture treats the number of training steps as ``a proxy for how much data we have''. It says nothing about the \emph{number of parameters} (see the caricature below, and the next lecture).
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=17mm}, notes, width=0.5\linewidth, height=0.52\linewidth]
+\nextgroupplot[xmode=log, ymode=log, xmin=1, xmax=1e4, ymin=1e-8, ymax=3, xlabel={mode index $k$}, title={(a) spectrum and target},
+    ytick={1e-6,1e-3,1}, legend style={at={(0.03,0.03)}, anchor=south west}]
+  \addplot[accent, line width=1.4pt] table[x=k, y=lam] {figures/data/spec_modes.dat};   \addlegendentry{$\lambda_k=k^{-\alpha}$}
+  \addplot[crimson, line width=1.4pt] table[x=k, y=a2] {figures/data/spec_modes.dat};   \addlegendentry{$a_k^2=k^{-1-\alpha\beta}$}
+\nextgroupplot[xmode=log, xmin=1, xmax=1.5e4, ymin=0, ymax=1.06, xlabel={mode index $k$}, ylabel={learned fraction $1-e^{-\lambda_kt}$}, title={(b) modes learned by time $t$},
+    ytick={0,0.5,1}, legend style={at={(0.97,0.55)}, anchor=east, legend columns=1}]
+  \addplot[amber!70, line width=1.3pt] table[x=k, y=t1] {figures/data/spec_learned.dat};   \addlegendentry{$t=10$}
+  \addplot[teal!80, line width=1.3pt] table[x=k, y=t2] {figures/data/spec_learned.dat};   \addlegendentry{$10^{2}$}
+  \addplot[accent, line width=1.3pt] table[x=k, y=t3] {figures/data/spec_learned.dat};   \addlegendentry{$10^{3}$}
+  \addplot[plum, line width=1.3pt] table[x=k, y=t4] {figures/data/spec_learned.dat};   \addlegendentry{$10^{4}$}
+  \draw[dotted, ink!60, line width=0.6pt] (axis cs:4.64,0) -- (axis cs:4.64,1.06);
+  \draw[dotted, ink!60, line width=0.6pt] (axis cs:21.5,0) -- (axis cs:21.5,1.06);
+  \draw[dotted, ink!60, line width=0.6pt] (axis cs:100,0) -- (axis cs:100,1.06);
+  \draw[dotted, ink!60, line width=0.6pt] (axis cs:464,0) -- (axis cs:464,1.06);
+\end{groupplot}
+\end{tikzpicture}
+\caption{The spectral picture with $\alpha=1.5$, $\beta=0.5$. \textbf{(a)} The two power laws. \textbf{(b)} The fraction of each mode learned by time $t$ is a smoothed step at $k\approx t^{1/\alpha}$ (dotted lines: $k=10^{2/3},\,10^{4/3},\,10^{2},\,10^{8/3}$); modes to the left are learned, modes to the right are untouched. Data: \kbd{figures/gen\_data.py}.}
+\label{fig:L2-anatomy}
+\end{figure}
+
+\begin{beyond}[A numerical check, and the sharp constant]
+For the exact power laws $\lambda_k=k^{-\alpha}$, $a_k^2=k^{-1-\alpha\beta}$ the loss is $\Lambda(t)=\frac12\sum_{k\ge1}k^{-1-\alpha\beta}e^{-2tk^{-\alpha}}$. This is a Riemann sum for $\int_0^\infty g$ of the proof with mesh $1$, on a scale $t^{1/\alpha}\to\infty$, so
+\[
+   \Lambda(t)\;\sim\;\frac{\Gamma(\beta)}{\alpha\,2^{\beta+1}}\;t^{-\beta}\qquad(t\to\infty).
+\]
+For $\alpha=1.5$, $\beta=0.5$ the constant is $\Gamma(\tfrac12)/(1.5\cdot2^{1.5})=0.41777\ldots$; summing the series (with an exact incomplete-gamma tail), $t^{\beta}\Lambda(t)=0.417771$ at $t=10^{6}$, and the local log--log slope is $-0.5000$ (Figure~\ref{fig:L2-check}).
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[notes, width=0.78\linewidth, height=0.5\linewidth, xlabel={training time $t$}, ylabel={loss $L(t)$}, xmin=1, xmax=1e6, ymin=3e-4, ymax=0.3,
+    legend style={at={(0.97,0.95)}, anchor=north east}]
+  \addplot[accent, line width=1.6pt] table[x=t, y=Lexact] {figures/data/spec_loss.dat};   \addlegendentry{exact sum}
+  \addplot[amber, line width=1.4pt, dashed] table[x=t, y=Lasym] {figures/data/spec_loss.dat};   \addlegendentry{$\frac{\Gamma(\beta)}{\alpha2^{\beta+1}}\,t^{-\beta}$}
+  \draw[ink, line width=0.6pt] (axis cs:2e3,0.0085) -- (axis cs:2e4,0.0085) -- (axis cs:2e4,0.0085*0.3162);
+  \node[font=\sffamily\scriptsize, text=ink, anchor=south] at (axis cs:6e3,0.0095) {slope $-\beta$};
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{Numerical check of Proposition~\ref{prop:powerlaw} with $\alpha=1.5$, $\beta=0.5$: the exact loss $\frac12\sum_ka_k^2e^{-2\lambda_kt}$ (summed to $4\cdot10^6$ modes plus an analytic tail) against the closed-form asymptote.}
+\label{fig:L2-check}
+\end{figure}
+
+\begin{beyond}[Parameters enter too: a caricature of Chinchilla]
+By Lemma~\ref{lem:T} and the remark after it, $T$ has rank at most $n$ for a network with $n$ parameters. Consider a caricature in which such a network can only use $n$ modes (as if its features were the first $n$ eigenfunctions of the infinite-width kernel). Then the loss is
+$\frac12\sum_{k\le n}a_k^2e^{-2\lambda_kt}+\frac12\sum_{k>n}a_k^2$, and the two-sided bound of Proposition~\ref{prop:powerlaw} (with $\sum_{k>n}a_k^2\asymp n^{-\alpha\beta}$) gives, for power-law $\lambda_k,a_k$, a loss of the shape
+\[
+   L(t,n)\ \approx\ c_1\,t^{-\beta}\ +\ c_2\,n^{-\alpha\beta}\ +\ L_\infty ,
+\]
+with the first term coming from finite training time (data) and the second from finite model size. This has the same additive form as the empirical law \eqref{eq:chinchilla}, with exponents $b=\beta$ and $a=\alpha\beta$, hence $a/b=\alpha$. With the published values $a/b=0.34/0.28\approx1.2$, which is an admissible eigenvalue decay ($\alpha>1$ is needed for $\sum_k\lambda_k<\infty$). This is a caricature, not a derivation (a real $n$-parameter network does not select the top $n$ eigenfunctions; random-feature effects and saturation phenomena are ignored, compare \citealt{bahri2024}), but it shows how the model accounts for the \emph{form} of a scaling law.
+\end{beyond}
+
+\subsection{What the model gets right and wrong}
+\begin{caution}
+\begin{itemize}
+  \item \textbf{Frozen kernel.} Real networks change their kernel (feature learning); the model describes only the lazy regime.
+  \item \textbf{Squared loss and a unique target.} Language models minimize cross-entropy against a distribution of continuations.
+  \item \textbf{Exponents are assumed.} The power laws for $\lambda_k$ and $a_k$ are inputs. Taking $\alpha,\beta$ arbitrary one can obtain any exponent; whether they are realistic is a question for data (Lecture~3).
+  \item \textbf{No model size.} The model explains the training-time (data) exponent, not the parameter exponent, except in the caricature above.
+\end{itemize}
+\end{caution}
+Despite these, the same decomposition (a spectrum of modes learned at rates set by eigenvalues) \emph{appears in many theories of scaling laws}, which is why the instructor presents it.
+
+\paragraph{Looking ahead.}\tsm{57:56}
+Next Wednesday (23 September) there is a guest lecture by Anson Ho of Epoch AI on modeling capability trajectories. The instructor asks for feedback on the format: today was a blackboard lecture; would slides be better? The course then returns to other theories of deep learning and, later, moves to mechanistic interpretability and the geometry of activations.
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{takeaways}
+\begin{itemize}
+  \item The Oppenheimer story shows what a \emph{calculation} can do; for AI we lack the theory. Policy and research complement each other; honesty about uncertainty is the scientist's contribution; the main obstacle to stopping is \emph{coordination}.
+  \item Scaling laws: the (reducible) loss follows power laws in $N$, $D$ and $C$, straight lines on log--log plots; $C\approx6ND$; compute-optimal training balances $N$ and $D$.
+  \item Gradient flow on $L=\frac12\norm{f_\theta-f^*}^2$ gives $\partial_tg=-T_tg$ with $T_t$ the \emph{neural tangent kernel operator}: self-adjoint, positive semidefinite, compact.
+  \item If $T$ is frozen (wide-network, small-step regime), modes decouple: $g_t=\sum_ke^{-\lambda_kt}\,\ip{g_0}{\varphi_k}\varphi_k$.
+  \item $\lambda_k\asymp k^{-\alpha}$ and $a_k^2\asymp k^{-1-\alpha\beta}$ imply $L(t)\asymp t^{-\beta}$: the modes with $k\lesssim t^{1/\alpha}$ are learned, the unlearned tail carries the loss.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Warm-up and extensions]
+\begin{enumerate}
+  \item \emph{Linear models are exactly lazy.} For $f_\theta(x)=\ip{\theta}{\psi(x)}$ show that $K_\theta(x,x')=\ip{\psi(x)}{\psi(x')}$ does not depend on $\theta$, so $g_t=e^{-tT}g_0$ holds exactly.
+  \item \emph{Another initialization.} If $f_{\theta_0}=f_0\ne0$, show that $L(\theta_t)=\tfrac12\sum_k(a_k-\ip{f_0}{\varphi_k})^2e^{-2\lambda_kt}+\tfrac12\norm{P_{\ker T}(f^*-f_0)}^2$.
+  \item \emph{Time to accuracy.} Assume $L_\infty=0$. Show that for small $\epsilon$ reaching $L\le\epsilon$ needs $t\asymp\epsilon^{-1/\beta}$, and that the number of modes involved is $m(t)\asymp\epsilon^{-1/(\alpha\beta)}$.
+  \item \emph{Sharp constant.} Prove $\lim_{t\to\infty}t^\beta\Lambda(t)=\Gamma(\beta)/(\alpha2^{\beta+1})$ for $\lambda_k=k^{-\alpha}$, $a_k^2=k^{-1-\alpha\beta}$. (Hint: Riemann sum and $u=2tx^{-\alpha}$.)
+  \item \emph{An exponential spectrum.} Let $\lambda_k=e^{-\alpha' k}$ and $a_k^2=e^{-\gamma k}$. Show $\Lambda(t)\asymp t^{-\gamma/\alpha'}$: a power law in time can come from exponentially decaying spectra as well. (Hint: the cutoff is at $k_*=\alpha'^{-1}\ln t$.)
+  \item \emph{Irreducible loss.} Suppose $f^*$ has a component in $\ker T$. What does Proposition~\ref{prop:solution} say about the limit of $L(\theta_t)$ as $t\to\infty$, and what would a student have to change in the network to remove it?
+\end{enumerate}
+\end{exercise}

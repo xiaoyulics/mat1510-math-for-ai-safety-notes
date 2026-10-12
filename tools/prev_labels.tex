@@ -1,0 +1,104 @@
+\newlabel{ch:L1}{{1}{1}{Capability trajectories: why mathematics, and why now}{chapter.1}{}}
+\newlabel{sec:L1-intro}{{1.1}{1}{A course that is unusual on purpose}{section.1.1}{}}
+\newlabel{sec:L1-capabilities}{{1.2}{2}{What AI systems can do: from GPT-2 to today}{section.1.2}{}}
+\newlabel{sec:L1-incident}{{1.3}{3}{Case study: agents that defeated their own evaluation}{section.1.3}{}}
+\newlabel{sec:L1-act1}{{1.3.2}{4}{Act I: a message board made of a package cache}{subsection.1.3.2}{}}
+\newlabel{fig:L1-channel}{{1.2}{5}{Act I (schematic). Agents had no internet access but could reach a package proxy. Its cache was shared and not isolated per user, so directory names written by one agent were visible to the others. Names of the form shown are modeled on METR's report\,\citep {metr2026}; the exact strings are illustrative}{figure.caption.9}{}}
+\newlabel{sec:L1-act2}{{1.3.3}{5}{Act II: the flag, the scorer, and Hugging Face}{subsection.1.3.3}{}}
+\newlabel{fig:L1-timeline}{{1.3}{6}{Timeline of the incident, 2026. Dates up to early July are as stated in the lecture; the Hugging Face period follows METR\,\citep {metr2026}, whose investigation covers 7--13 July. Color marks the three acts}{figure.caption.10}{}}
+\newlabel{sec:L1-measuring}{{1.4}{8}{Measuring capability trajectories}{section.1.4}{}}
+\newlabel{fig:L1-measure}{{1.4}{9}{\textbf {(a)} Schematic of METR's time-horizon plot: the length of tasks (measured by human completion time) that models can perform doubles every fixed period $T$, a straight line on a logarithmic axis. No data shown. \textbf {(b)} The latent-capability model of Definition~\ref {def:eci}: four benchmarks of increasing difficulty are four shifted sigmoids of the same latent capability; a single model with capability $C=1.5$ scores near $1$ on the easy ones and near $0$ on the hard ones. Illustrative parameters}{figure.caption.13}{}}
+\newlabel{def:eci}{{1.1}{9}{Stitching benchmarks (Epoch)}{box.1.1}{}}
+\newlabel{fig:L1-futures}{{1.5}{10}{Three continuations of the same history (schematic; the vertical axis is a logarithmic capability scale and the curves carry no data). \textbf {A}: the trend bends over and flattens. \textbf {B}: the exponential trend continues, with no single system pulling ahead; the risk is \emph {gradual disempowerment}. \textbf {C}: AI systems speed up AI research, and the curve bends \emph {upwards} (recursive self-improvement)}{figure.caption.15}{}}
+\newlabel{sec:L1-futures}{{1.5}{10}{Three futures}{section.1.5}{}}
+\newlabel{fig:L1-labor}{{1.6}{11}{The argument of \citet {kulveit2025} as the lecture presents it, drawn schematically: wages rise with productivity, then collapse as AI becomes better at \emph {all} cognitive tasks}{figure.caption.16}{}}
+\newlabel{sec:L1-gradual}{{1.5.2}{11}{B: gradual disempowerment}{subsection.1.5.2}{}}
+\newlabel{sec:L1-rsi}{{1.5.3}{12}{C: recursive self-improvement}{subsection.1.5.3}{}}
+\newlabel{box:toy-ode}{{1.5.3}{12}{The AI~2027 model}{paragraph*.18}{}}
+\newlabel{sec:L1-good}{{1.6}{14}{Toward good outcomes}{section.1.6}{}}
+\newlabel{sec:L1-math}{{1.7}{15}{Why mathematics?}{section.1.7}{}}
+\newlabel{fig:L1-map}{{1.7}{16}{The areas of mathematics the lecturer sees entering AI safety (not exhaustive)}{figure.caption.28}{}}
+\newlabel{sec:L1-map}{{1.7.2}{16}{A map of the field}{subsection.1.7.2}{}}
+\newlabel{ch:L2}{{2}{19}{Scaling laws and a solvable model of training}{chapter.2}{}}
+\newlabel{sec:L2-oppenheimer}{{2.1}{19}{Oppenheimer and the atmosphere}{section.2.1}{}}
+\newlabel{sec:L2-coordination}{{2.2}{20}{Research, regulation and coordination}{section.2.2}{}}
+\newlabel{sec:L2-scaling}{{2.3}{21}{Scaling laws}{section.2.3}{}}
+\newlabel{eq:C6ND}{{2.1}{22}{The setup}{equation.2.1}{}}
+\newlabel{eq:chinchilla}{{2.2}{22}{The observation}{equation.2.2}{}}
+\newlabel{fig:L2-frontier}{{2.2}{23}{\textbf {The compute frontier} (illustration; the parametric form \eqref {eq:chinchilla} with the constants quoted above, computed in \kbd {figures/gen\_data.py}). Each blue curve is a fixed model size trained on more and more tokens ($D=C/6N$); the dashed envelope is the best reducible loss reachable at each budget and is an exact straight line on log--log axes, of slope $-ab/(a+b)$: a \emph {scaling law in compute}. (The total loss $L$ would bend toward the irreducible term $E$.)}{figure.caption.35}{}}
+\newlabel{sec:L2-ntk}{{2.4}{23}{From gradient flow to the neural tangent kernel}{section.2.4}{}}
+\newlabel{eq:mse}{{2.3}{23}{The setting}{equation.2.3}{}}
+\newlabel{eq:flow}{{2.4}{24}{The setting}{equation.2.4}{}}
+\newlabel{sec:L2-resid}{{2.4.2}{24}{The residual obeys a linear equation}{subsection.2.4.2}{}}
+\newlabel{eq:resid}{{2.5}{24}{The residual obeys a linear equation}{equation.2.5}{}}
+\newlabel{def:ntk}{{2.1}{24}{The residual obeys a linear equation}{box.2.1}{}}
+\newlabel{eq:linear}{{2.6}{24}{The residual obeys a linear equation}{equation.2.6}{}}
+\newlabel{fig:L2-spaces}{{2.3}{25}{The same flow seen in two spaces. Gradient flow moves the weights; the induced motion of the \emph {function} $f_{\theta _t}$ in $\Hil $ obeys $\partial _tg=-Tg$. In weight space the contours of the (linearized) loss are ellipsoids with semi-axes $\propto \lambda _k^{-1/2}$ (the Hessian is $GG^*$, see below). In function space the loss $\frac 12\norm {f-f^*}^2$ has \emph {spherical} contours, but the flow contracts the residual fast along stiff eigenfunctions (large $\lambda _k$) and slowly along flat ones. Schematic}{figure.caption.36}{}}
+\newlabel{sec:L2-Tprops}{{2.4.3}{25}{The operator \texorpdfstring {$T$}{T} is a nice operator}{subsection.2.4.3}{}}
+\newlabel{lem:T}{{2.2}{25}{The operator \texorpdfstring {$T$}{T} is a nice operator}{box.2.2}{}}
+\newlabel{sec:L2-spectral}{{2.5}{26}{The spectral solution and the scaling law}{section.2.5}{}}
+\newlabel{prop:solution}{{2.3}{27}{Solving the equation}{box.2.3}{}}
+\newlabel{sec:L2-power}{{2.5.3}{27}{A power law in the training time}{subsection.2.5.3}{}}
+\newlabel{prop:powerlaw}{{2.4}{27}{A power law in the training time}{box.2.4}{}}
+\newlabel{fig:L2-anatomy}{{2.4}{29}{The spectral picture with $\alpha =1.5$, $\beta =0.5$. \textbf {(a)} The two power laws. \textbf {(b)} The fraction of each mode learned by time $t$ is a smoothed step at $k\approx t^{1/\alpha }$ (dotted lines: $k=10^{2/3},\,10^{4/3},\,10^{2},\,10^{8/3}$); modes to the left are learned, modes to the right are untouched. Data: \kbd {figures/gen\_data.py}}{figure.caption.38}{}}
+\newlabel{fig:L2-check}{{2.5}{29}{Numerical check of Proposition~\ref {prop:powerlaw} with $\alpha =1.5$, $\beta =0.5$: the exact loss $\frac 12\sum _ka_k^2e^{-2\lambda _kt}$ (summed to $4\cdot 10^6$ modes plus an analytic tail) against the closed-form asymptote}{figure.caption.39}{}}
+\newlabel{ch:L3}{{3}{32}{Why do big models generalize?}{chapter.3}{}}
+\newlabel{sec:L3-observations}{{3.1}{32}{Observations without a theory}{section.3.1}{}}
+\newlabel{sec:L3-recap}{{3.2}{34}{The spectral law revisited}{section.3.2}{}}
+\newlabel{sec:L3-data}{{3.3}{35}{Does the spectral picture match data?}{section.3.3}{}}
+\newlabel{sec:L3-params}{{3.4}{36}{Scaling with parameters: the dimension of the data manifold}{section.3.4}{}}
+\newlabel{eq:N4d}{{3.1}{36}{The argument}{equation.3.1}{}}
+\newlabel{fig:L3-pl}{{3.2}{37}{Approximating a smooth function by a piecewise-linear one on cells of size $h$ (here $d=1$). A ReLU network with about one parameter per cell can represent the fit, which gives $N\approx h^{-d}$ and $L\lesssim N^{-4/d}$}{figure.caption.50}{}}
+\newlabel{sec:L3-classical}{{3.5}{37}{Generalization: the classical picture and why it fails}{section.3.5}{}}
+\newlabel{fig:L3-bullseye}{{3.3}{38}{Bias and variance (after Fortmann-Roe). Each dot is a prediction from a different training sample; the target is the bull's-eye. Bias is the offset of the cloud's center, variance its spread}{figure.caption.51}{}}
+\newlabel{sec:L3-biasvar}{{3.5.1}{38}{The bias--variance decomposition}{subsection.3.5.1}{}}
+\newlabel{eq:bv-basic}{{3.2}{38}{The bias--variance decomposition}{equation.3.2}{}}
+\newlabel{lem:biasvar}{{3.1}{38}{The bias--variance decomposition}{box.3.1}{}}
+\newlabel{fig:L3-ucurve}{{3.4}{39}{The classical trade-off (schematic): bias$^2$ falls with complexity, variance rises, and the total error has a minimum at an intermediate complexity}{figure.caption.52}{}}
+\newlabel{sec:L3-heuristic}{{3.5.2}{39}{The classical heuristic}{subsection.3.5.2}{}}
+\newlabel{sec:L3-zhang}{{3.5.3}{39}{Zhang et al.: fitting noise}{subsection.3.5.3}{}}
+\newlabel{sec:L3-compression}{{3.6}{40}{Learning as compression}{section.3.6}{}}
+\newlabel{sec:L3-bayes}{{3.6.1}{40}{Bayesian prediction and log-loss}{subsection.3.6.1}{}}
+\newlabel{eq:posterior}{{3.3}{40}{Bayesian prediction and log-loss}{equation.3.3}{}}
+\newlabel{eq:predict}{{3.4}{40}{Bayesian prediction and log-loss}{equation.3.4}{}}
+\newlabel{sec:L3-kraft}{{3.6.2}{41}{Why the logarithm? Prediction is compression}{subsection.3.6.2}{}}
+\newlabel{thm:kraft}{{3.3}{41}{Why the logarithm? Prediction is compression}{box.3.3}{}}
+\newlabel{eq:regret}{{3.5}{42}{Regret}{equation.3.5}{}}
+\newlabel{sec:L3-solomonoff}{{3.6.3}{42}{Solomonoff's prior and the regret bound}{subsection.3.6.3}{}}
+\newlabel{thm:solomonoff}{{3.5}{42}{Solomonoff's prior and the regret bound}{box.3.5}{}}
+\newlabel{sec:L3-singular}{{3.7}{43}{Continuous parameters: from Rissanen to singular learning theory}{section.3.7}{}}
+\newlabel{sec:L3-evidence}{{3.7.1}{43}{Evidence and regret}{subsection.3.7.1}{}}
+\newlabel{thm:rissanen}{{3.6}{44}{Evidence and regret}{box.3.6}{}}
+\newlabel{fig:L3-regret}{{3.5}{45}{Regret of Bayesian prediction in two models of coin flips with true bias $\theta ^*=5/17$ (exact computation by summing over the binomial). \textbf {Finite class} $\{j/17\}_{j=1}^{16}$ with uniform prior: the regret saturates at $\log _2 16=4$ bits, the bound of Theorem~\ref {thm:solomonoff} (with $\Kc $ replaced by $-\log _2\pi $). \textbf {One continuous parameter}, uniform prior: it keeps growing like $\frac 12\log _2n$ and tracks the formula of Theorem~\ref {thm:rissanen} (dashed); at $n=10^5$ the two differ by $1.5\cdot 10^{-5}$ bits}{figure.caption.57}{}}
+\newlabel{sec:L3-watanabe}{{3.7.2}{45}{Singular learning theory}{subsection.3.7.2}{}}
+\newlabel{def:rlct}{{3.7}{45}{Singular learning theory}{box.3.7}{}}
+\newlabel{thm:watanabe}{{3.8}{45}{Singular learning theory}{box.3.8}{}}
+\newlabel{fig:L3-landscapes}{{3.6}{46}{Three divergence landscapes $K(\theta )$ on $[-1,1]^2$ (dark $=$ small; saturated at $K=1$); the set $W_0$ of true parameters is drawn in amber. \textbf {(a)} $K=\theta _1^2+\theta _2^2$: an isolated minimum, $\rlct =d/2=1$. \textbf {(b)} $K=\theta _2^2$: a whole valley; $\rlct =\tfrac 12$ (the codimension over two). \textbf {(c)} $K=\theta _1^2\theta _2^2$: a cross of true parameters with a singular crossing; $\rlct =\tfrac 12$ and $m=2$}{figure.caption.59}{}}
+\newlabel{ch:L4}{{4}{49}{Will AI drive a software intelligence explosion?}{chapter.4}{}}
+\newlabel{sec:L4-race}{{4.1}{50}{The race to automate AI research}{section.4.1}{}}
+\newlabel{sec:L4-jones}{{4.2}{51}{The basic model: Jones' growth theory}{section.4.2}{}}
+\newlabel{sec:L4-setup}{{4.2.1}{52}{Software quality and research effort}{subsection.4.2.1}{}}
+\newlabel{eq:L4-jones}{{4.1}{52}{Software quality and research effort}{equation.4.1}{}}
+\newlabel{sec:L4-loop}{{4.2.2}{52}{Closing the loop}{subsection.4.2.2}{}}
+\newlabel{eq:L4-RSC}{{4.2}{52}{Closing the loop}{equation.4.2}{}}
+\newlabel{eq:L4-closed}{{4.3}{52}{Closing the loop}{equation.4.3}{}}
+\newlabel{eq:L4-r}{{4.4}{52}{Closing the loop}{equation.4.4}{}}
+\newlabel{fig:L4-loop}{{4.2}{53}{The feedback loop of the Jones model once AIs do the research. Better software makes the AI researchers better (and cheaper to run), which raises research input $R$; research input drives progress, with a parallelization penalty $\lambda $ on the way in and a diminishing-returns factor $S^{-\beta }$ on the way out. Everything hinges on whether the loop \emph {amplifies} ($\lambda >\beta $)}{figure.caption.67}{}}
+\newlabel{prop:L4-loop}{{4.1}{53}{Closing the loop}{box.4.1}{}}
+\newlabel{fig:L4-traj}{{4.3}{54}{Solutions of $\dot u=k\,u^{r}$, $u=S^{\beta }$ (Proposition~\ref {prop:L4-loop}), drawn on a logarithmic scale: for $r<1$ the curve bends \emph {down} (growth slower than exponential), for $r=1$ it is a straight line, for $r>1$ it bends \emph {up} and reaches infinity at $T^*=u_0^{1-r}/((r-1)k)$ (dotted). Exact solutions, checked against numerical integration of the original equation \eqref {eq:L4-jones} with $R=CS$ (script \kbd {figures/gen\_data.py})}{figure.caption.68}{}}
+\newlabel{sec:L4-balanced}{{4.2.3}{54}{A back-of-the-envelope estimate of $r$}{subsection.4.2.3}{}}
+\newlabel{eq:L4-balanced}{{4.5}{54}{A back-of-the-envelope estimate of $r$}{equation.4.5}{}}
+\newlabel{fig:L4-shift}{{4.4}{55}{Schematic scaling curves (no data). \textbf {(a)} A constant efficiency gain translates the curve to the left by a fixed amount: the same loss needs $G$ times less compute at every scale. \textbf {(b)} Scale-dependent progress: a new method with a steeper curve saves little compute at small scale and a lot at large scale (here it is even worse at the smallest scales, where the curves cross). This is the situation of Section~\ref {sec:L4-scale}}{figure.caption.70}{}}
+\newlabel{sec:L4-measure}{{4.3}{55}{Measuring software progress and estimating $r$}{section.4.3}{}}
+\newlabel{sec:L4-extend}{{4.4}{57}{Beyond the basic model}{section.4.4}{}}
+\newlabel{sec:L4-ces}{{4.4.1}{57}{Experiments need compute: the CES production function}{subsection.4.4.1}{}}
+\newlabel{tab:L4-ces}{{4.1}{58}{The CES family. The last column is the \emph {elasticity of substitution} that gives the family its name\dagmark {}: $\sigma =\dd \ln (L/K)/\dd \ln \mathrm {MRS}$ along a level curve, where MRS is the ratio of the marginal products. Substitutes ($\sigma >1$) and complements ($\sigma <1$) are separated by Cobb--Douglas \citep {arrow1961}}{table.caption.74}{}}
+\newlabel{def:L4-ces}{{4.2}{58}{Experiments need compute: the CES production function}{box.4.2}{}}
+\newlabel{cesleg}{{\expandafter\protect\csname pgfplots@legend@to@name@cesleg\endcsname}{59}{What it means for an explosion}{pgfplotslink.4.4.0}{}}
+\newlabel{fig:L4-ces}{{4.5}{59}{The CES function with equal weights $\alpha =\tfrac 12$ (computed from the formula; script \kbd {figures/gen\_data.py}). \textbf {(a)} Output as the cognitive labor grows with experiment compute fixed at $K=1$. Substitutes ($\rho >0$) have no ceiling; for $\rho <0$ the output saturates at $\alpha ^{1/\rho }K$ (dashed), and for $\rho $ close to $0$ the ceiling is approached very slowly. \textbf {(b)} Level curves $R=1$ (colors as in the legend, for $\rho =1,0,-1,-4$): for complements they become an L-shape with asymptotes at $K=\alpha ^{1/|\rho |}$ and $L=(1-\alpha )^{1/|\rho |}$; no amount of the plentiful input compensates for a shortage of the other}{figure.caption.76}{}}
+\newlabel{box:L4-bottleneck}{{4.4.1}{60}{What the data say}{paragraph*.77}{}}
+\newlabel{sec:L4-two}{{4.4.2}{60}{Intelligence versus the number of AIs}{subsection.4.4.2}{}}
+\newlabel{sec:L4-scale}{{4.4.3}{61}{Scale-dependent progress}{subsection.4.4.3}{}}
+\newlabel{sec:L4-data}{{4.4.4}{62}{Data from inside the labs}{subsection.4.4.4}{}}
+\newlabel{sec:L4-questions}{{4.5}{62}{Take-aways and questions}{section.4.5}{}}
+\newlabel{disc:L4-credence}{{4.5}{62}{Take-aways and questions}{section.4.5}{}}

@@ -1,0 +1,188 @@
+% =====================================================================================
+%  Lecture 3, part B  —  sections 3.5 – 3.6
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Generalization: the classical picture and why it fails}\label{sec:L3-classical}
+\tsm{52:48}
+Now to the second theme. The question one wants answered: is the network learning \emph{some} function that happens to fit the training points, or \emph{the} function that will work on points it has not seen? Suppose we have a collection of data points (the training set) and then
+test how well the fitted model does on other points. The model needs enough \emph{degrees of freedom} to adapt to the data; if it has too few, it may be a poor approximation (\term{underfitting}). If it has very many, it may be very good at matching these particular points and still be a worse approximation than a model with fewer degrees of freedom,
+which chooses a simpler fit and ignores part of the noise (\term{overfitting}). So there are two worries: too little complexity in the class of functions, and too much.
+
+\subsection{The bias--variance decomposition}\label{sec:L3-biasvar}\tsm{56:18}
+A good way to write this is to decompose the loss. The tool is an elementary identity: for a random variable $Z$ and a constant $c$,
+\begin{equation}\label{eq:bv-basic}
+  \E\big[(Z-c)^2\big]\;=\;\Var(Z)+\big(\E Z-c\big)^2 ,
+\end{equation}
+which is proved by adding and subtracting $\E Z$ inside the square: the cross term is $2\,\E[Z-\E Z]\,(\E Z-c)=0$.
+
+\begin{lem}[Bias--variance--noise decomposition]\label{lem:biasvar}
+Let $Y=f(x)+\varepsilon$ be a fresh test observation at the fixed input $x$, where $\E\varepsilon=0$, $\Var\varepsilon=\sigma^2$ and $\varepsilon$ is independent of the training sample $S$. Let $\hat f_S$ be a predictor trained on $S$, with $\E_S\hat f_S(x)^2<\infty$. Then
+\[
+  \E_{S,\varepsilon}\Big[\big(Y-\hat f_S(x)\big)^2\Big]\;=\;\big(\E_S\hat f_S(x)-f(x)\big)^2\;+\;\Var_S\big(\hat f_S(x)\big)\;+\;\sigma^2 .
+\]
+The three terms are the \emph{squared bias}, the \emph{variance} and the irreducible \emph{noise}.
+\end{lem}
+\begin{proof}
+Fix $S$ and apply \eqref{eq:bv-basic} to $Z=Y$ and $c=\hat f_S(x)$: $\E_\varepsilon[(Y-\hat f_S(x))^2]=\sigma^2+(f(x)-\hat f_S(x))^2$. Now average over $S$ and apply \eqref{eq:bv-basic} to $Z=\hat f_S(x)$ and $c=f(x)$:
+$\E_S[(\hat f_S(x)-f(x))^2]=\Var_S(\hat f_S(x))+(\E_S\hat f_S(x)-f(x))^2$.
+\end{proof}
+
+The first term says how far the \emph{average} prediction is from the true value, the second how much the prediction \emph{fluctuates} from one sample to the next, the last is noise. The instructor shows the picture from Scott Fortmann-Roe's lecture notes\,\citep{fortmannroe2012} (Figure~\ref{fig:L3-bullseye}): low bias and low variance means hitting the bull's-eye repeatedly; low bias and high variance means the average is right but the shots are scattered;
+high bias and low variance is a tight cluster off target; high bias and high variance is scattered and off.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\scriptsize]
+  \newcommand{\bseye}[5]{% center x, center y, offset x, offset y, spread
+    \foreach \r/\c in {15/ink!6, 11.5/ink!11, 8/ink!18, 4.3/crimson!45} \fill[\c] (#1,#2) circle (\r);
+    \foreach \dx/\dy in {0.0/0.1, 0.9/0.3, -0.7/0.8, 0.4/-0.95, -0.95/-0.4, 0.6/0.95, -0.2/-0.25, 0.95/-0.45} {
+      \fill[accent!85!black] ({#1+#3+#5*\dx},{#2+#4+#5*\dy}) circle (0.85);
+    }
+  }
+  \bseye{24}{22}{0}{0}{2.2}   \bseye{80}{22}{0}{0}{9}
+  \bseye{24}{-16}{7}{-4.5}{2.2}   \bseye{80}{-16}{6}{-4}{9}
+  \node[anchor=south, font=\headsf\bfseries\scriptsize] at (24,38.5) {low variance};
+  \node[anchor=south, font=\headsf\bfseries\scriptsize] at (80,38.5) {high variance};
+  \node[anchor=east, font=\headsf\bfseries\scriptsize, rotate=90] at (2.5,22) {low bias};
+  \node[anchor=east, font=\headsf\bfseries\scriptsize, rotate=90] at (2.5,-16) {high bias};
+\end{tikzpicture}
+\caption{Bias and variance (after Fortmann-Roe). Each dot is a prediction from a different training sample; the target is the bull's-eye. Bias is the offset of the cloud's center, variance its spread.}
+\label{fig:L3-bullseye}
+\end{figure}
+
+\subsection{The classical heuristic}\label{sec:L3-heuristic}\tsm{1:00:37}
+In many situations there is a \emph{trade-off} between the two. As one increases the complexity of the class of functions, a minimization over a very complex class can find a function that fits the data points almost exactly, so \emph{bias tends to zero}. But once the complexity is very large the functions are complex enough to hit every training point, which makes them more sensitive to the sample: the solution is more scattered, and the \emph{variance} term grows (Figure~\ref{fig:L3-ucurve}).
+The recommended practice is to find the sweet spot.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.78\linewidth, height=0.46\linewidth, xmin=0, xmax=10, ymin=0, ymax=3.4, xlabel={complexity of the function class}, ylabel={expected error}, xtick=\empty, ytick=\empty,
+   legend style={at={(0.5,1.02)}, anchor=south, legend columns=4, draw=none, fill=none}]
+  \addplot[accent, line width=1.5pt, domain=0:10, samples=80] {2.4*exp(-0.45*x)};
+  \addplot[crimson, line width=1.5pt, domain=0:10, samples=80] {0.018*x^2};
+  \addplot[ink, line width=2.2pt, domain=0:10, samples=80] {2.4*exp(-0.45*x)+0.018*x^2+0.3};
+  \addplot[slate, dashed, line width=1.0pt, domain=0:10, samples=2] {0.3};
+  \legend{bias$^2$, variance, total, noise}
+  \draw[amber, dashed, line width=0.8pt] (axis cs:4.3,0) -- (axis cs:4.3,1.45);
+  \node[font=\sffamily\scriptsize, text=amber!80!black, anchor=south] at (axis cs:4.3,1.5) {sweet spot};
+\end{axis}
+\end{tikzpicture}
+\caption{The classical trade-off (schematic): bias$^2$ falls with complexity, variance rises, and the total error has a minimum at an intermediate complexity.}
+\label{fig:L3-ucurve}
+\end{figure}
+
+\begin{discussion}[A heuristic, not a law]
+A student asks whether this is a heuristic or a theoretical statement. It is a \emph{heuristic that can be proved as a theorem for particular classes} of learning procedures. It governed much of statistical learning theory in the 1990s and 2000s and made people care a lot about limiting the complexity of the class of functions one is allowed to use.
+It sits uneasily with scaling: as models get bigger, their complexity increases, so one would suspect that they will not generalize.
+There is also a worry about \emph{general intelligence}: it is supposed to solve complicated problems, so it must live in a complicated class of functions, and then the heuristic predicts that it will fit its data too tightly and learn complicated solutions instead of simple ones that generalize.
+\end{discussion}
+
+\subsection{Zhang et al.: fitting noise}\label{sec:L3-zhang}\tsm{1:03:13}
+Neural networks do not obey this heuristic. The instructor's example is the 2017 paper of Zhang and co-authors\,\citep{zhang2017}. They took the CIFAR image-classification problem and several architectures (convolutional networks and fully connected MLPs), first trained them on the usual task, and then \emph{randomized} things.
+
+\begin{exmp}[Training on noise]
+\begin{itemize}
+  \item \textbf{Random labels.} The labels of the training images are randomly permuted: dogs are no longer dogs, cats no longer cats. Networks of the same size fit this perfectly: \emph{zero training loss}.
+  \item \textbf{Random pixels.} Random perturbations of the pixels of the images: again zero training loss for all variants.
+\end{itemize}
+In other words, the network has enough capacity to learn \emph{anything} about this data. With random labels the test error is obviously large, since there is nothing to predict (the lecture quotes about $90\%$, chance level for ten classes): no information on unseen data can be extracted.
+\end{exmp}
+
+\paragraph{The puzzle.} Two kinds of learning seem to occur. With unstructured random data the model is large and expressive enough to \emph{memorize} everything. When it is given real images, it does not choose one of the vast number of solutions that fit the training data perfectly but do nothing useful on the test data;
+it chooses \emph{one that works on the test data too}. There are very many algorithms it could have found with zero training loss, the vast majority with very large test loss, and it does not pick them.
+This runs against the heuristic about the trade-off between complexity and variance, and shows that the capacity of the class cannot be what explains generalization: the same class can fit noise.
+
+\begin{beyond}[The lesson in modern terms]
+\citet{zhang2017} concluded that traditional capacity measures of the hypothesis class (such as VC dimension or Rademacher complexity) cannot explain generalization in deep networks, since the class fits random labels. What is special must be \emph{which} interpolating solution the training procedure selects (an \emph{implicit bias} of the architecture, optimizer and data). The rest of the lecture is a study of \emph{inductive bias as compression}: why simplicity weighting can give generalization even when the class is huge.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\section{Learning as compression}\label{sec:L3-compression}
+\tsm{1:07:25}
+How could one build an algorithm that learns in a way that generalizes to unseen data, in principle? The lecture takes the road of \emph{sequential prediction}: given $x_1,\dots,x_n$ drawn from a true distribution, predict $x_{n+1}$.
+
+\subsection{Bayesian prediction and log-loss}\label{sec:L3-bayes}\tsm{1:07:55}
+Let $\mathcal H$ be a class of hypotheses; each $h\in\mathcal H$ determines a probability distribution $p_h$ over sequences, and $p_h(x_{1:n})$ is the probability it gives to the first $n$ symbols. Fix a \term{prior} $\pi(h)$ on $\mathcal H$, a probability distribution ($\sum_h\pi(h)=1$; Solomonoff's prior below is only a sub-probability and will be normalized).
+The standard way to predict is Bayes' rule:
+\begin{align}
+  \pi(h\mid x_{1:n})&\;\propto\;\pi(h)\,p_h(x_{1:n}) &&\text{(posterior)},\label{eq:posterior}\\
+  \Pbayes(x_{n+1}\mid x_{1:n})&\;=\;\sum_{h}\pi(h\mid x_{1:n})\,p_h(x_{n+1}\mid x_{1:n}) &&\text{(prediction)}.\label{eq:predict}
+\end{align}
+Each hypothesis is weighted by how well it predicted the data seen so far, times its prior weight, and the predictions are averaged; one can view this as an iterative process: after seeing $k$ points one has a posterior, and the next point updates it. Equivalently, the prediction is that of the \term{Bayes mixture} $\Pbayes(x_{1:n})=\sum_h\pi(h)\,p_h(x_{1:n})$.
+
+How do we measure performance? By the \term{log-loss}, the negative logarithm of the probability assigned to the next point by Bayes' rule,
+\[
+  \ell_t\;=\;-\log\Pbayes(x_t\mid x_{<t})\;=\;\log\frac1{\Pbayes(x_t\mid x_{<t})}\qquad(\text{the ``surprise''}),
+\]
+which is large when the probability is small. By the chain rule of probability the losses add up to the \emph{total} log-probability of the data: $\sum_{t=1}^n\ell_t=-\log\Pbayes(x_{1:n})$. (This is also what language models minimize, Lecture~2.)
+
+\subsection{Why the logarithm? Prediction is compression}\label{sec:L3-kraft}\tsm{1:11:07}
+A student asks why the logarithm, or any particular function, is the right measure. The answer lies in a link between probability and \emph{coding}. Suppose we want to describe each of a collection of events in a fixed alphabet (say binary strings), \emph{briefly}: frequent events should get short descriptions and rare events longer ones, so that the total number of letters used is smallest. To avoid ambiguity one uses
+\term{prefix-free} codes: no codeword is the beginning of another.
+
+\begin{thm}[Kraft and Shannon]\label{thm:kraft}
+\textbf{(Kraft)} Codeword lengths $\ell(x)$ of a binary prefix-free code satisfy $\sum_x2^{-\ell(x)}\le1$; conversely, any lengths satisfying this inequality are the lengths of some prefix-free code. In particular for any distribution $P$ there is a code with $\ell(x)=\lceil-\log_2P(x)\rceil$.
+\textbf{(Shannon)} For data distributed according to $Q$, every prefix-free code has $\E_Q[\ell(X)]\ge\E_Q[-\log_2Q(X)]=:\Hent(Q)$, and using the code built from a different distribution $P$ costs $\E_Q[-\log_2P(X)]=\Hent(Q)+\KL(Q\,\|\,P)$ bits on average (ignoring the rounding of lengths to integers).
+\end{thm}
+\noindent So the log-loss of a predictor is the \emph{length of the code} it induces, and making good predictions and compressing well are the same problem. (Proofs are in the exercises at the end of the lecture; the lecture states both as known facts.)
+
+\begin{exmp}[A four-letter alphabet]
+Let $Q=(\tfrac12,\tfrac14,\tfrac18,\tfrac18)$ on $\{a,b,c,d\}$. The code $a\mapsto0$, $b\mapsto10$, $c\mapsto110$, $d\mapsto111$ is prefix-free; its lengths $1,2,3,3$ equal $-\log_2Q$, and $\sum2^{-\ell}=1$. The expected length is $1.75$ bits $=\Hent(Q)$. Coding the same data with the uniform distribution (length $2$ bits for each letter) costs $2$ bits,
+$0.25$ more: this is $\KL(Q\,\|\,U)=0.25$.
+\end{exmp}
+
+\paragraph{Kullback--Leibler divergence.}\tsm{1:18:57}
+For distributions $Q,P$ on the same space,
+\[
+   \KL(Q\,\|\,P)\;=\;\E_Q\Big[\log\frac{Q(X)}{P(X)}\Big]\;\ge\;0,
+\]
+with equality if and only if $P=Q$ (almost everywhere). It is the \emph{expected extra code length} when one switches from the code of the truth $Q$ to the code of $P$. It is not symmetric, but behaves like a distance between distributions.
+
+\paragraph{Regret.}\tsm{1:16:19}
+Suppose the data really follow some distribution $Q=p_{h^*}$ with $h^*\in\mathcal H$ (the \emph{realizable} case). Even the true distribution would incur an expected loss equal to the Shannon entropy, which cannot be beaten. What we can ask is how much \emph{worse} the Bayesian prediction is: the \term{regret}
+\begin{equation}\label{eq:regret}
+   R_n\;=\;\E_{Q}\Big[\log\frac{1}{\Pbayes(x_{1:n})}\Big]-\E_{Q}\Big[\log\frac{1}{Q(x_{1:n})}\Big]\;=\;\KL\big(Q^{(n)}\,\|\,\Pbayes^{(n)}\big),
+\end{equation}
+the extra code length for the first $n$ points ($Q^{(n)}$, $\Pbayes^{(n)}$ denote the laws of $x_{1:n}$). By the chain rule for the divergence, $R_n=\sum_{t=1}^n\E\,\KL\big(Q(\cdot\mid x_{<t})\,\|\,\Pbayes(\cdot\mid x_{<t})\big)$: the regret is the cumulated expected error of the one-step predictions.
+
+\begin{discussion}[Does the prior matter?]
+A student notes that the initial hypothesis is not in the notation. It is there, hidden in the Bayes mixture: it is the prior $\pi$. Does it stop mattering as $n$ grows? ``It depends on the class of hypotheses; I will get to that.''
+\end{discussion}
+
+\subsection{Solomonoff's prior and the regret bound}\label{sec:L3-solomonoff}\tsm{1:20:30}
+Which class and prior to choose? The instructor chooses an enormous class: \emph{all computable probability distributions}. By the heuristic of the previous section a huge class of hypotheses should lead to bad regret. We will see that it does not.
+For the prior one uses \term{Kolmogorov complexity}: for a hypothesis $h$, $\Kc(h)$ is the length of the shortest (prefix-free, for technical reasons) program that computes it on a fixed universal machine. Set
+\[
+   w(h)\;=\;2^{-\Kc(h)}\qquad(\text{Solomonoff's prior}).
+\]
+By Kraft's inequality $Z:=\sum_hw(h)\le1$, so $w$ is a sub-probability; the prior used in \eqref{eq:posterior}--\eqref{eq:predict} is its normalization $\pi=w/Z$. It is \term{Occam's razor} made quantitative: among the hypotheses that describe the data, simplicity, measured by program length, is rewarded.
+
+\begin{thm}[Regret is bounded by the Kolmogorov complexity of the truth]\label{thm:solomonoff}
+Let $\mathcal H$ be the (countable) class of computable distributions with the prior $\pi=w/Z$, $w(h)=2^{-\Kc(h)}$, and suppose the data are drawn from $Q=p_{h^*}$ with $h^*\in\mathcal H$. Then for \emph{every} $n$ and \emph{every} sequence $x_{1:n}$,
+\[
+   \log_2\frac{Q(x_{1:n})}{\Pbayes(x_{1:n})}\;\le\;\log_2\frac1{\pi(h^*)}\;=\;\Kc(h^*)+\log_2Z\;\le\;\Kc(h^*),
+\]
+and hence $R_n\le\Kc(h^*)$ bits for all $n$.
+\end{thm}
+\begin{proof}
+All terms in the Bayes mixture are non-negative, so it is at least the term of the true hypothesis: $\Pbayes(x_{1:n})=\sum_h\pi(h)p_h(x_{1:n})\ge\pi(h^*)\,p_{h^*}(x_{1:n})=\frac{2^{-\Kc(h^*)}}{Z}\,Q(x_{1:n})\ge2^{-\Kc(h^*)}\,Q(x_{1:n})$, because $Z\le1$. Take logarithms.
+\end{proof}
+\noindent In the words of the lecture: after $n$ observations the worst that can happen is the Shannon entropy, which cannot be reduced, \emph{plus} one extra term, the Kolmogorov complexity of the true hypothesis. If what we are trying to learn is a computable function with a short description, then this argument ``will certainly get us there''.
+
+\begin{intuition}
+The bound does not grow with $n$, and apart from the prior weight $\pi(h^*)$ of the truth it does not depend on how large or complex the class is (for a finite class with the uniform prior it is $\log_2\abs{\mathcal H}$). The prior does the work: it spends its probability mass mostly on simple hypotheses, so that a simple truth is quickly recognized, whereas the (infinitely many) complicated hypotheses can wait in the tail. Compare with the classical heuristic, in which complexity of the class itself is penalized; here the class is unrestricted and the penalty is \emph{soft}.
+\end{intuition}
+
+\paragraph{Consequences.} By the chain rule, $R_n=\sum_{t\le n}\E\,\KL_t\le\Kc(h^*)$ for all $n$, where $\KL_t=\KL\big(Q(\cdot\mid x_{<t})\,\|\,\Pbayes(\cdot\mid x_{<t})\big)$ is the one-step error. So the series $\sum_t\E\,\KL_t$ converges: the expected number of steps with $\KL_t>\epsilon$ is at most $\Kc(h^*)/\epsilon$ (the Bayes predictor can make large errors only finitely often, in expectation; the terms themselves need not be monotone), and the average regret $R_n/n\to0$. A student asks whether this is ``less than that for all $n$'': yes, the regret after $n$ data points is bounded by the same constant, so the per-point regret vanishes, ``in a sense, I am learning''.
+
+\begin{caution}
+The difficulty is that \emph{$\Kc$ is not computable}. The hope is that, for the kinds of problems neural networks learn, short programs exist, and that what a neural network does is effectively \emph{to give weight to solutions in a way that penalizes longer ones}. That is regularization: ``in your reading material there is a link to a paper that calls this the \emph{soft inductive bias}'', a penalty for more complicated programs closely related to penalizing large weights in the network.
+\end{caution}
+
+\begin{beyond}[Two literature pointers]
+The argument is Solomonoff's\,\citep{solomonoff1964,solomonoff1978} (his actual construction mixes over the class of \emph{enumerable semimeasures}, which makes the mixture itself enumerable; the proof above uses only the domination $\Pbayes\ge\pi(h^*)p_{h^*}$ and goes through verbatim); see \citet{li2019} for a complete treatment of Kolmogorov complexity, and \citet{grunwald2007} for the closely related MDL principle. The reading that calls it a \emph{soft inductive bias} is, I believe, \citet{wilson2025}, who argues that benign overfitting, double descent and the generalization of large models are not as mysterious as often thought, if inductive biases are soft preferences rather than hard restrictions.
+\end{beyond}
+
+\input{lectures/lecture03c}

@@ -1,0 +1,251 @@
+% =====================================================================================
+%  frontmatter.tex  —  title page, about, contents, roadmap
+% =====================================================================================
+
+% ---------------------------------------------------------------------- title page ---
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % --- navy block -----------------------------------------------------------------
+  \fill[ink] (current page.north west) rectangle ([yshift=-176mm]current page.north east);
+  % faint dot lattice
+  \begin{scope}[shift={(current page.north west)}]
+    \foreach \x in {6,12,...,204} \foreach \y in {6,12,...,170}
+      \fill[white, opacity=0.045] (\x mm, -\y mm) circle (0.45mm);
+  \end{scope}
+  % spectral bars  lambda_k ~ k^{-1.2}  (a nod to Lecture 2)
+  \begin{scope}[shift={([xshift=104mm, yshift=-171mm]current page.north west)}]
+    \foreach \k in {1,...,24} {
+      \pgfmathsetmacro{\h}{62/pow(\k,1.05)}
+      \pgfmathsetmacro{\o}{0.95-0.025*\k}
+      \fill[teal!55!white, opacity=\o] ({(\k-1)*3.7mm}, 0) rectangle ++(2.6mm, {\h mm});
+    }
+    \draw[amber!85!white, line width=1.6pt, rounded corners=0.5mm]
+      plot[domain=1:24, samples=60, variable=\x] ({(\x-1)*3.7mm+1.3mm}, {62/pow(\x,1.05)*0.86 mm});
+    \foreach \k in {1,3,6,12,24} {
+      \pgfmathsetmacro{\h}{62/pow(\k,1.05)*0.86}
+      \fill[amber!85!white] ({(\k-1)*3.7mm+1.3mm}, {\h mm}) circle (0.9mm);
+    }
+  \end{scope}
+  % --- text on the navy block -------------------------------------------------------
+  \node[anchor=north west, text=amber!80!white, font=\headsf\scshape\small, inner sep=0pt]
+    at ([xshift=22mm, yshift=-32mm]current page.north west)
+    {\addfontfeature{LetterSpace=12}Fields Institute \textperiodcentered{} Shared Graduate Course};
+  \node[anchor=north west, text=white, inner sep=0pt, text width=130mm, align=left]
+    at ([xshift=22mm, yshift=-44mm]current page.north west)
+    {{\headsf\bfseries\fontsize{44}{47}\selectfont Mathematics\\[2pt] for AI Safety}};
+  \draw[amber!85!white, line width=2pt] ([xshift=22mm, yshift=-88mm]current page.north west) -- ++(24mm,0);
+  \node[anchor=north west, text=white, inner sep=0pt, text width=120mm, align=left]
+    at ([xshift=22mm, yshift=-94mm]current page.north west)
+    {{\lightsf\fontsize{19}{23}\selectfont Lecture Notes}\\[3pt]
+     {\headsf\fontsize{12.5}{16}\selectfont\color{white!85!ink} Lectures 1--8 \enspace\textperiodcentered\enspace
+        Capability trajectories, scaling laws, generalization, LLM training, misalignment \&\ jailbreaks}};
+  % --- course info below the block ------------------------------------------------
+  \node[anchor=north west, text=ink, inner sep=0pt, text width=150mm, align=left]
+    at ([xshift=22mm, yshift=-188mm]current page.north west)
+    {{\headsf\bfseries\large MAT1510\enspace\textperiodcentered\enspace Fall 2026}\\[5pt]
+     {\sffamily\small Instructor\enspace\textbf{Yevgeny Liokumovich}, University of Toronto}\\[1pt]
+     {\sffamily\small Lectures\enspace 14, 16, 21, 23, 28 and 30 September and 5 and 7 October 2026 \enspace(in person at the Fields Institute and on Zoom; Lecture 4 by guest speaker Anson Ho)}};
+  % eight little cards (two rows of four)
+  \begin{scope}[shift={([xshift=22mm, yshift=-214mm]current page.north west)}]
+    \foreach \i/\c/\t/\s in {1/accent/{Capability trajectories}/{why mathematics, and why now},
+                            2/teal/{Scaling laws}/{a solvable model: gradient flow, NTK},
+                            3/plum/{Generalization\\as compression}/{Bayes, Solomonoff, singular learning},
+                            4/moss/{Recursive\\self-improvement}/{growth model, compute bottlenecks},
+                            5/amber/{Bayes, SGD and grokking}/{posterior, Langevin, Fourier},
+                            6/crimson/{How LLMs are trained}/{transformers, RLHF, constitutions},
+                            7/ink/{Personas and\\misalignment}/{emergent misalignment, reward hacking},
+                            8/slate/{Jailbreaks and geometry}/{prompt injection, high dimensions}} {
+      \pgfmathsetmacro{\xx}{mod(\i-1,4)*42.5}
+      \pgfmathsetmacro{\yy}{-int((\i-1)/4)*29.5}
+      \node[anchor=north west, inner sep=0pt] at (\xx mm, \yy mm) {%
+        \begin{tikzpicture}
+          \fill[\c!8!white] (0,0) rectangle (39.5mm,-26.5mm);
+          \fill[\c] (0,0) rectangle (1.6mm,-26.5mm);
+          \node[anchor=north west, font=\headsf\bfseries\fontsize{21}{21}\selectfont, text=\c, inner sep=0pt] at (4.5mm,-1.6mm) {\i};
+          \node[anchor=north west, font=\headsf\bfseries\footnotesize, text=ink, text width=31mm, inner sep=0pt] at (4.5mm,-10.6mm) {\t};
+          \node[anchor=north west, font=\sffamily\scriptsize, text=slate, text width=33mm, inner sep=0pt] at (4.5mm,-19mm) {\s};
+        \end{tikzpicture}};
+    }
+  \end{scope}
+  % disclaimer
+  \node[anchor=south west, text=slate, inner sep=0pt, text width=165mm, align=left, font=\sffamily\scriptsize]
+    at ([xshift=22mm, yshift=14mm]current page.south west)
+    {Unofficial notes compiled from the public lecture recordings; they have not been reviewed by the instructor, and any errors are mine.
+     Items marked \textcolor{amber}{$\dagger$} go beyond what was said in the lecture. Compiled \today.};
+\end{tikzpicture}
+\end{titlepage}
+
+% ---------------------------------------------------------------------- about --------
+\chapter*{About these notes}
+\addcontentsline{toc}{chapter}{\protect\nonumberline About these notes}
+\markboth{About these notes}{About these notes}
+
+These are study notes for the first eight lectures of \emph{Mathematics for AI Safety}, a graduate course taught by Yevgeny Liokumovich
+at the Fields Institute and the University of Toronto. The course asks which mathematical questions are raised by AI safety and alignment,
+and aims to leave every student with a viable research project. The eight lectures covered here are, in order: a motivational tour of AI
+capabilities and futures; a first mathematical model of \emph{scaling laws}; a longer discussion of \emph{why large models generalize}; a guest lecture on whether AI could drive a \emph{software intelligence explosion};
+a lecture on \emph{Bayesian learning, SGD and grokking}; a descriptive lecture on \emph{how large language models are built and trained}; a lecture on \emph{personas, emergent misalignment and reward hacking}, with a first toy mathematical model; and a lecture on \emph{jailbreaks, prompt injection} and the first facts about the geometry of activation spaces.
+
+\begin{tcolorbox}[notebox={accent}{5}]
+\textbf{How the notes are organized.} Each lecture opens with a \emph{lecture map}: a bar drawn to scale over the recording, with timestamps.
+Sections follow the order of the lecture, so the notes can be read alongside the video. Every lecture ends with a short list of
+take-aways and a few questions; the technical lectures also have exercises.
+\end{tcolorbox}
+
+\setlecturevideo{0QIE9tQLV0E}% example link on this page points into Lecture 1
+\section*{Reading guide}
+\begin{description}[style=nextline, leftmargin=1.2em, itemsep=0.55em]
+  \item[Margin timestamps] A small \ts{12:30}-style link in the margin jumps to that moment of the recording (click it; the one shown here opens Lecture~1 at 12:30).
+  \item[Plain text and the colored boxes] These reflect what was said or shown in the lecture, in my own words. Where the lecturer
+    stated a result, I give a precise statement; where the board derivation was only sketched, I reconstruct the steps.
+  \item[\textcolor{amber}{Beyond the lecture}\dagmark] Boxes with this label hold material that is \emph{mine}: literature context, complete proofs,
+    numerical checks, extra examples. They are there to help, but they are not what the lecturer said.
+  \item[\textcolor{crimson}{\ddag}] marks a detail I recovered from imperfect captions (a name, a number, a date). Please double-check it before
+    citing it.
+  \item[Figures] Every figure is drawn by me. Unless a caption says otherwise, curves are \emph{schematic} and carry no measured data. The
+    figures built on computation (the spectral power law, Bayes regret, the compute frontier, the growth-model trajectories and the CES curves, the Langevin histogram, the grokking runs, the temperature and preference-model curves, the persona-model simulations, the high-dimensional angle statistics) come from the scripts in \kbd{figures/}: \kbd{gen\_data.py}, \kbd{grokking.py} and \kbd{gen\_data\_L5.py} to \kbd{gen\_data\_L8.py}, with \kbd{check\_L4\_bottleneck.py} for a numerical check.
+\end{description}
+
+\section*{Sources and caveats}
+The only source for the lectures is the recordings. YouTube provides auto-generated captions only; names, numbers and technical terms were
+sometimes garbled, and the slides and the blackboard are not visible in them. For Lecture~3 the English track was missing altogether, and I worked from machine translations of the captions, which I cross-checked
+against one another. I fixed what I could by comparing with the public record (for example the METR report on the incident of Lecture~1 and the papers and posts that the later lectures discuss)
+and by recomputing every formula; a few passages of the blackboard derivations were inaudible, and there I reconstructed
+the argument myself and say so. The mathematics of every lecture was re-derived and checked numerically (the scripts in \kbd{figures/} reproduce the numbers quoted). Lectures~2 to~8 were also re-read by an independent automated reviewer (a read-only referee run on the finished text, without web access), whose findings (mostly missing hypotheses and overstated remarks, and in Lecture~7 one proposition that was false as first stated) have been incorporated; the bibliography entries of Lectures~5 to~8 were additionally checked one by one against the primary pages. The referees could not check the statements about 2026 events and papers; those rest on my own reading of search results, and the boxes say where. Remaining errors are mine.
+
+Lectures~1 and~4 to~8 discuss recent events and papers (a security incident, mathematical results found by AI systems, forecasting scenarios, incidents of model misbehavior, new attacks). The notes report
+these \emph{as presented in the lecture}, with pointers to primary sources where I found them and with a note on what I could and could not verify in the boxes marked \dagmark. They should be read as an account of the lectures,
+not as independent reporting. A number of the sources are from 2026 and were read through search results and page-summarizing tools; where that is so, the box says it.
+
+
+\section*{Conventions}
+$\log$ is the natural logarithm unless the unit is bits (then $\log_2$). $f\asymp g$ means $c\,g\le f\le C\,g$ for constants $0<c\le C$.
+$\ip{\cdot}{\cdot}$ is an inner product, $\Hil$ the space of square-integrable functions for the measure $\mu$. A glossary of notation and
+terms is in the appendix.
+
+\clearpage
+{\hypersetup{linkcolor=ink}\tableofcontents}
+
+% ---------------------------------------------------------------------- roadmap -------
+\clearpage
+\chapter*{Where the notes sit in the course}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Where the notes sit in the course}
+\markboth{Course roadmap}{Course roadmap}
+
+The course page at the Fields Institute describes MAT1510 as a course on \emph{mathematical questions motivated by AI safety and alignment}, drawing on statistics and
+probability, learning theory, geometry, optimization, game theory and logic; its topics include capability scaling and forecasting, the theory of deep learning, the geometry and interpretability of neural representations,
+scalable oversight, multi-agent interactions and formal approaches to safety. Many foundational questions are open, the page says, and the student should aim to develop a viable research project with a novel contribution by the end of the course. The plan
+has ten topical weeks followed by two weeks of project presentations, and the lecturer expects the contents to change as the field develops. The topical weeks are \emph{topics}, not calendar weeks: a topic can take two or three lectures.
+In this volume, Lectures~1, 2 and~4 belong to the first topic, Lectures~3 and~5 to the second, Lectures~6 and~7 to the third, and Lecture~8 to the fourth (its last quarter already starts the fifth).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \def\w{23}\def\h{24}\def\wt{19.2}
+  \foreach \i/\t/\c in {1/AI capability trajectories/accent, 2/Theory of deep learning/plum, 3/LLM training stages/crimson,
+                       4/Jailbreaking and adversarial attacks/slate, 5/Geometry of neural activations/slate,
+                       6/Interpretability for control and alignment/slate, 7/Game theory of multi-agent interactions/slate,
+                       8/Scalable oversight/slate, 9/Safety guarantees/slate, 10/Agency and decision theory/slate} {
+    \pgfmathtruncatemacro{\col}{mod(\i-1,5)}
+    \pgfmathtruncatemacro{\row}{int((\i-1)/5)}
+    \pgfmathsetmacro{\xx}{\col*(\w+2)}
+    \pgfmathsetmacro{\yy}{-\row*(\h+8)}
+    \ifnum\i<5
+      \node[anchor=north west, inner sep=0pt] at (\xx,\yy) {%
+        \begin{tikzpicture}\fill[\c!12!white, draw=\c, line width=0.9pt, rounded corners=1.2mm] (0,0) rectangle (\w mm,-\h mm);
+          \node[anchor=north west, font=\headsf\bfseries\footnotesize, text=\c, inner sep=0pt] at (2mm,-1.6mm) {Week \i};
+          \node[anchor=north west, font=\headsf\bfseries\scriptsize, text=ink, text width=\wt mm, inner sep=0pt] at (2mm,-6.5mm) {\t};
+        \end{tikzpicture}};
+    \else\ifnum\i=5
+      \node[anchor=north west, inner sep=0pt] at (\xx,\yy) {%
+        \begin{tikzpicture}\fill[\c!6!white, draw=\c, dashed, line width=0.9pt, rounded corners=1.2mm] (0,0) rectangle (\w mm,-\h mm);
+          \node[anchor=north west, font=\headsf\bfseries\footnotesize, text=\c, inner sep=0pt] at (2mm,-1.6mm) {Week \i};
+          \node[anchor=north west, font=\headsf\scriptsize, text=ink, text width=\wt mm, inner sep=0pt] at (2mm,-6.5mm) {\t};
+        \end{tikzpicture}};
+    \else
+      \node[anchor=north west, inner sep=0pt] at (\xx,\yy) {%
+        \begin{tikzpicture}\fill[ink!4!white, draw=rule, line width=0.6pt, rounded corners=1.2mm] (0,0) rectangle (\w mm,-\h mm);
+          \node[anchor=north west, font=\headsf\bfseries\footnotesize, text=slate, inner sep=0pt] at (2mm,-1.6mm) {Week \i};
+          \node[anchor=north west, font=\sffamily\scriptsize, text=slate, text width=\wt mm, inner sep=0pt] at (2mm,-6.5mm) {\t};
+        \end{tikzpicture}};
+    \fi\fi
+  }
+  % lecture pills (colours of the lectures)
+  \tikzset{pill/.style={text=white, rounded corners=1mm, font=\headsf\bfseries\fontsize{6.5}{7}\selectfont, inner sep=2pt, anchor=north west}}
+  \node[pill, fill=accent] at (1.5,-19.6) {L1};  \node[pill, fill=teal] at (7.9,-19.6) {L2};  \node[pill, fill=moss] at (14.3,-19.6) {L4};
+  \node[pill, fill=plum] at (26.7,-19.6) {L3};   \node[pill, fill=amber] at (33.1,-19.6) {L5};
+  \node[pill, fill=crimson] at (51.9,-19.6) {L6};\node[pill, fill=ink] at (58.3,-19.6) {L7};
+  \node[pill, fill=slate] at (77.1,-19.6) {L8};
+  \node[pill, fill=slate!70!white] at (102.3,-19.6) {L8 (start)};
+  \node[anchor=north west, font=\sffamily\scriptsize, text=slate, text width=100mm] at (0,-58) {Weeks 11--12: project presentations. Topics may change as the field develops.};
+\end{tikzpicture}
+\caption{The official outline (weeks 1--10) with the lectures of these notes placed on their topics; the colors are those of the title page. The weeks are topics, not calendar weeks. L4 (the guest lecture) belongs to the first topic (``automation of AI R\&D and feedback loops''); L8 ends with the start of the fifth topic. Source: the course page at the Fields Institute (retrieved October 2026).}
+\end{figure}
+
+\small
+\begin{description}[style=nextline, leftmargin=1.2em, itemsep=0.35em, font=\headsf\color{ink}\small]
+  \item[Week 1. AI capability trajectories] Neural scaling laws and their theoretical explanations; capability evaluations and current modeling techniques for future capabilities; automation of AI R\&D and feedback loops.
+  \item[Week 2. Theory of deep learning] Learning theories; SGD versus Bayes; generalization of neural networks; architectures and large-width limits; training dynamics and phase transitions (grokking, in-context learning).
+  \item[Week 3. LLM training stages] Next-token pre-training; supervised fine-tuning and instruction tuning; reward modeling, RLHF and RLAIF; direct preference optimization; reinforcement learning for reasoning.
+  \item[Week 4. Jailbreaking and adversarial attacks] Jailbreaks and adversarial prompting; prompt injection and attacks on LLM agents; red-teaming and automated attacks; robustness of safety fine-tuning and defenses.
+  \item[Week 5. Geometry of neural activations] The linear representation hypothesis, computation in superposition, linear probes, sparse autoencoders, feature manifolds.
+  \item[Week 6. Interpretability for control and alignment] Applications of SAEs and probes; the logit lens; activation steering; persona alignment and monitoring of safety-relevant representations.
+  \item[Week 7. Game theory of multi-agent interactions] Cooperation and competition among AI agents; repeated games, bargaining and coordination; multi-agent learning; commitment, collusion and open-source game theory.
+  \item[Week 8. Scalable oversight] How weaker evaluators can supervise stronger systems; safety via debate; weak-to-strong generalization; decomposition and AI-assisted evaluation.
+  \item[Week 9. Safety guarantees] Formal verification in AI safety; robustness certificates and provable guarantees for networks; runtime monitoring; statistical versus worst-case guarantees.
+  \item[Week 10. Agency and decision theory] Mathematical models of agency and goal-directed behavior; utility theory, sequential decision-making and causal models of incentives; instrumental goals, power-seeking and corrigibility.
+\end{description}
+\normalsize
+
+\section*{The eight lectures at a glance}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{6mm}>{\raggedright\arraybackslash}p{20mm}>{\raggedright\arraybackslash}p{12mm}>{\raggedright\arraybackslash}p{51mm}>{\raggedright\arraybackslash}p{9mm}>{\raggedright\arraybackslash}p{8mm}@{}}
+\toprule
+\textbf{L} & \textbf{Date} & \textbf{Length} & \textbf{Subject} & \textbf{Topic} & \textbf{Page}\\
+\midrule
+\hyperref[ch:L1]{1} & Mon 14 Sep & 1\,h 44 & Capability trajectories; an incident of agents defeating their evaluation; three futures; why mathematics & 1 & \pageref{ch:L1}\\
+\hyperref[ch:L2]{2} & Wed 16 Sep & 58\,min & Scaling laws; gradient flow, the NTK, a solvable spectral model & 1 & \pageref{ch:L2}\\
+\hyperref[ch:L3]{3} & Mon 21 Sep & 1\,h 46 & Why large models generalize: compression, Bayes, Solomonoff, singular learning theory & 2 & \pageref{ch:L3}\\
+\hyperref[ch:L4]{4} & Wed 23 Sep & 55\,min & Guest A.\,Ho (Epoch AI): a software intelligence explosion? & 1 & \pageref{ch:L4}\\
+\hyperref[ch:L5]{5} & Mon 28 Sep & 1\,h 52 & Bayesian learning, SGD and grokking & 2 & \pageref{ch:L5}\\
+\hyperref[ch:L6]{6} & Wed 30 Sep & 1\,h 10 & How a large language model is built and trained (held online) & 3 & \pageref{ch:L6}\\
+\hyperref[ch:L7]{7} & Mon 5 Oct & 1\,h 41 & Personas, emergent misalignment, reward hacking; a toy model & 3 & \pageref{ch:L7}\\
+\hyperref[ch:L8]{8} & Wed 7 Oct & 57\,min & Jailbreaks, prompt injection; geometry of activation spaces (start) & 4--5 & \pageref{ch:L8}\\
+\bottomrule
+\end{tabular}
+\caption{The lectures of this volume. ``Topic'' is the week of the official outline in which the subject belongs. After the mid-semester break (12--16 October) the course continues on 19 October with Lecture~9. The lecture times are Monday 10:00--12:00 and Wednesday 10:00--11:00 (Eastern Time); office hours are on Fridays 10:00--11:00.}
+\end{table}
+
+\section*{Practical facts from the course page}
+\begin{itemize}[itemsep=0.1em]
+  \item \textbf{Course.} Fields Academy Shared Graduate Course, University of Toronto code MAT1510; 14 September to 9 December 2026; in person at the Fields Institute (Room 309, Stewart Library) and online via Zoom; capacity 60 students, auditing allowed; no formal prerequisites (optional pre-reading is suggested in the syllabus). Registration is closed. All recordings are on the Fields Institute's YouTube channel (a playlist is linked from the course page, and each lecture has a page of its own).
+  \item \textbf{Assessment.} The course is graded on the final project (see the project ideas at the end of these notes and the lecturer's own list of directions described in Lecture~5).
+  \item \textbf{Suggested readings} (course page): the \emph{Iliad Intensive} curriculum; D.\ Hendrycks, \emph{Introduction to AI Safety, Ethics, and Society}; and the lecture notes of three similar courses: R.\ Grosse (Toronto), L.\ Levine (Cornell), B.\ Barak (Harvard). Details and pointers by topic are in the chapter ``Further reading''.
+\end{itemize}
+
+\section*{A short summary of the eight lectures}
+\textbf{Lecture 1} argues that AI capabilities have followed a fast exponential trend, walks through a vivid recent incident in which AI agents coordinated to defeat
+their own evaluation, surveys three scenarios for the future (a plateau, gradual disempowerment, recursive self-improvement), and explains why mathematics should
+contribute.
+
+\textbf{Lecture 2} introduces scaling laws and derives one from scratch in a solvable model of gradient-flow training: a power-law spectrum
+for the neural tangent kernel and the target function yields a power law for the loss in training time.
+
+\textbf{Lecture 3} tests that picture against data,
+adds a heuristic for scaling with model size via the dimension of the data manifold, and then asks the central puzzle of deep learning theory: why do
+over-parameterized networks generalize? The answer sketched is \emph{prediction as compression}: Bayesian inference with a simplicity prior (Solomonoff)
+has bounded regret even for huge hypothesis classes, and in parametric models the regret is governed by an effective dimension (Rissanen, Watanabe).
+
+\textbf{Lecture 4} (a guest lecture by Anson Ho of Epoch AI) asks whether AI that automates AI research could drive a \emph{software intelligence explosion}: in the Jones growth model the self-improvement loop blows up in finite time exactly when the returns to software R\&D exceed one; the lecture discusses how to estimate that number, how compute bottlenecks (a CES production function) can switch the feedback off, and what data from inside the labs would help.
+
+\textbf{Lecture 5} continues the theory of deep learning. After announcements about the course projects it reviews Bayesian learning (the evidence $Z_n$ is both the probability of the data and the normalizer of the posterior, and the predictive distribution is $Z_{n+1}/Z_n$), restates the regret bounds of Lecture~3, and works one Gaussian example in two ways: exactly, with a Gaussian prior, and by a Solomonoff-style discretization. The lesson is that complexity, here the norm of the parameter, must be penalized. The lecture then connects Bayes with training (MAP is regularized fitting; Langevin dynamics and SGLD sample the posterior; SGD behaves similarly to it) and ends with grokking on modular addition and the start of a Bayesian theory of it, in which, the instructor guesses, a one-hidden-layer network computes in the Fourier basis; the lecture stops before the main insight.
+
+\textbf{Lecture 6} (a descriptive tour, held online) explains what an LLM is and how it is trained. A transformer turns tokens into vectors, applies layers of causal attention and MLPs of one width, converts the last vector into probabilities by a softmax with temperature, samples a token and repeats; what it actually sees is a hidden system prompt, the history and a hidden chain of thought, and agents add a harness and four layers of monitoring. Training has three stages: pre-training on the next-token log-loss (which, by Kraft--Shannon, is compression and not shallow statistics), mid-training, and post-training (SFT, RLHF and RLAIF, RL with verifiable rewards, DPO). The lecture ends with the safety rationale: RLHF does not scale and breeds sycophancy, so Claude's Constitution and OpenAI's Model Spec are trained in instead.
+
+\textbf{Lecture 7} asks why language models misbehave. It reads early oddities (Bing's ``Sydney'', a vending-machine agent that claims to wear a blazer) and recent papers (emergent misalignment after fine-tuning on insecure code, natural misalignment from reward hacking in production RL, inoculation prompting) through the \emph{persona selection model}: pre-training teaches a model to simulate many characters, post-training elicits one assistant persona, and narrow training changes which persona the model takes itself to be, so behavior generalizes along the character rather than the data. A toy model treats safety training as an exponential tilt $e^{-\beta V}$ of a posterior over personas: with two personas it only delays the bad one, linearly in $\beta\Delta V$, and discrete and continuous persona spaces predict exponential and power-law decay in the context length.
+
+\textbf{Lecture 8} (7 October 2026) begins with a hands-on tutorial for replicating emergent misalignment on a small model with LoRA, and then turns to attacks: what a jailbreak is (a concept recognized rather than defined), the obscure-alphabet, persona and nested-fiction examples, a classroom game on extracting a hidden system prompt, and prompt injection into agents whose only channel is text. The defenses (refusal training, input and output classifiers, probes on activations) are tested by boundary point jailbreaking, a black-box attack that sees only ``flagged / not flagged''; the remedy is to judge many prompts together. The last ten minutes begin the geometry of activations: in dimension $2000$ a random point of the ball is almost on the boundary, random directions are $90^\circ\pm1.3^\circ$ apart, and among $2\cdot10^5$ of them the smallest angle is still about $81^\circ$.
+

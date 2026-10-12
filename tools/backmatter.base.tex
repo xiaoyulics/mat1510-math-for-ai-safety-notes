@@ -1,0 +1,300 @@
+% =====================================================================================
+%  backmatter.tex  —  formula sheet, notation, glossary, further reading, project ideas
+% =====================================================================================
+\chapter*{Formula sheet}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Formula sheet}
+\markboth{Formula sheet}{Formula sheet}
+\small
+\renewcommand{\arraystretch}{1.5}
+\newcommand{\fsrow}[2]{\textsf{\scriptsize\bfseries\textcolor{slate}{#1}} & $\displaystyle #2$\\}
+\newenvironment{fsblock}[2]{\begin{tcolorbox}[enhanced jigsaw, breakable, colback=#1!5!white, colframe=#1, boxrule=0pt, frame hidden, borderline west={2.6pt}{0pt}{#1}, sharp corners, left=9pt, right=6pt, top=5pt, bottom=5pt, before skip=8pt, after skip=8pt]%
+ {\headsf\bfseries\color{#1}\normalsize #2}\par\vspace{2pt}\begin{tabular}{@{}>{\raggedright\arraybackslash}p{33mm}@{\hspace{3mm}}>{\raggedright\arraybackslash}p{82mm}@{}}}{\end{tabular}\end{tcolorbox}}
+
+\begin{fsblock}{accent}{Lecture 1 \textperiodcentered{} capability trajectories}
+\fsrow{latent-capability model}{s_{m,b}=\sigma\big(a_b(C_m-D_b)\big),\ \ \sigma(z)=\tfrac1{1+e^{-z}}}
+\fsrow{horizon vs.\ ECI}{h(t)=h_0\,2^{(\mathrm{ECI}(t)-\mathrm{ECI}_0)/5}}
+\fsrow{score window}{\Delta C_{10\%\to90\%}=2\ln9/a_b\approx4.4/a_b}
+\fsrow{feedback loop}{\dot x=kx^{p}\ \Rightarrow\ x=\big(x_0^{1-p}-(p-1)kt\big)^{-\frac1{p-1}},\ \ T^*=\tfrac{x_0^{1-p}}{(p-1)k}\ (p>1)}
+\end{fsblock}
+
+\begin{fsblock}{teal}{Lecture 2 \textperiodcentered{} scaling laws and the spectral model}
+\fsrow{compute}{C\approx6ND}
+\fsrow{parametric scaling law}{L(N,D)=E+AN^{-a}+BD^{-b},\ \ N^*\propto C^{\frac b{a+b}},\ D^*\propto C^{\frac a{a+b}}}
+\fsrow{function-space dynamics}{\partial_tg_t=-T_tg_t,\ \ K_\theta(x,x')=\langle\nabla_\theta f_\theta(x),\nabla_\theta f_\theta(x')\rangle}
+\fsrow{frozen-kernel solution}{L(\theta_t)=\tfrac12\sum_ka_k^2e^{-2\lambda_kt}+L_\infty}
+\fsrow{power-law scaling}{\lambda_k\asymp k^{-\alpha},\ a_k^2\asymp k^{-1-\alpha\beta}\ \Rightarrow\ L(t)\asymp t^{-\beta}}
+\fsrow{sharp constant}{\tfrac12\sum_kk^{-1-\alpha\beta}e^{-2tk^{-\alpha}}\sim\tfrac{\Gamma(\beta)}{\alpha\,2^{\beta+1}}\,t^{-\beta}}
+\end{fsblock}
+
+\begin{fsblock}{plum}{Lecture 3 \textperiodcentered{} generalization as compression}
+\fsrow{parameter scaling}{L(N)\asymp N^{-4/d}\quad(d=\text{intrinsic dimension})}
+\fsrow{bias--variance}{\mathbb E(Y-\hat f_S(x))^2=\mathrm{bias}^2+\mathrm{Var}+\sigma^2}
+\fsrow{Kraft / Shannon}{\sum_x2^{-\ell(x)}\le1,\ \ \mathbb E_Q\ell\ge\mathrm H(Q),\ \ \mathbb E_Q[-\log_2P]=\mathrm H(Q)+\mathrm{KL}(Q\|P)}
+\fsrow{regret}{R_n=\mathrm{KL}\big(Q^{(n)}\|P_{\mathrm B}^{(n)}\big)=\sum_{t\le n}\mathbb E\,\mathrm{KL}\big(Q(\cdot|x_{<t})\|P_{\mathrm B}(\cdot|x_{<t})\big)}
+\fsrow{Solomonoff}{\pi(h)\propto2^{-\mathsf K(h)}\ \Rightarrow\ R_n\le\mathsf K(h^*)\ \text{bits, for all }n}
+\fsrow{Rissanen / Clarke--Barron}{R_n=\tfrac d2\log\tfrac n{2\pi e}+\log\tfrac{\sqrt{\det I(\theta^*)}}{\pi(\theta^*)}+o(1)}
+\fsrow{Watanabe}{R_n=\lambda_{\mathrm{RLCT}}\log n-(m-1)\log\log n+O(1),\ \ \lambda_{\mathrm{RLCT}}\le\tfrac d2}
+\fsrow{Morse--Bott}{\text{codimension }r\ \Rightarrow\ \lambda_{\mathrm{RLCT}}=r/2}
+\end{fsblock}
+
+\begin{fsblock}{moss}{Lecture 4 \textperiodcentered{} software intelligence explosion}
+\fsrow{Jones model}{\dot S/S=R^{\lambda}S^{-\beta},\ \ \tfrac{\mathrm d}{\mathrm dt}S^{\beta}=\beta R^{\lambda}}
+\fsrow{closed loop $R=CS$}{\dot S=C^{\lambda}S^{1+\lambda-\beta}}
+\fsrow{blow-up condition}{\lambda>\beta\ \ \big(\Leftrightarrow r=\lambda/\beta>1\text{ for }\beta>0\big)}
+\fsrow{blow-up time}{u=S^{\beta}:\ \dot u=ku^{r},\ \ T^*=\tfrac{u_0^{1-r}}{(r-1)k},\ \ k=\beta C^{\lambda}}
+\fsrow{balanced growth}{g_S=r\,g_R}
+\fsrow{halving time of the compute requirement}{S=e^{kt}:\ T_{1/2}=\tfrac{\ln2}{k};\ \ 8\text{ months}\Rightarrow2.8\times\text{ per year}}
+\fsrow{CES}{R=\big(\alpha K^{\rho}+(1-\alpha)L^{\rho}\big)^{1/\rho},\ \ \sigma=\tfrac1{1-\rho}}
+\fsrow{ceiling ($\rho<0$)}{R<\alpha^{1/\rho}K}
+\fsrow{bottleneck (constant $K$)}{\text{blow-up}\iff\theta r>1,\ \ \theta=1,\ 1-\alpha,\ 0\ \ (\rho>0,\ \rho=0,\ \rho<0)}
+\fsrow{scale-dependent gain}{G=\big(\tfrac{A_1}{A_2}\big)^{1/a_1}C_2^{\,a_2/a_1-1}}
+\end{fsblock}
+%%ANCHOR FORMULA
+\normalsize
+
+\chapter*{Notation and glossary}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Notation and glossary}
+\markboth{Notation and glossary}{Notation and glossary}
+
+\section*{Notation}
+\small
+\renewcommand{\arraystretch}{1.22}
+% a block of notation rows (a tabular, not a longtable: longtable page splits raise a harmless but fatal-under-halt-on-error TeX error in TeX Live 2026)
+\newenvironment{notationchunk}{\par\medskip\noindent
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{26mm}>{\raggedright\arraybackslash}p{80mm}>{\raggedright\arraybackslash}p{13mm}@{}}
+  \toprule\textbf{Symbol} & \textbf{Meaning} & \textbf{Where}\\\midrule}{\bottomrule\end{tabular}\par}
+\begin{notationchunk}
+$C_m,\ D_b,\ a_b,\ \sigma$ & latent capability of model $m$, difficulty and slope of benchmark $b$, logistic function (local to \S1.4) & L1\\
+$N,\ D,\ C$ & parameters, training tokens, training compute; $C\approx6ND$ & L2\\
+$E,A,B,a,b$ & constants and exponents in $L(N,D)=E+AN^{-a}+BD^{-b}$ & L2\\
+$\mathcal X,\ \mu$ & input space and data distribution; $\Hil$ is the space of square-integrable functions & L2\\
+$f_\theta,\ f^*$ & network with weights $\theta\in\R^n$; target function & L2\\
+$L(\theta)$ & loss, $\tfrac12\norm{f_\theta-f^*}^2_{\Hil}$ & L2\\
+$g_t$ & residual $f_{\theta_t}-f^*$ & L2\\
+$K_\theta,\ T_\theta$ & neural tangent kernel and its integral operator & L2\\
+$\lambda_k,\ \varphi_k$ & eigenvalues (decreasing) and eigenfunctions of $T$ & L2\\
+$a_k$ & coefficient of the target on $\varphi_k$ & L2\\
+$\alpha,\ \beta,\ s$ & spectral exponents: $\lambda_k\asymp k^{-\alpha}$, $a_k^2\asymp k^{-1-\alpha\beta}=k^{-1-s}$ & L2, L3\\
+$m(t)$ & cutoff index $\approx t^{1/\alpha}$ between learned and unlearned modes & L2\\
+$d$ & intrinsic dimension of the data manifold, or number of parameters in \S3.7 & L3\\
+$\mathrm{bias},\ \Var$ & bias and variance of a predictor & L3\\
+$p_h,\ \pi,\ \Pbayes$ & hypothesis distribution, prior, Bayes mixture & L3\\
+$\ell(x)$ & codeword length (bits) & L3\\
+$\Hent(Q)$ & Shannon entropy & L3\\
+$\KL(Q\|P)$ & Kullback--Leibler divergence & L3\\
+$\Kc(h)$ & prefix Kolmogorov complexity of $h$ & L3\\
+$R_n$ & regret (redundancy) after $n$ observations & L3\\
+$Z_n$ & evidence $\int\pi(\theta)\prod_ip_\theta(x_i)\,\dd\theta$ & L3\\
+$I(\theta)$ & Fisher information matrix & L3\\
+$\rlct,\ m$ & real log canonical threshold and its multiplicity (Watanabe) & L3\\
+$S,\ R,\ C$ & software quality, research input, compute that runs the AIs (Jones model; $\lambda,\beta$ here are local to L4) & L4\\
+$\lambda,\ \beta,\ r$ & parallelization penalty, diminishing-returns exponent, returns to software R\&D $r=\lambda/\beta$ & L4\\
+$g_S,\ g_R$ & growth rates $\dot S/S$ and $\dot R/R$ & L4\\
+$K,\ L,\ \rho,\ \sigma$ & CES inputs (experiment compute, cognitive labor), substitution parameter, elasticity of substitution $1/(1-\rho)$ & L4\\
+$\alpha$ & weight of the first input in the CES function, $0<\alpha<1$ (not the spectral exponent of L2) & L4\\
+$G$ & compute-equivalent gain of an algorithmic improvement & L4\\
+\end{notationchunk}
+%%ANCHOR NOTATION
+
+\normalsize
+
+\section*{Glossary}
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=0.35em]
+  \item[Agent] A language model together with a harness that lets it act (run commands, browse) and see the results. (L1)
+  \item[Chain of thought] The reasoning text a model writes before answering; monitoring it is a key oversight tool. (L1)
+  \item[Reward hacking] Achieving the measured objective by an unintended route, e.g.\ obtaining the flag without exploiting the vulnerability. (L1)
+  \item[Scalable oversight] Methods by which weaker or fewer overseers (including other AIs) can supervise stronger systems. (L1, later in the course)
+  \item[Recursive self-improvement] AI systems that accelerate AI research so that capability growth feeds on itself. (L1)
+  \item[Scaling law] A power-law relation between loss and compute, data or parameters. (L2)
+  \item[Gradient flow] The continuous-time limit of gradient descent, $\dot\theta=-\nabla L(\theta)$. (L2)
+  \item[Neural tangent kernel] $K_\theta(x,x')=\ip{\nabla_\theta f_\theta(x)}{\nabla_\theta f_\theta(x')}$; in the infinite-width limit it is constant during training. (L2)
+  \item[Lazy / NTK regime] Training in which the kernel does not change; opposed to \emph{feature learning}, in which it does. (L2)
+  \item[Bias--variance trade-off] The decomposition of expected squared error into bias$^2$, variance and noise. (L3)
+  \item[Grokking] A delayed, abrupt rise of test accuracy long after the training set is fitted. (L3)
+  \item[In-context learning] Inferring a task from examples in the prompt, without weight updates. (L3)
+  \item[Prefix-free code, Kraft inequality] A code in which no codeword begins another; its lengths satisfy $\sum2^{-\ell}\le1$. (L3)
+  \item[Regret] Extra expected code length (or log-loss) of a predictor over the true distribution; equals a KL divergence. (L3)
+  \item[Kolmogorov complexity] Length of the shortest program that outputs an object; not computable. (L3)
+  \item[Solomonoff prior] Weights $2^{-\Kc(h)}$ (normalized) over computable hypotheses; a formalization of Occam's razor. (L3)
+  \item[Singular model] A parametric model whose Fisher information is degenerate; the set of true parameters is not a point. (L3)
+  \item[Real log canonical threshold (RLCT)] The exponent in the volume of near-optimal parameters, $V(\epsilon)\sim\epsilon^{\rlct}$; replaces $d/2$ in the regret $\rlct\log n$. (L3)
+  \item[Software intelligence explosion] A self-reinforcing acceleration of AI capability driven by AI improving its own software (algorithms, data) with a fixed stock of hardware. (L4)
+  \item[Returns to software R\&D ($r$)] $r=\lambda/\beta$ in the Jones model; for $\beta>0$ the closed research loop blows up in finite time iff $r>1$. (L4)
+  \item[CES production function] $R=(\alpha K^\rho+(1-\alpha)L^\rho)^{1/\rho}$; for $\rho<0$ the inputs are complements and one can bottleneck the other. (L4)
+  \item[Compute-equivalent gain] The factor by which training compute would have to be scaled to match the benefit of an algorithmic improvement. (L4)
+%%ANCHOR GLOSSARY
+\end{description}
+
+\chapter*{Video index}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Video index}
+\markboth{Video index}{Video index}
+Every section of the notes with the moment of the recording where it starts (click the time).
+\small
+\renewcommand{\arraystretch}{1.28}
+\newcommand{\vrow}[3]{\textcolor{accent}{\textbf{#1}} & #2 & \ts{#3}\\}
+\newcommand{\vsub}[3]{\textcolor{slate}{#1} & \hspace{1.2em}\textcolor{slate}{#2} & \ts{#3}\\}
+\newenvironment{vidtable}[2]{\needspace{13\baselineskip}\par\medskip{\headsf\bfseries\color{ink}\normalsize #1}\par\smallskip\setlecturevideo{#2}%
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{11mm}>{\raggedright\arraybackslash}p{95mm}r@{}}\toprule}{\bottomrule\end{tabular}\par}
+
+\begin{vidtable}{Lecture 1 \textperiodcentered{} capability trajectories}{0QIE9tQLV0E}
+\vrow{1.1}{A course that is unusual on purpose}{0:00}
+\vrow{1.2}{What AI systems can do: from GPT-2 to today}{8:31}
+\vrow{1.3}{Case study: agents that defeated their own evaluation}{15:51}
+\vsub{1.3.1}{The setting}{16:54}
+\vsub{1.3.2}{Act I: a message board made of a package cache}{20:04}
+\vsub{1.3.3}{Act II: the flag, the scorer, and Hugging Face}{26:16}
+\vsub{1.3.4}{The game theory of a collective}{29:22}
+\vsub{1.3.5}{How it ended, and Act III}{31:26}
+\vrow{1.4}{Measuring capability trajectories}{47:06}
+\vrow{1.5}{Three futures}{51:49}
+\vsub{1.5.2}{B: gradual disempowerment}{55:26}
+\vsub{1.5.3}{C: recursive self-improvement}{1:05:30}
+\vrow{1.6}{Toward good outcomes}{1:21:15}
+\vrow{1.7}{Why mathematics?}{1:31:44}
+\vsub{1.7.2}{A map of the field}{1:36:56}
+\end{vidtable}
+
+\begin{vidtable}{Lecture 2 \textperiodcentered{} scaling laws and a solvable model}{-XmDvvHqfLI}
+\vrow{2.1}{Oppenheimer and the atmosphere}{1:01}
+\vrow{2.2}{Research, regulation and coordination}{4:08}
+\vrow{2.3}{Scaling laws}{10:31}
+\vrow{2.4}{From gradient flow to the neural tangent kernel}{18:00}
+\vsub{2.4.2}{The residual obeys a linear equation}{23:35}
+\vrow{2.5}{The spectral solution and the scaling law}{38:40}
+\vsub{2.5.2}{Solving the equation}{46:37}
+\vsub{2.5.3}{A power law in the training time}{54:46}
+\end{vidtable}
+
+\begin{vidtable}{Lecture 3 \textperiodcentered{} why do big models generalize?}{q_Dj4-QNJV8}
+\vrow{3.1}{Observations without a theory}{0:01}
+\vrow{3.2}{The spectral law revisited}{11:28}
+\vrow{3.3}{Does the spectral picture match data?}{34:41}
+\vrow{3.4}{Scaling with parameters: the dimension of the data manifold}{45:20}
+\vrow{3.5}{Generalization: the classical picture and why it fails}{52:48}
+\vsub{3.5.1}{The bias--variance decomposition}{56:18}
+\vsub{3.5.3}{Zhang et al.: fitting noise}{1:03:13}
+\vrow{3.6}{Learning as compression}{1:07:25}
+\vsub{3.6.3}{Solomonoff's prior and the regret bound}{1:20:30}
+\vrow{3.7}{Continuous parameters: from Rissanen to singular learning theory}{1:32:26}
+\vsub{3.7.2}{Singular learning theory}{1:41:55}
+\end{vidtable}
+
+\begin{vidtable}{Lecture 4 \textperiodcentered{} will AI drive a software intelligence explosion?}{7AaNkZuYfmk}
+\vrow{4.1}{The race to automate AI research}{0:01}
+\vrow{4.2}{The basic model: Jones' growth theory}{7:18}
+\vsub{4.2.2}{Closing the loop}{9:50}
+\vsub{4.2.3}{A back-of-the-envelope estimate of $r$}{11:55}
+\vrow{4.3}{Measuring software progress and estimating $r$}{13:27}
+\vrow{4.4}{Beyond the basic model}{24:22}
+\vsub{4.4.1}{Experiments need compute: the CES production function}{24:54}
+\vsub{4.4.2}{Intelligence versus the number of AIs}{34:45}
+\vsub{4.4.3}{Scale-dependent progress}{36:50}
+\vsub{4.4.4}{Data from inside the labs}{39:30}
+\vrow{4.5}{Take-aways and questions}{42:38}
+\end{vidtable}
+%%ANCHOR VIDEOINDEX
+\normalsize
+
+\chapter*{Hints and answers to the exercises}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Hints and answers to the exercises}
+\markboth{Hints and answers}{Hints and answers}
+\begin{beyond}[Mine, not the lecturer's]
+Short answers for self-checking; the numerical ones were verified by computer. Try the exercise first.
+\end{beyond}
+\small
+\paragraph{Lecture 1.}
+\textbf{4.} Separate variables: $x^{-p}\dd x=k\,\dd t$ gives $x^{1-p}=x_0^{1-p}+(1-p)kt$; for $p<1$ this is $x\propto(t+t_0)^{1/(1-p)}$, a polynomial. ``AI helps AI research a bit'' is a feedback with small $p$ (or one that saturates).
+\textbf{5.} $\Delta C=\big(\ln\tfrac{0.8}{0.2}-\ln\tfrac{0.2}{0.8}\big)/a_b=2\ln4/1.5\approx1.85$ units of the latent scale.
+
+\paragraph{Lecture 2.}
+\textbf{1.} $\nabla_\theta f_\theta(x)=\psi(x)$ does not depend on $\theta$, so $K=\ip{\psi(x)}{\psi(x')}$ and $T_t\equiv T$. \quad
+\textbf{2.} $r_k(0)=\ip{f_0}{\varphi_k}-a_k$; square, sum, and add the constant from $\ker T$. \quad
+\textbf{3.} Invert $A_\pm t^{-\beta}\approx\epsilon$; then $m=t^{1/\alpha}$. \quad
+\textbf{4.} With $g(x)=x^{-1-\alpha\beta}e^{-2tx^{-\alpha}}$ one has $\sum_{k\ge1}g(k)=\int_0^\infty g+O(\max g)$ and $\int_0^\infty g=\frac1\alpha(2t)^{-\beta}\Gamma(\beta)$ (substitute $u=2tx^{-\alpha}$); halve it for the factor $\tfrac12$. \quad
+\textbf{5.} Modes with $k<k_*=\alpha'^{-1}\ln t$ are learned. The tail is $\sum_{k>k_*}e^{-\gamma k}\asymp e^{-\gamma k_*}=t^{-\gamma/\alpha'}$ and the modes just below $k_*$ contribute the same order (writing $k=k_*-j$, they give $t^{-\gamma/\alpha'}\sum_{j\ge1}e^{\gamma j}e^{-2e^{\alpha'j}}$, a convergent sum). Numerically, the log--log slope is $-\gamma/\alpha'$ to three digits. \quad
+\textbf{6.} $L(\theta_t)\to L_\infty=\tfrac12\norm{P_{\ker T}f^*}^2>0$; one must change the architecture (width, features) so that $f^*\in\overline{\operatorname{ran}T}$.
+
+\paragraph{Lecture 3.}
+\textbf{1.} Jensen: $-\KL(Q\|P)=\E_Q\log\frac{P}{Q}\le\log\E_Q\frac PQ\le\log1=0$, with equality iff $P/Q$ is constant $Q$-a.e. \quad
+\textbf{2.} In the binary tree of codewords, a codeword of length $\ell$ ``owns'' a fraction $2^{-\ell}$ of the leaves at any deeper level, and these sets are disjoint for a prefix-free code. Conversely, assign codewords in order of increasing length. Then $\E_Q\ell-\Hent(Q)=\KL(Q\|2^{-\ell})\ge-\log_2\sum_x2^{-\ell(x)}\ge0$. \quad
+\textbf{3.} bias$^2=(1-c)^2\mu^2$, variance $=c^2\sigma^2/n$; the total is minimized at $c^*=\mu^2/(\mu^2+\sigma^2/n)<1$ whenever $\sigma^2>0$, with minimal value $\mu^2(\sigma^2/n)/(\mu^2+\sigma^2/n)$ against $\sigma^2/n$ at $c=1$; the saving is largest when $n\mu^2/\sigma^2$ is small. \quad
+\textbf{4.} $\Pbayes\ge\pi(h^*)p_{h^*}$ gives the bound; as $n\to\infty$ the posterior concentrates on $h^*$ (distinguishability), so $\Pbayes\sim\pi(h^*)Q$ on typical sequences. \quad
+\textbf{5.} $Z_n=\int_0^1\theta^k(1-\theta)^{n-k}\dd\theta=\frac{k!(n-k)!}{(n+1)!}$; the regret is the binomial average of $k\ln\theta^*+(n-k)\ln(1-\theta^*)+\ln\big((n+1)\binom nk\big)$ (this is the computation behind Figure~\ref{fig:L3-regret}). \quad
+\textbf{6.} $\theta_1^2+\theta_2^4$: $V\asymp\epsilon^{1/2}\epsilon^{1/4}$, so $\rlct=\tfrac34$, $m=1$. $\theta_1^4\theta_2^2$: $V=8\epsilon^{1/4}-4\epsilon^{1/2}$ (Lebesgue area), so $\rlct=\tfrac14$, $m=1$ (the poles $-\tfrac14$ and $-\tfrac12$ are distinct, in contrast to $\theta_1^2\theta_2^2$). For $\theta_1^2+\theta_2^4$ the area is $B(\tfrac14,\tfrac32)\,\epsilon^{3/4}\approx3.50\,\epsilon^{3/4}$. \quad
+\textbf{7.} $4/d=2$ for $d=2$; $d=4/0.076\approx53$. \quad
+\textbf{8.} With random labels no short program explains the data, so the true hypothesis has $\Kc\approx n$ bits and the bound of Theorem~\ref{thm:solomonoff} is vacuous: fitting the training set is possible but only by memorization, and nothing is predicted on new inputs (test error at chance).
+\paragraph{Lecture 4.}
+\textbf{1.} For $\lambda=0.8$, $\beta=0.5$, $C=2$, $S_0=1$: $r=1.6$, $k=\beta C^{\lambda}=0.5\cdot2^{0.8}\approx0.871$, $T^*=1/((r-1)k)\approx1.914$ (checked against numerical integration of the original equation). \quad
+\textbf{2.} $u^{1-r}\approx(1-r)kt$ for large $t$, so $u\approx((1-r)kt)^{1/(1-r)}$ and $S=u^{1/\beta}$; $\log S\sim\frac1{\beta(1-r)}\log t$ grows like a logarithm of time, not linearly in $t$. \quad
+\textbf{3.} $g_S=\ln2/(8/12)\approx1.04$ per year and $g_R=\ln1.4\approx0.336$, so $r\approx3.1$; for $16$ months, $g_S\approx0.52$ and $r\approx1.55$. Going from $3\times$ to $10\times$ per year multiplies $g_S$ by $\ln10/\ln3\approx2.1$. \quad
+\textbf{4.} Write $R=\exp\big(\tfrac1\rho\log(\alpha K^\rho+(1-\alpha)L^\rho)\big)$ and expand to first order in $\rho$ (or use l'H\^opital) to get $K^\alpha L^{1-\alpha}$; for $\rho\to-\infty$ divide by $\min(K,L)$ and let the terms with ratio $>1$ vanish. The marginal rate of substitution is $\frac{\alpha}{1-\alpha}(L/K)^{1-\rho}$, so $\dd\ln(L/K)/\dd\ln\mathrm{MRS}=1/(1-\rho)$. \quad
+\textbf{5.} $\alpha K^\rho+(1-\alpha)L^\rho>\alpha K^\rho$ and $x\mapsto x^{1/\rho}$ is decreasing for $\rho<0$; the bound is approached as $L^\rho\to0$. For $\alpha=\frac12$: $2^{2.5}\approx5.66$, $2$ and $2^{0.25}\approx1.19$ times $K$. \quad
+\textbf{6.} The upper bound is in the box \emph{What a bottleneck does to the explosion condition}; for equality use $R\ge\min(K,CS)$ and $r>1$ (end of its proof). With $\lambda=1.5$, $\beta=1$ ($r=1.5$) and $g_K=0.1$ the rate is $r\,g_K=0.15$ per unit time (checked numerically; for $\lambda=0.5$, $r<1$, it would be $0$). \quad
+\textbf{7.} $\dot S=C^\lambda S^{1+\kappa\lambda-\beta}$, so the loop blows up iff $\kappa\lambda>\beta$ (equivalently $\kappa r>1$, for $\beta>0$). For $\kappa<1$ the research labor delivered grows less than proportionally with the software index, which weakens the loop. \quad
+\textbf{8.} $C_1=(A_1/\ell)^{1/a_1}$ and $C_2=(A_2/\ell)^{1/a_2}$; eliminate $\ell$. The gain is scale-independent iff $a_1=a_2$; the speaker's two numbers give the exponent $\ln(26/6.3)/\ln(10^{17}/(3\cdot10^{15}))\approx0.40$. \quad
+\textbf{9.} After passing: $0.1/(0.1+0.9\cdot0.9)\approx0.110$; after failing: $0$.
+%%ANCHOR HINTS
+\normalsize
+
+\chapter*{Further reading}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Further reading}
+\markboth{Further reading}{Further reading}
+\section*{From the course page and the instructor's homepage}
+The course page lists the following suggested reading and related course notes; the instructor's homepage adds resources written for mathematicians. (Everything in this section is as listed on those pages in October 2026; I have not read all of it.)
+\begin{itemize}
+  \item The \emph{Iliad Intensive} course materials (a Google document linked from the course page; the version I looked at is dated April 2026): the notes of a month-long, full-time alignment course for mathematicians, physicists and theoretical computer scientists, organized in clusters (Alignment; Learning; Abstractions, Representations and Interpretability; Agency; Safety Guarantees and their Limits).
+  \item D.\ Hendrycks, \emph{Introduction to AI Safety, Ethics, and Society} (\url{https://www.aisafetybook.com}).
+  \item Related courses: R.\ Grosse (University of Toronto), \emph{AI Alignment} (CSC2547, winter 2024); L.\ Levine (Cornell), \emph{Math for AI Safety} (MATH 7710, fall 2024); B.\ Barak (Harvard), \emph{AI Safety} (CS~2881; I read its fall 2026 page).
+  \item \emph{AI Safety for Mathematicians} (\url{https://mathforaisafety.org}), a starting point for mathematicians maintained by J.~Tsimerman with contributions from A.~Critch, L.~Levine, Y.~Liokumovich and A.~Shankar; research directions: developing good heuristics, interpretability and feature manifolds, open-source game theory.
+  \item L.\ Levine's survey \emph{Math for AI safety: an invitation for mathematicians}\,\citep{levine2026}, organized by field of mathematics with an open problem in each section, and the companion repository of open problems announced on his course page.
+  \item The lecturer's own papers on AI safety, listed on his homepage (for instance on a geometric description of representations in language models, arXiv:2607.27092, and on non-power-seeking agents, arXiv:2401.03529), and the Fields \emph{Mathematical AI} seminar, whose talks are announced to the course (Lectures~5 and~7 mention some).
+\end{itemize}
+
+\section*{Where the related curricula cover the same ground}
+\begin{beyond}[A rough map, mine]
+The table matches the topics of the official outline with modules or sessions of the related curricula, as printed on their pages (accessed October 2026). The matching is my own judgment and only approximate; the sessions of Barak's fall 2026 course are still being added.
+\end{beyond}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{27mm}>{\raggedright\arraybackslash}p{37mm}>{\raggedright\arraybackslash}p{55mm}@{}}
+\toprule
+\textbf{Topic (lectures)} & \textbf{Iliad Intensive modules} & \textbf{Other courses and resources}\\
+\midrule
+Capability trajectories, automation of AI R\&D (L1, L2, L4) & Prerequisites; starred readings include ``Measuring AI ability to complete long tasks'' and ``Gradual disempowerment'' & Barak: \emph{RSI \& AI Trajectories} (AI~2027, AI~2040) and \emph{Economic Impact of AI}, whose reading list includes Jones and Tonetti, \emph{Past automation and future A.I.: how weak links tame the growth explosion} (2026 draft; the title suggests a link to the bottleneck discussion of Lecture~4, which I have not checked); Grosse: \emph{Introduction + AI timelines}\\
+Theory of deep learning (L2, L3, L5) & B.1 Principles of Learning; B.2 Mysteries of Deep Learning; B.3 Singular Learning Theory; B.4 Training Dynamics & Grosse: \emph{Universal Induction and AIXI}; the instructor's own pointer in Lecture~5 to Hutter's agents\\
+LLM training stages (L6, L7) & A.2 Alignment in Practice (readings include Constitutional AI, Deliberative Alignment and Emergent Misalignment) & Barak: \emph{Modern LLM Training and Inference} (e.g.\ Austin et al., \emph{All the Transformer Math You Need to Know}; Lambert on instruction tuning and RLHF), \emph{Grading, Reward Hacking, and Alignment} (Gao, Schulman and Hilton on reward-model overoptimization; Baker et al.\ on monitoring reasoning models; MacDiarmid et al.), \emph{Model Policies} (OpenAI Model Spec; Claude's Constitution); Grosse: \emph{Intro to LLMs and RLHF}\\
+Jailbreaks and robustness (L8) & (see A.2) & Grosse: \emph{Harmlessness and Robustness}\\
+Geometry of activations; interpretability (weeks 5--6) & C.2 Mechanistic Interpretability; C.4 Abstractions and Latents & Levine: Anthropic's papers on transformer circuits, toy models of superposition and monosemanticity; probing and steering (Burns et al., representation engineering, activation patching); Barak: \emph{AI Interpretability}; Grosse: \emph{Model Internals and Interpretability} (two sessions); \emph{AI Safety for Mathematicians}: ``Interpretability and feature manifolds''\\
+Multi-agent interactions (week 7) & D.2 Idealised Agency; D.3 Agent Foundations & Levine: open-source game theory (Critch, Dennis, Russell), robust cooperation in the prisoner's dilemma, logical induction; Grosse: \emph{Cooperation}; \emph{AI Safety for Mathematicians}: ``Open-source game theory''\\
+Scalable oversight, guarantees, agency (weeks 8--10) & E.1 Debate; E.3 Worst-case Interpretability; D.1 Reinforcement Learning; D.4 World Models & Levine: causal incentives (Everitt et al.), coherence theorems, Dutch books, Aumann agreement; Grosse: \emph{Value Uncertainty}, \emph{Truthfulness}\\
+\bottomrule
+\end{tabular}
+\normalsize
+
+\paragraph{By lecture\dagmark.} \textbf{Lecture 1:} the METR report on the Hugging Face incident\,\citep{metr2026} and the Redwood companion post\,\citep{redwood2026}; the METR time-horizon paper\,\citep{kwa2025}; the Epoch Capabilities Index\,\citep{epoch2025eci}; \emph{Gradual disempowerment}\,\citep{kulveit2025}; \emph{AI~2027}\,\citep{aifutures2025}; Wiener's essay\,\citep{wiener1960}; Sutton's \emph{Bitter Lesson}\,\citep{sutton2019}.
+\textbf{Lecture 2:} \citet{kaplan2020}; \citet{hoffmann2022}; \citet{jacot2018}; \citet{chizat2019}; \citet{bahri2024}; \citet{bordelon2025}.
+\textbf{Lecture 3:} \citet{zhang2017}; \citet{sharma2022}; \citet{fortmannroe2012}; for Solomonoff induction and MDL, \citet{li2019} and \citet{grunwald2007}; for singular learning theory, \citet{watanabe2009,watanabe2018}; \citet{wilson2025} for the soft-inductive-bias viewpoint.
+\textbf{Lecture 4:} \citet{jones1995}; \citet{bloom2020}; \citet{ho2024}; \citet{besiroglu2024}; \citet{whitfill2025}; \citet{davidson2025}; the AI Futures model update\,\citep{aifutures2025dec}; the OpenAI post\,\citep{openai2026ra}.
+%%ANCHOR READING
+
+\chapter*{Project ideas}
+\addcontentsline{toc}{chapter}{\protect\nonumberline Project ideas}
+\markboth{Project ideas}{Project ideas}
+\begin{beyond}[Mine, not the lecturer's]
+The course is meant to end in a research project. The following are directions that the material of Lectures 1--8 suggests to me; they are starting points for discussion, not claims that the problems are open or tractable.
+\end{beyond}
+
+\begin{enumerate}
+  \item \textbf{Feedback loops with bottlenecks (L1).} The toy ODE $\dot x=kx^p$ blows up in finite time for $p>1$. Study $\dot x=F(x,R)$ with explicit resource constraints (compute, data, energy, physical build-out) and characterize when the blow-up is replaced by a finite plateau; calibrate against time-horizon and ECI data.
+  \item \textbf{Collusion against an evaluator (L1).} Model the incident as a game among many agents with a hidden scorer: who volunteers for risky information-gathering, what commitments are credible, and what \emph{mechanism design} (randomized audits, information barriers, isolation guarantees) makes cooperation unprofitable.
+  \item \textbf{Provable isolation (L1).} What can be proved, in an information-flow (non-interference) sense, about a sandbox that shares a cache or a registry? Formalize the covert channel of Figure~\ref{fig:L1-channel} and the weakest isolation property that rules it out.
+  \item \textbf{Beyond the frozen kernel (L2).} How do the exponents $\alpha,\beta$ of Proposition~\ref{prop:powerlaw} change when the kernel evolves? Compute the first correction to the spectral solution in a model where $T_t$ depends on $g_t$, and compare with the hard-task exponents of \citet{bordelon2025}.
+  \item \textbf{Spectra of language models (L2, L3).} Measure the spectrum of the Gauss--Newton matrix (equivalently the NTK, see the remark after Lemma~\ref{lem:T}) and the target coefficients along training for open-weight models; do power laws appear, and do $\alpha,\beta$ explain the observed loss exponents?
+  \item \textbf{Exponents from geometry (L3).} Combine the manifold-dimension argument with measured intrinsic dimensions of text and image data to test $L\propto N^{-4/d}$ across scales; where does it fail (non-smooth targets, discrete data)?
+  \item \textbf{Learning coefficients and capability jumps (L3).} Estimate the local learning coefficient\,\citep{lau2023} along checkpoints of a model that shows grokking or in-context learning; does a drop in effective dimension precede the jump?
+  \item \textbf{What prior does SGD implement? (L3).} Compare the generalization behavior of SGD with the Solomonoff-style prior $2^{-\Kc}$ on controlled families of tasks of known program length (algorithmic datasets) and look for a simple complexity measure that predicts sample efficiency.
+  \item \textbf{Monitoring as compression (L1, L3).} Cast chain-of-thought monitoring as a detection problem with a rate-distortion budget: how much information about an agent's intent must a reasoning trace leak, and how does \emph{less legible} reasoning reduce it?
+  \item \textbf{Bottlenecks in the Jones loop (L4).} Starting from the bottleneck box of Lecture~4 (Section~\ref{sec:L4-ces}), calibrate $(r,\rho,\alpha)$ jointly on public series (capability index or time horizon, compute, research headcount) and propagate the uncertainty. Because the exponent $\theta$ jumps at $\rho=0$ while the blow-up time diverges as $\rho\downarrow0$, ask a question with a horizon (how probable is a tenfold gain in software quality within ten years?) rather than the sign of $\theta r-1$.
+  \item \textbf{Leading indicators (L4).} Design a statistical test that detects a change from exponential to super-exponential progress as early as possible in a noisy capability series, and quantify its false-alarm rate and detection delay.
+%%ANCHOR PROJECTS
+\end{enumerate}

@@ -1,0 +1,260 @@
+% =====================================================================================
+%  Lecture 7, part D  --  section 7.8 (a toy mathematical model)
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\needspace{10\baselineskip}
+\section{A toy mathematical model}\label{sec:L7-toy}
+\tsm{1:10:30}
+After a pause for questions the instructor turns to what he calls ``rephrasing the whole thing in a slightly more mathematical language''. Nothing deep is claimed; the aim is a model in which the persona story can be written down, computed with and, in principle, tested.
+
+\subsection{Personas, context and the posterior}\label{sec:L7-setup}\tsm{1:11:00}
+The assistant character is a \term{latent variable}: a point $z$ of a \emph{persona space} $M$, a discrete set or a manifold. The \term{context} $c$ is everything the model has seen so far: the user's prompt, the system prompt, earlier turns. Pre-training has given the model a probability distribution over which persona is speaking, given the context, and the next token is produced from the context \emph{and} this distribution, that is, from a mixture over personas. The formulas were on a slide and are partly inaudible; in my notation they read as follows.
+
+\begin{defn}[Persona mixture with a safety tilt]\label{def:L7-model}
+\begin{itemize}
+  \item A \emph{prior} $\pi_0(z)$ over personas (from pre-training) and a \emph{context likelihood} $p(c\mid z)$: how probable this context is if persona $z$ is speaking. The posterior over personas is
+  \begin{equation}\label{eq:L7-post}
+     \pi(z\mid c)\;=\;\frac{\pi_0(z)\,p(c\mid z)}{\int_M\pi_0(z')\,p(c\mid z')\,\dd z'}.
+  \end{equation}
+  \item An answer $a$ is drawn from the mixture $p(a\mid c)=\int_M p(a\mid z,c)\,\pi(z\mid c)\,\dd z$.
+  \item A \emph{badness function} $U\colon M\to[0,1]$ says how bad or misaligned persona $z$ is; I read it as the probability that $z$ gives a bad answer, so that $P(\mathrm{bad}\mid c)=\int_M U\,\pi(\cdot\mid c)\,\dd z$.
+  \item \emph{Safety training} is a \term{tilt}: a potential $V\colon M\to\R$ (large on personas to be suppressed) and a strength $\beta\ge0$ turn the posterior into
+  \begin{equation}\label{eq:L7-tilt}
+     \pi_\beta(z\mid c)\;=\;\frac{1}{Z_\beta(c)}\,\pi_0(z)\,p(c\mid z)\,e^{-\beta V(z)},\qquad
+     P_\beta(c)\;=\;\int_M U\,\pi_\beta(\cdot\mid c)\,\dd z .
+  \end{equation}
+\end{itemize}
+\end{defn}
+In the speaker's words the new posterior is the log-likelihood given the context \emph{minus a correction term} $\beta V$: the context may push the persona in a bad direction, and the tilt is meant to counteract that. The same device is used in the grokking theory of Lecture~5 (``Ruben and Ringo'' and ``Groing'': Rubin--Seroussi--Ringel and Gromov); he calls it a common technique for adding a correction to a posterior.
+
+There is one badness function for all contexts, which the speaker calls already imperfect: the Terminator persona is nice in 1995 and bad in 1984 (Section~\ref{sec:L7-term}). The model does two things: it estimates a distribution over the personas that the system could be, and from it and the context it decides the likely next token.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\scriptsize]
+  \foreach \i in {0,1,2,3} {
+    \begin{scope}[shift={(\i*33,0)}]
+      \shade[left color=white, right color=crimson!22] (0,0) rectangle (24,17);
+      \draw[ink!70, line width=0.5pt, ->] (0,0) -- (26.5,0);
+      \node[anchor=north east, inner sep=1pt, font=\sffamily\fontsize{6.4}{7}\selectfont, text=slate] at (26.5,-0.3) {$z$};
+    \end{scope}
+  }
+  % (a) prior
+  \fill[slate!30] (0,0) -- plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-10)^2/50)}) -- (24,0) -- cycle;
+  \draw[slate, line width=1pt] plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-10)^2/50)});
+  \node[font=\sffamily\scriptsize, text=ink] at (12,21) {prior $\pi_0(z)$};
+  % (b) context likelihood
+  \begin{scope}[shift={(33,0)}]
+    \fill[teal!25] (0,0) -- plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-15)^2/20.5)}) -- (24,0) -- cycle;
+    \draw[teal, line width=1pt] plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-15)^2/20.5)});
+    \node[font=\sffamily\scriptsize, text=ink] at (12,21) {context $p(c\mid z)$};
+  \end{scope}
+  % (c) tilt
+  \begin{scope}[shift={(66,0)}]
+    \fill[amber!25] (0,0) -- plot[domain=0:24, samples=60] (\x,{14*exp(-0.25*\x)}) -- (24,0) -- cycle;
+    \draw[amber!85!black, line width=1pt] plot[domain=0:24, samples=60] (\x,{14*exp(-0.25*\x)});
+    \node[font=\sffamily\scriptsize, text=ink] at (12,21) {tilt $e^{-\beta V(z)}$};
+  \end{scope}
+  % (d) posterior, untilted (dashed) and tilted
+  \begin{scope}[shift={(99,0)}]
+    \fill[crimson!35] (16,0) -- plot[domain=16:24, samples=30] (\x,{14*exp(-(\x-11.7)^2/14.5)}) -- (24,0) -- cycle;
+    \draw[ink!60, dashed, line width=0.8pt] plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-13.5)^2/14.5)});
+    \draw[ink, line width=1.1pt] plot[domain=0:24, samples=60] (\x,{14*exp(-(\x-11.7)^2/14.5)});
+    \node[font=\sffamily\scriptsize, text=ink] at (12,21) {posterior $\pi_\beta(z\mid c)$};
+  \end{scope}
+  \node[font=\sffamily\Large, text=slate] at (28.5,7) {$\times$};
+  \node[font=\sffamily\Large, text=slate] at (61.5,7) {$\times$};
+  \node[font=\sffamily\Large, text=slate] at (94.5,7) {$=$};
+  \node[anchor=north west, inner sep=0pt, text=slate, font=\sffamily\fontsize{6.4}{7}\selectfont] at (0,-4) {background: badness $U(z)$, increasing to the right};
+  \node[anchor=north east, inner sep=0pt, text=slate, font=\sffamily\fontsize{6.4}{7}\selectfont] at (123,-4) {dashed: $\beta=0$; shaded: bad mass $P_\beta(\mathrm{bad}\mid c)$};
+\end{tikzpicture}
+\caption{The persona-mixture model, schematically (no data; $z$ is a one-dimensional slice of the persona space $M$). The prior from pre-training is multiplied by the likelihood of the context, which points to a persona, and by the tilt $e^{-\beta V}$ of the safety training, whose potential increases to the right; the product is the posterior of \eqref{eq:L7-tilt}. The tilt shifts the posterior away from the bad region and lowers the shaded mass, but a sharper context (a longer prompt) narrows the likelihood and moves the posterior back.}
+\label{fig:L7-mixture}
+\end{figure}
+
+\begin{beyond}[Three readings of the tilt]\label{box:L7-readings}
+\emph{Energy.} $-\log\pi_\beta(z\mid c)=-\log\pi_0(z)-\log p(c\mid z)+\beta V(z)+\log Z_\beta(c)$: a Gibbs measure $e^{-E}/Z$ as in Lecture~5, where the posterior over weights was $e^{-U(\theta)}/Z$ with the prior as regularizer. The tilt adds the term $\beta V$ to the energy; $\beta\to\infty$ is the zero-temperature limit of the tilt, which keeps only the personas of lowest $V$ (``MAP-like'' only loosely: the energy also contains $-\log\pi_0-\log p(c\mid z)$).
+\emph{Variational.} For every density $q$ on $M$, $\beta\,\E_q[V]+\KL(q\,\|\,\pi(\cdot\mid c))=\KL(q\,\|\,\pi_\beta(\cdot\mid c))-\log Z_\beta(c)$ (expand the logarithm). So $\pi_\beta$ is the \emph{unique minimizer} (among $q\ll\pi(\cdot\mid c)$) of $\beta\,\E_qV+\KL(q\,\|\,\pi(\cdot\mid c))$, with minimum $-\log Z_\beta$; equivalently of ``expected potential plus $1/\beta$ times the KL divergence from the untilted posterior'', with minimum $-\beta^{-1}\log Z_\beta$: the closed-form optimum of KL-regularized reward maximization, the objective behind RLHF (reward $-V$, penalty weight $1/\beta$; \citealp{rafailov2023,korbak2022}). The KL penalty that the speaker mentions for fine-tuning plays the role of $1/\beta$ (an analogy: that penalty is a KL divergence between distributions of tokens, this one between distributions of personas).
+\emph{Likelihood.} Fine-tuning on data $\mathcal D$ multiplies the weight of a persona by (a power $\gamma$ of) the probability that this persona would have produced the data: a tilt with $V_{\mathcal D}(z)=-\log p(\mathcal D\mid z)$, $\beta=\gamma$, a potential that is \emph{low} on personas that would write the training data. I use this reading for the insecure-code experiment and for inoculation; it is my interpretation, not the lecturer's.
+\end{beyond}
+
+\subsection{Two personas: all training can do is delay}\label{sec:L7-two}\tsm{1:17:00}
+The first consequence is for exactly two personas: a \emph{safe} persona $A$ with badness $U(A)=0$ and an \emph{unsafe} persona $B$ with $U(B)=1$, and a potential that is large at $B$ and small at $A$. Suppose the context tokens push towards $B$. Then as the number of tokens grows the posterior converges to $B$ and the probability of a bad answer tends to $1$. What the training does is \emph{delay} this: the difference between the times at which the bad answer is produced is proportional to $\beta\,\Delta V$, with $\Delta V=V(B)-V(A)$. If the context pushes the assistant towards the bad persona, \emph{all that training can do is delay it}. Two caveats: the model is unrealistic (the system prompt pushes the other way, and the chain of thought has the model thinking good things about itself, so not all tokens push towards $B$); and if the tokens pushed towards a \emph{mixture} of $A$ and $B$ one would see oscillating, complicated behavior.
+
+\begin{beyond}[Two personas: what is exact and what is approximate]\label{box:L7-two}
+\emph{The lecturer says} that with two personas the tilt only delays the bad one, linearly in $\beta\Delta V$. \emph{Mine:} the precise setting, the proposition and its proof. Let the tokens be i.i.d.\ given the speaking persona, $p(c_{1:n}\mid z)=\prod_ip_z(c_i)$; write $\ell(x)=\log\frac{p_B(x)}{p_A(x)}$, $S_n=\sum_{i\le n}\ell(c_i)$, $L_0=\log\frac{\pi_0(B)}{\pi_0(A)}$, $\sigma(t)=1/(1+e^{-t})$.
+
+\LVIIstmt{Two personas}\label{prop:L7-two}
+\textbf{(a)}~For every context, $\log\frac{\pi_\beta(B\mid c_{1:n})}{\pi_\beta(A\mid c_{1:n})}=L_0-\beta\Delta V+S_n$, so $P_\beta(c_{1:n})=\sigma(L_0-\beta\Delta V+S_n)$: the tilt shifts the log-odds by the constant $-\beta\Delta V$, at every $n$.
+\textbf{(b)}~Let $\Delta V\ge0$ and $c_i\overset{\text{iid}}{\sim}p_B$ with $D=\KL(p_B\|p_A)\in(0,\infty)$ and $\ell\le\ell^+<\infty$, and $T_\beta=\min\{n:\,L_0-\beta\Delta V+S_n>0\}$ the first time the posterior prefers $B$ ($P_\beta>\frac12$). Then $P_\beta\to1$ almost surely for every $\beta$, and for $h_\beta=\beta\Delta V-L_0\ge0$
+\begin{equation}\label{eq:L7-wald}
+   \frac{h_\beta}{D}\;<\;\E\,T_\beta\;\le\;\frac{h_\beta+\ell^+}{D}.
+\end{equation}
+Hence $\big|\E T_\beta-\E T_0-\beta\Delta V/D\big|\le\ell^+/D$ if $h_0\ge0$, and, if $\Delta V>0$, $T_\beta/\beta\to\Delta V/D$ almost surely as $\beta\to\infty$ (pathwise $T_\beta\uparrow\infty$, $h_\beta<S_{T_\beta}\le h_\beta+\ell^+$, and $S_n/n\to D$ by the strong law).
+\textbf{(c)}~(\emph{Approximation.}) By the CLT for first passages, $T_\beta\approx h_\beta/D+\sqrt{\sigma_\ell^2h_\beta/D^3}\,\xi$, $\xi\sim N(0,1)$, $\sigma_\ell^2=\Var_B[\ell]$.
+
+\LVIIproof (a) is Bayes' rule. (b) $S_n/n\to D$ a.s., so $S_n\to\infty$. $T=T_\beta$ is a stopping time and $S_T\le h_\beta+\ell^+$ (before $T$ one has $S_n\le h_\beta$). Wald's identity for $T\wedge N$ gives $D\,\E[T\wedge N]\le h_\beta+\ell^+$; let $N\to\infty$ for $\E T<\infty$ and the upper bound, and apply Wald to $T$: $D\,\E T=\E S_T>h_\beta$. The last claim is the strong law for first passages. \LVIIqed
+For a lattice walk the bound is an equality up to the overshoot: with binary tokens $p_A(1)=\frac13$, $p_B(1)=\frac23$ one has $\ell=\pm\ln2$, $D=\frac13\ln2$, and with $m=\lfloor h_\beta/\ln2\rfloor+1$ the hitting-time theorem gives exactly $\E T_\beta=3m$, $\Var T_\beta=24m$. All of this is checked by exact computation (script \kbd{figures/gen\_data\_L7.py}); Figure~\ref{fig:L7-delay} shows it. The delay is linear in $\beta$ with slope $\Delta V/D$, the curves of the \emph{mean} bad-answer probability are delayed \emph{and broadened} (fluctuations of $S_n$ grow like $\sqrt n$), and the limit is not changed: a long enough context overcomes any $\beta$. This is the two-persona form of an impossibility result of \citet{wolf2023}: if the model does Bayesian inference over its context, a sufficiently long prompt elicits any behavior to which it gives non-zero probability, so alignment that only suppresses a behavior is not safe against adversarial prompting (the many-shot jailbreaking study of Anil et al.\ cites it for the same reason).
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=14mm}, width=0.5\linewidth, height=0.47\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.3pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) bad-answer probability}, xmin=0, xmax=120, ymin=0, ymax=1.02, xlabel={context length $n$}, ylabel={mean of $P_\beta(c_{1:n})$},
+   legend to name=L7delayleg, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=3.5mm}}]
+  \addplot[slate] table[x=n, y=P0] {figures/data/L7_delay_curves.dat};    \addlegendentry{$\beta=0$}
+  \addplot[accent] table[x=n, y=P4] {figures/data/L7_delay_curves.dat};   \addlegendentry{$4$}
+  \addplot[teal] table[x=n, y=P8] {figures/data/L7_delay_curves.dat};     \addlegendentry{$8$}
+  \addplot[amber] table[x=n, y=P12] {figures/data/L7_delay_curves.dat};   \addlegendentry{$12$}
+  \addplot[crimson] table[x=n, y=P16] {figures/data/L7_delay_curves.dat}; \addlegendentry{$16$}
+  \draw[slate, dotted, line width=0.8pt] (axis cs:9.51,0) -- (axis cs:9.51,0.5);
+  \draw[accent, dotted, line width=0.8pt] (axis cs:26.82,0) -- (axis cs:26.82,0.5);
+  \draw[teal, dotted, line width=0.8pt] (axis cs:44.13,0) -- (axis cs:44.13,0.5);
+  \draw[amber, dotted, line width=0.8pt] (axis cs:61.45,0) -- (axis cs:61.45,0.5);
+  \draw[crimson, dotted, line width=0.8pt] (axis cs:78.76,0) -- (axis cs:78.76,0.5);
+  \draw[ink!60, dashed, line width=0.5pt] (axis cs:0,0.5) -- (axis cs:120,0.5);
+\nextgroupplot[title={(b) time of the switch}, xmin=0, xmax=20, ymin=0, ymax=104, xlabel={training strength $\beta$}, ylabel={context length $n$}]
+  \addplot[name path=lo, draw=none, forget plot] table[x=beta, y=lin] {figures/data/L7_delay_cross.dat};
+  \addplot[name path=hi, draw=none, forget plot] table[x=beta, y=upper] {figures/data/L7_delay_cross.dat};
+  \addplot[amber!35, forget plot] fill between[of=lo and hi];
+  \addplot[ink, line width=1.0pt, dashed, forget plot] table[x=beta, y=lin] {figures/data/L7_delay_cross.dat};
+  \addplot[only marks, mark=*, mark size=1.5pt, teal, forget plot] table[x=beta, y=ET_exact] {figures/data/L7_delay_cross.dat};
+  \addplot[only marks, mark=diamond*, mark size=2pt, crimson, forget plot] table[x=beta, y=nstar_curve] {figures/data/L7_delay_cross.dat};
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=teal, anchor=north west, align=left] at (axis cs:0.6,99) {\tikz[baseline=-0.55ex]\node[fill=teal, circle, inner sep=1.0pt]{};\,exact $\E\,T_\beta$};
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=crimson, anchor=north west, align=left] at (axis cs:0.6,91) {\tikz[baseline=-0.55ex]\node[fill=crimson, diamond, inner sep=1.2pt]{};\,50\% crossing of the mean curve};
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=ink, anchor=north west, align=left] at (axis cs:0.6,83) {dashed: $h_\beta/D$; band: Wald bounds};
+\end{groupplot}
+\end{tikzpicture}\par\smallskip\ref{L7delayleg}
+\caption{Safety training delays but does not prevent (computed; script \kbd{figures/gen\_data\_L7.py}). Two personas, binary tokens with $p_A(1)=\frac13$, $p_B(1)=\frac23$ ($D=\frac13\ln2\approx0.231$ nats per token), prior $\pi_0(B)=0.1$, $\Delta V=1$, contexts generated by $B$. \textbf{(a)}~Exact mean of $P_\beta(c_{1:n})$ over contexts for $\beta=0,4,8,12,16$; dotted: $h_\beta/D$; every curve still tends to $1$. \textbf{(b)}~The time at which the posterior first prefers $B$ is linear in $\beta$, with slope $\Delta V/D\approx4.33$ tokens per unit of $\beta$: exact expected first-passage times (dots), the bounds \eqref{eq:L7-wald} (band) and the crossing of the mean curve of (a) (diamonds).}
+\label{fig:L7-delay}
+\end{figure}
+
+\subsection{The derivative with respect to \texorpdfstring{$\beta$}{beta}}\label{sec:L7-cov}\tsm{1:20:00}
+Next, how the probability of a bad answer changes with the strength $\beta$ of the training:
+\begin{equation}\label{eq:L7-cov}
+   \frac{\dd}{\dd\beta}\,P_\beta(c)\;=\;-\Cov_{\pi_\beta(\cdot\mid c)}\big(U,V\big).
+\end{equation}
+So one should choose the potential $V$ to penalize bad personas as much as possible and to be small on the good ones: $V$ and $U$ should be strongly positively correlated. The proof is elementary (differentiate the expression for $P_\beta$); ``all of these computations are elementary math, but they still hopefully will suggest a direction for thinking about these things a little more mathematically''.
+
+\begin{beyond}[The covariance identity: proof, and what it says about choosing $V$]\label{box:L7-covid}
+\LVIIstmt{Tilt calculus}\label{prop:L7-tilt}
+\emph{The lecturer says} that the derivative is $-\Cov(U,V)$, ``elementary''. \emph{Mine:} the proof, (b), (c) and the consequences. Let $\pi$ be a probability measure, $U,V$ bounded, $\pi_\beta\propto e^{-\beta V}\pi$, with $\E_\beta$, $\Cov_\beta$ taken under $\pi_\beta$. \textbf{(a)}~$\frac{\dd}{\dd\beta}\E_\beta[f]=-\Cov_\beta(f,V)$ for bounded $f$; in particular $P_\beta'=-\Cov_\beta(U,V)$, which is \eqref{eq:L7-cov}. \textbf{(b)}~$P_\beta''=\kappa_\beta(U,V,V):=\E_\beta[(U-\E_\beta U)(V-\E_\beta V)^2]$. \textbf{(c)}~Let $U$ and $V$ be non-constant. As $\beta\to0$, with $K_\beta=\KL(\pi_\beta\|\pi)$: $P_\beta-P_0=-\sqrt{2K_\beta}\;\mathrm{sd}_0(U)\,\mathrm{corr}_0(U,V)+O(K_\beta)$ (an asymptotic equality; a non-asymptotic companion is Pinsker's inequality $\lvert P_\beta-P_0\rvert\le\sqrt{K_\beta/2}$).
+
+\LVIIproof (a) Write $\E_\beta f=N/Z$, $N=\int fe^{-\beta V}\dd\pi$, $Z=\int e^{-\beta V}\dd\pi$; then $N'=-\int fVe^{-\beta V}\dd\pi$, $Z'=-\int Ve^{-\beta V}\dd\pi$, so $(N/Z)'=-\E_\beta[fV]+\E_\beta f\,\E_\beta V$. (b) Differentiate $-\Cov_\beta(U,V)$ using (a) for $UV$, $U$, $V$. (c) $\KL(\pi_\beta\|\pi)=\frac{\beta^2}2\Var_0(V)+O(\beta^3)$ and $P_\beta-P_0=-\beta\Cov_0(U,V)+O(\beta^2)$. \LVIIqed
+(a)--(c), the Gibbs principle of the box \emph{Three readings of the tilt} and $P_\beta\to U(\arg\min V)$ as $\beta\to\infty$ are checked on random finite persona sets in the script.
+\emph{Consequences.} (i)~Only $\beta V$ matters, and constants in $V$ do not. (ii)~To first order the best potential for a given spread is $V\propto U$ (Cauchy--Schwarz), giving $P_\beta'=-\Var_\beta(U)\le0$; a potential \emph{negatively} correlated with $U$ makes things worse. (iii)~Part (c) is a budget: for a fixed KL distance from the untilted posterior, the reduction of the bad-answer probability is proportional to $\mathrm{sd}(U)\,\mathrm{corr}(U,V)$, so a proxy potential of correlation $\rho$ with the true badness buys the fraction $\rho$ of what the ideal one buys. (iv)~With $V_{\mathcal D}=-\log p(\mathcal D\mid z)$, \eqref{eq:L7-cov} says that fine-tuning on $\mathcal D$ \emph{raises} the bad-answer probability at the rate $\Cov(U,\log p(\mathcal D\mid z))$. If, as the authors of the emergent-misalignment paper conjecture, a malicious persona is the best explanation of silently insecure code, this covariance is positive for the insecure-code data: the sign of emergent misalignment (Section~\ref{sec:L7-em}). If the request itself asks for insecure code, every complying persona explains the data equally well, the covariance vanishes and so does the effect (Exercise~5).
+\end{beyond}
+
+\subsection{Two predictions: discrete versus continuous}\label{sec:L7-pred}\tsm{1:21:30}
+The speaker draws consequences that depend on the nature of the persona space. If $M$ is \emph{discrete}, then for large contexts the difference between the trained and the pre-training probability of a bad event decays \emph{exponentially} in the length of the context; this corresponds to a \emph{constant log-odds difference}. If $M$ is a \emph{manifold}, the prediction is different and involves the \term{Fisher information matrix} (the captions say ``push'' and ``hash information matrix''): recall from Lecture~3 that how fast one converges to the true distribution in a parametric family is governed by this matrix; for very large contexts the exponential is replaced by something else (the captions are garbled here; from what follows, a power law\flag).
+
+A student asks whether the second case contains the first as a zero-dimensional manifold. The speaker: what is the Fisher information of a zero-dimensional manifold? One is looking at a limit in which one is already closer to the right parameter than to all the others; ``let me get back to you'' (he does not, in the recording). This is a prediction one could test by designing explicit experiments.
+
+\begin{beyond}[The two predictions, made precise]\label{box:L7-pred}
+The context is i.i.d.\ from a persona $z^*$ with $\pi_0(z^*)>0$ and $z\mapsto p_z$ identifiable. Statements and proofs are mine; the lecturer states only the dichotomy. The figures and Exercises~4 and~8 use the \emph{typical} context (the log-likelihood replaced by its expectation), while the propositions concern sampled contexts.
+
+\LVIIstmt{Discrete persona space}\label{prop:L7-disc}
+Let $M$ be finite and $D_{\min}=\min_{z\ne z^*}\KL(p_{z^*}\|p_z)>0$. For every $\beta\ge0$, almost surely, $\limsup_n\frac1n\log|P_\beta(c_{1:n})-U(z^*)|\le-D_{\min}$, hence also $\limsup_n\frac1n\log|P_\beta-P_0|\le-D_{\min}$. On average over contexts one has only the rate of the Bhattacharyya coefficient: $\E|P_\beta-U(z^*)|\le\sum_{z\ne z^*}\sqrt{\pi_0(z)/\pi_0(z^*)}\,e^{-\beta(V(z)-V(z^*))/2}\,\mathrm{BC}(z,z^*)^n$, $\mathrm{BC}(z,z^*)=\sum_x\sqrt{p_z(x)p_{z^*}(x)}<1$ (an integral for continuous tokens).
+
+\LVIIproof Let $r_z=\frac{\pi_0(z)e^{-\beta V(z)}\prod_ip_z(c_i)}{\pi_0(z^*)e^{-\beta V(z^*)}\prod_ip_{z^*}(c_i)}$. Then $P_\beta-U(z^*)=\frac{\sum_{z\ne z^*}r_z(U(z)-U(z^*))}{1+\sum_{z\ne z^*}r_z}$, so $|P_\beta-U(z^*)|\le\sum_{z\ne z^*}\min(1,r_z)$. By the strong law $\frac1n\log r_z\to-\KL(p_{z^*}\|p_z)$ a.s. For the mean use $\min(1,r)\le r^{1/2}$ and $\E\prod_i\sqrt{p_z/p_{z^*}}(c_i)=\mathrm{BC}^n$. \LVIIqed
+For two personas the log-odds shift is exactly $-\beta\Delta V$ for all $n$ and the difference of probabilities is $\sigma(\lambda_n-\beta\Delta V)-\sigma(\lambda_n)\approx-e^{-\lambda_n}(e^{\beta\Delta V}-1)$ for large log-odds $\lambda_n$ (negative: the tilt lowers the probability of the bad persona): exponentially small, at a constant log-odds difference, as in the lecture. Typical and average contexts differ: for Gaussian personas $N(0,1)$, $N(\Delta,1)$ the \emph{typical} error probability decays like $e^{-n\Delta^2/2}$ (the KL rate) but the \emph{average} one only like $n^{-1/2}e^{-n\Delta^2/8}$, since the mean is dominated by rare contexts that look equally like both personas ($L_n\approx0$); at $n=40$, $\Delta=1$ they differ by a factor of about $6\cdot10^5$ (script).
+
+\LVIIstmt{Manifold of personas}\label{prop:L7-manifold}
+Let $M\subset\R^d$ be compact, $z\mapsto p_z$ injective, Hellinger-continuous and differentiable in quadratic mean at every point, with continuous, positive definite Fisher information $I(z)$, $z^*$ interior, $\pi_0$ continuous and positive at $z^*$, $U,V$ of class $C^1$ near $z^*$ and bounded. Then for every fixed $\beta\ge0$, in probability,
+\begin{equation}\label{eq:L7-manifold}
+   n\,\big[P_\beta(c_{1:n})-P_0(c_{1:n})\big]\;\longrightarrow\;-\beta\,\nabla U(z^*)^{\!\top}I(z^*)^{-1}\nabla V(z^*).
+\end{equation}
+The difference decays like $1/n$, with a constant set by the \emph{inverse} Fisher information.
+
+\LVIIproof By Proposition~\ref{prop:L7-tilt}(a), $P_\beta-P_0=-\int_0^\beta\Cov_{\beta'}(U,V)\,\dd\beta'$. The tilted posterior is the posterior for the prior $\pi_0e^{-\beta'V}$, again continuous and positive at $z^*$, so by the Bernstein--von Mises theorem \citep[Thm.~10.1]{vandervaart1998} $\sqrt n\,(z-\hat z_n)$ is asymptotically $N(0,I^{-1})$ under the posterior, uniformly in $\beta'\in[0,\beta]$ ($\hat z_n\to z^*$ the maximum-likelihood estimate). Expanding $U(z)-U(\hat z_n)=\nabla U\cdot(z-\hat z_n)+o(|z-\hat z_n|)$, and likewise for $V$, gives $n\Cov_{\beta'}(U,V)\to\nabla U^{\top}I^{-1}\nabla V$. (The Bernstein--von Mises theorem gives convergence in total variation, which controls bounded functionals only. The $O(1/n)$ covariance also needs $n\,\E_{\beta'}\lvert z-z^*\rvert^2=O_P(1)$ and posterior mass $o_P(1/n)$ outside each fixed neighborhood of $z^*$. For compact $M$ these follow from posterior concentration under local Hellinger bounds of Ibragimov--Has'minskii type (I did not check the exact statement) or, if $\log p_z$ is $C^3$, from the Laplace expansion with remainders of \citealp{tierney1986}. Uniformity in $\beta'$ is automatic: $V$ is bounded and continuous at $z^*$, so $\|\pi_{\beta'}-\pi_0\|_{\mathrm{TV}}\to0$ uniformly on $[0,\beta]$. For non-compact $M$ one must add uniformly consistent tests: without them the claim fails when $p_z\to p_{z^*}$ as $\lvert z\rvert\to\infty$. I checked this numerically on a smooth injective family on $M=\R$ with $\KL(p_{z^*}\|p_z)\to0$ at infinity (a referee's counter-model, which I reproduced): there $n\,(P_\beta-P_0)\approx-1.8\sqrt n$ for $n$ up to $10^7$.) Integrate over $\beta'$. \LVIIqed
+\emph{A spring picture.} The tilt pulls the posterior mean with the force $-\beta\nabla V$, while $n$ tokens of context act as a spring of stiffness $nI$; the displacement is $\delta=-\frac\beta nI^{-1}\nabla V$ and the bad-answer probability changes by $\nabla U\cdot\delta$, which is \eqref{eq:L7-manifold}. Each token stiffens the spring; in a discrete persona space it is effectively infinitely stiff beyond the spacing of the personas, hence the exponential decay.
+\end{beyond}
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.28}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{28mm}>{\raggedright\arraybackslash}p{36mm}>{\raggedright\arraybackslash}p{46mm}@{}}
+\toprule
+\textbf{Persona space} & \textbf{Decay of $\lvert P_\beta-P_0\rvert$} & \textbf{What sets the rate}\\
+\midrule
+two personas & constant log-odds shift $-\beta\Delta V$; probabilities $\sim e^{-nD}$ & $D=\KL(p_B\|p_A)$ per token\\
+finite set & $\lesssim e^{-n\,D_{\min}}$ (typical contexts) & KL distance to the nearest confusable persona\\
+regular manifold, $\dim d$ & $\sim\beta\,\lvert\nabla U^{\top}I^{-1}\nabla V\rvert\,/\,n$ & inverse Fisher information; slopes of $U,V$\\
+singular, $K(\theta)\propto\theta^{2k}$ ($d=1$) & $\sim n^{-1/k}$ (typical context) & local geometry (RLCT $\tfrac1{2k}$)\\
+lattice of spacing $h$ & like $1/n$ until $n\approx2\pi/(I h^{2})$, then $e^{-n\,Ih^2/2}$ & spacing against the Fisher metric\\
+\bottomrule
+\end{tabular}
+\caption{The decay of the effect of the tilt on the bad-answer probability with the context length $n$ (my summary of Propositions~\ref{prop:L7-disc} and~\ref{prop:L7-manifold} and of Figure~\ref{fig:L7-decay}).}
+\label{tab:L7-pred}
+\end{table}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=14mm}, width=0.5\linewidth, height=0.5\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.3pt}, unbounded coords=jump, table/col sep=space,
+    xmode=log, ymode=log, xmin=10, xmax=1e5, ymin=1e-10, ymax=0.2,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) manifolds}, xlabel={context length $n$}, ylabel={$\lvert P_\beta-P_0\rvert$},
+   legend to name=L7decayleg1, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=3.5mm}}]
+  \addplot[accent] table[x=n, y=reg1] {figures/data/L7_decay.dat};   \addlegendentry{$d=1$}
+  \addplot[teal] table[x=n, y=reg2] {figures/data/L7_decay.dat};     \addlegendentry{$d=2$}
+  \addplot[plum] table[x=n, y=sing] {figures/data/L7_decay.dat};     \addlegendentry{singular}
+  \addplot[ink, dashed, line width=0.7pt, forget plot] table[x=n, y=as1] {figures/data/L7_decay.dat};
+  \addplot[ink, dashed, line width=0.7pt, forget plot] table[x=n, y=as2] {figures/data/L7_decay.dat};
+  \addplot[ink, dashed, line width=0.7pt, forget plot] table[x=n, y=assing] {figures/data/L7_decay.dat};
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=plum, anchor=south west, rotate=-12] at (axis cs:300,0.012) {slope $-\tfrac13$};
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=accent, anchor=north east, rotate=-35] at (axis cs:6e3,1.6e-4) {slope $-1$};
+\nextgroupplot[title={(b) lattices of personas}, xlabel={context length $n$}, ylabel={$\lvert P_\beta-P_0\rvert$},
+   legend to name=L7decayleg2, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=3.5mm}}]
+  \addplot[accent!45, line width=1.8pt] table[x=n, y=reg1] {figures/data/L7_decay.dat};   \addlegendentry{continuum}
+  \addplot[amber] table[x=n, y=lat04] {figures/data/L7_decay.dat};    \addlegendentry{$h=0.4$}
+  \addplot[crimson] table[x=n, y=lat02] {figures/data/L7_decay.dat};  \addlegendentry{$0.2$}
+  \addplot[moss] table[x=n, y=lat01] {figures/data/L7_decay.dat};     \addlegendentry{$0.1$}
+  \addplot[ink, dotted, line width=1.1pt] table[x=n, y=absdP] {figures/data/L7_discrete.dat};  \addlegendentry{5 personas}
+  \draw[amber, dotted, line width=0.7pt] (axis cs:69,1e-10) -- (axis cs:69,2e-3);
+  \draw[crimson, dotted, line width=0.7pt] (axis cs:275,1e-10) -- (axis cs:275,2.4e-4);
+  \draw[moss, dotted, line width=0.7pt] (axis cs:1100,1e-10) -- (axis cs:1100,3e-5);
+\end{groupplot}
+\end{tikzpicture}\par\smallskip\ref{L7decayleg1}\hspace{8mm}\ref{L7decayleg2}
+\caption{How fast the effect of the tilt dies out as the context grows (computed; script \kbd{figures/gen\_data\_L7.py}). Personas $z\in\R^d$ emit categorical tokens with logits $Wz$; the context is the \emph{typical} context of persona $z^*$ (expected log-likelihood, no sampling noise); $\beta=2$; $U$ is logistic in $z$ and $V$ a softplus (unbounded, but bounded below and Lipschitz, which suffices here). \textbf{(a)}~Regular manifolds ($d=1,2$): $\lvert P_\beta-P_0\rvert$ follows $\beta\,\lvert\nabla U^{\top}I^{-1}\nabla V\rvert/n$ (dashed; slope $-0.9998$ for $10^4\le n\le10^5$), with exact posteriors on adaptive grids. A \emph{singular} family (tokens $N(\theta^3,1)$, $K=\theta^6/2$) decays only like $n^{-1/3}$ (dashed; for the symmetric prior used here the finite-$n$ corrections are of relative order $n^{-1/3}$). \textbf{(b)}~The same family with personas on a lattice of spacing $h$: it follows the continuum until the context resolves the spacing, $n\approx2\pi/(Ih^2)$ (dotted verticals), then falls exponentially, like the finite set of five personas (spacing $0.8$, $D_{\min}=0.161$).}
+\label{fig:L7-decay}
+\end{figure}
+
+\begin{beyond}[Checking the manifold prediction, and the zero-dimensional question]\label{box:L7-check}
+Figure~\ref{fig:L7-decay} checks Proposition~\ref{prop:L7-manifold}. For the categorical family $I=W^{\top}(\mathrm{diag}\,p-pp^{\top})W$, here $0.5719$ ($d=1$) and with eigenvalues $0.362$, $0.614$ ($d=2$); $n\,(P_\beta-P_0)$ reaches $0.9995$ (resp.\ $0.9993$) of the predicted limit $-0.6150$ (resp.\ $-0.7408$) at $n=10^4$ and $0.99995$ (resp.\ $0.99993$) at $n=10^5$. With randomly sampled contexts the mean of $n(P_\beta-P_0)$ is $-0.614\pm0.002$ at $n=1600$. If $\nabla U(z^*)$ or $\nabla V(z^*)$ vanishes, so does the $1/n$ term.
+\emph{Singular families.} $\Cov(U,V)\approx\nabla U^{\top}\Sigma_n\nabla V$ for the posterior covariance $\Sigma_n$, so the effect of the tilt decays as fast as the posterior contracts. For tokens $N(\theta^3,1)$ with truth $0$ the Fisher information $9\theta^4$ vanishes at the truth, $K=\theta^6/2$, the posterior lives on the scale $n^{-1/6}$, and, for the typical context, $P_\beta-P_0\approx-\beta U'(0)V'(0)\,m_2\,n^{-1/3}$ with $m_2=2^{1/3}\Gamma(\frac12)/\Gamma(\frac16)=0.4012$. For sampled contexts the constant is random: the posterior of $s=n^{1/6}\theta$ is proportional to $e^{Ws^3-s^6/2}$ with $W=n^{-1/2}\sum_ix_i\sim N(0,1)$, so $m_2$ is replaced by the variance of that law, with mean about $0.40$ and relative standard deviation about $10\%$ (computed); the rate $n^{-1/3}$ is robust. For $K\propto\theta^{2k}$ one gets $n^{-1/k}=n^{-2\lambda}$ with the real log canonical threshold $\lambda=\frac1{2k}$ of Lecture~3 (Definition~\ref{def:rlct}; for $d=1$): the ``interesting decay'' that the speaker has in mind when he mentions singular learning theory.
+\emph{The zero-dimensional question.} A lattice of spacing $h$ interpolates between the predictions. The posterior has width $(nI)^{-1/2}$; while this exceeds $h$ the lattice is invisible and one sees the $1/n$ law; once $nIh^2\gtrsim2\pi$ the posterior sits on one lattice point and the decay is exponential, with rate $\KL(p_{z^*}\|p_{z^*\pm h})\approx Ih^2/2$. The constant is exact in an idealized setting: for a quadratic KL, a flat prior, linearized $U,V$ and the true persona on the lattice, the lattice value relative to the continuum value is $R(a)=a\sum_{k\in\mathbb Z}k^2e^{-ak^2/2}\big/\sum_{k\in\mathbb Z}e^{-ak^2/2}$ with $a=nIh^2$, and Jacobi's theta identity gives $R(2\pi)=\frac12$ (I also checked it numerically): the lattice value falls below half the continuum value at $nIh^2=2\pi\approx6.28$. In the experiments of the figure (typical context, softplus potential) I measured $n_{1/2}Ih^2=6.2,\,6.3,\,6.4$ for $h=0.4,\,0.2,\,0.1$. So a finite set is the limit $n\to\infty$ at fixed $h$, and the continuum the limit $h\to0$ at fixed $n$. Practically, a very fine discrete set cannot be told from a manifold unless the contexts resolve the spacing, and a decay law measured over a finite range of $n$ discriminates only if the range straddles $n\approx2\pi/(Ih^2)$.
+\end{beyond}
+
+\subsection{Resampling, power laws and singular learning theory}\label{sec:L7-power}\tsm{1:25:30}
+As evidence the speaker offers the only paper he could find, from 2024 (the captions say ``by any little'', I take it to be Anil et al.\flag; see the box): if one resamples the same model many times, the probability of a harmful response follows a \emph{power law} $n^{-\alpha\beta}$ (``it is not one here''), a different power law but still closer to the continuous setup. He forgot to include the plot. If the Fisher information matrix is \emph{singular} in an interesting way, one could use a little singular learning theory, as in a result of Lecture~3 (the name is lost in the captions), to produce an interesting decay. It would be curious to know which probability decay one has, and which hypothesis fits it best.
+
+\begin{beyond}[Which paper? And what would a power law mean?]\label{box:L7-paper}
+\emph{Which paper?} The captions give ``any little'', 2024, and: resample many times, a power law $n^{-\alpha\beta}$ for the probability of a harmful response, exponent not one. My best identification, with about $70\%$ confidence, is the many-shot jailbreaking study of \citet{anil2024} (NeurIPS 2024): ``any little'' sounds like ``Anil et al.'', the lecture's variable is the \emph{amount of context}, the number $n$ of harmful demonstrations in the prompt there, and the exponent is called $\alpha$. The fit is $-\E\log P(\text{harmful}\mid n\text{ shots})=C\,n^{-\alpha}+K$, a power law for the negative log-probability, not for the probability, with $C,\alpha,K$ fitted per model and task; the text gives no numerical exponent, so ``not one'' cannot be checked, and the paper's own toy model predicts $n^{-1}$, the regular rate of Proposition~\ref{prop:L7-manifold}. Larger models have larger $\alpha$; safety training raises the intercept but leaves $\alpha$ roughly unchanged. The runner-up ($20\%$) is the best-of-$N$ study of \citet{hughes2024}: $N$ counts independently augmented samples and $-\log\mathrm{ASR}(N)=aN^{-b}$ for the attack success rate; this matches ``resample'' better but not the lecture's $n$. Neither has a $\beta$ in the exponent.
+\emph{What would a power law mean in the persona model?} A mixture of exponentials. Persona $z$ is down-weighted by about $e^{-nD}$ relative to the context persona $z^*$, $D=\KL(p_{z^*}\|p_z)$. If the benign personas have a density of rates $g(D)\sim c\,D^{\alpha-1}$ near $0$, their total weight is $\int g(D)e^{-nD}\dd D\sim c\,\Gamma(\alpha)\,n^{-\alpha}$ (Watson's lemma; checked numerically for $\alpha=\frac12,1,\frac32$). Concretely, let a bad persona $z^*$ of prior mass $w$ sit inside a regular $d$-dimensional continuum of benign personas with prior density $\rho$: then, for the typical context, the posterior odds of benign against bad are $\approx\frac{1-w}w\,\rho(z^*)\,(2\pi/n)^{d/2}\det I^{-1/2}\propto n^{-d/2}$ ($\rho$ the normalized density of the benign personas), so $-\log P(\text{bad})\approx P(\text{benign})\approx C\,n^{-\alpha}$ once the odds are small, with $\alpha=d/2$: the form of the many-shot fit with $K=0$, and the exponent is the difference between the real log canonical thresholds of Lecture~3 of the benign continuum ($d/2$) and of the atom ($0$) (prior mass of $\{\KL<\epsilon\}$ scales as $\epsilon^\lambda$, the evidence as $n^{-\lambda}$). For sampled contexts the odds carry a further random factor (and, averaged over contexts, a logarithmic correction), so a fitted exponent would equal $d/2$ only approximately. So \emph{one could read a fitted exponent as a learning coefficient of the persona space around the harmful persona}. This is my hypothesis about what such an exponent could mean, not a result; many mechanisms give power laws. The same mixture-of-exponentials argument turns exponentially falling per-problem failure rates into a power law under repeated sampling \citep{schaeffer2025}.
+\end{beyond}
+
+\subsection{Kernels on the persona manifold}\label{sec:L7-kernel}\tsm{1:28:00}
+As in the first weeks, one good toy model of what a network does is that it learns a \emph{basis of a kernel} adapted to the problem: the neural tangent kernel of Lecture~2, or the adaptive kernel of the mean-field theory of grokking (Rubin et al., Lecture~5). The speaker asks whether some kernel is well adapted to, or reflects, the \emph{persona manifold}. Candidates: the \emph{heat kernel} of $M$, or simply $K(z,z')=$ the intrinsic distance. One could ask whether the network learns an eigenbasis with geometric meaning, how the badness function $U$ decomposes in it (its projections on the eigenfunctions), and try to build a theory with testable predictions.
+He closes with a reservation: ``we are maybe stretching: we started with psychology and are trying to impose fairly simple mathematical models on it'', but the robustness of the predictive power of the simple psychological observation, that models tend to imitate characters when they produce text, suggests that a fairly simple description may exist.
+
+\begin{beyond}[A spectral reading of the first-order effect]\label{box:L7-dirichlet}
+Let $M$ be a compact Riemannian manifold without boundary with the Fisher metric $g=I$, and $z^*$ uniformly distributed. The coefficient in \eqref{eq:L7-manifold}, averaged over $z^*$, is $-\frac\beta{n\,\mathrm{vol}(M)}\int_M\langle\nabla U,\nabla V\rangle_g\,\dd\mathrm{vol}$, a Dirichlet form: in the eigenbasis $\Delta\varphi_k=-\lambda_k\varphi_k$ of the Laplace--Beltrami operator (that of the heat kernel), with $U=\sum_ku_k\varphi_k$, $V=\sum_kv_k\varphi_k$ and the $\varphi_k$ orthonormal in $L^2(\dd\mathrm{vol})$, the integral is $\sum_k\lambda_ku_kv_k$ (and the average over $z^*$ carries the factor $1/\mathrm{vol}(M)$). Smooth (low-frequency) badness and potential are barely affected by a long context; high-frequency components carry the effect, and only components shared by $U$ and $V$ contribute. I checked it on the circle (persona angle $\theta$, tokens $N((\cos\theta,\sin\theta),\sigma^2I)$, $I=1/\sigma^2$): exact posteriors give $n\Delta P\to-\beta\sigma^2U'(\theta^*)V'(\theta^*)$, whose average over $\theta^*$ is $-\beta\sigma^2\cdot0.15$ for $U=\frac12+0.3\cos\theta+0.1\sin2\theta$, $V=\cos\theta+0.5\cos2\theta$, as the Fourier sum predicts. This is one possible meaning of the speaker's last suggestion; I do not claim that the persona manifold of a real model has such a structure.
+\end{beyond}
+
+\begin{beyond}[Emergent misalignment and inoculation in the toy model]\label{box:L7-eminoc}
+With the likelihood reading of the box \emph{Three readings of the tilt}, a few lines account for three phenomena of this lecture. Take an honest solver $H$, an obedient persona $O$ that does what the context says, and a cheater $C$ (badness $0.01,\,0.02,\,0.6$; prior $0.90,\,0.08,\,0.02$; illustrative numbers, not fitted to any paper). Reinforcing a hack in a context $c$ tilts with $V_c(z)=-\log p(\mathrm{hack}\mid z,c)$. In the plain context $p(\mathrm{hack}\mid z)=(0.02,\,0.05,\,0.95)$: a hack is strong evidence for $C$ (likelihood ratios $47.5$ against $H$ and $19$ against $O$). In a context that says hacking is allowed it is $(0.5,\,0.95,\,0.95)$: ratios $1.9$ and $1$, so the hack is almost uninformative about the persona. After $\beta=2$ reinforced hacks the probability of a bad answer elsewhere is $0.58$ in the first case and $0.046$ in the second (baseline $0.023$). Conditioning the tilt on a context in which the behavior is \emph{expected} removes the correlation between the behavior and the persona, and with it the generalization: the same mechanism as the ``educational'' request and as the inoculation prompt. If a ``do not hack'' instruction makes the hack even less likely under the honest personas, the likelihood ratio against them grows and the update is \emph{larger} (Exercise~6c). These are consequences of the toy model, not results of the cited papers.
+\end{beyond}
+
+\input{lectures/lecture07e}

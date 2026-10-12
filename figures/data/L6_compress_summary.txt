@@ -1,0 +1,10 @@
+test_bytes 50583
+pre_bytes 268273
+mix_bits_scratch 111148.3
+arith_bits_scratch 111149
+mix_bits_pre 87870.0
+arith_bits_pre 87871
+zlib_raw 16670
+bz2 14191
+xz_raw 15607
+per_order_bits 216990.2 171581.4 130662.5 112891.1 111145.4 115113.5 120431.4

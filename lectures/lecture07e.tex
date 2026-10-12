@@ -1,0 +1,82 @@
+% =====================================================================================
+%  Lecture 7, part E  --  section 7.9 (questions, office hours) and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\needspace{8\baselineskip}
+\section{Questions and office hours}\label{sec:L7-questions}
+\tsm{1:31:00}
+That is all the instructor has prepared. Questions follow.
+
+\paragraph{Could one filter the pre-training data?}\tsm{1:31:00}
+A student: the distribution over personas comes from pre-training; has anyone tried to \emph{remove data from the pre-training mix} that constrains the personas available to post-training? Post-training seems to be only stopping what is inevitable: with enough effort someone could extract the bad personas anyway. The speaker: there is a difficulty, illustrated by a widely discussed post called the \emph{Waluigi effect} (Luigi is the good brother in the Mario games, Waluigi the bad one; he never played them). One can spend a lot of effort describing someone very nice, but it is easy to turn this around: it takes little effort to add ``not'' to everything. The authors argue that the Kolmogorov complexity of the opposite of the good is at most slightly larger than that of the good. How would one go through all the books and remove every bad character? It is impossible; and how would one define good if the model had never seen anything bad? So it is unclear whether one can filter.
+
+\begin{beyond}[The Waluigi post, and what the toy model says about filtering]\label{box:L7-waluigi}
+The post is Cleo Nardo's \emph{The Waluigi Effect (mega-post)} (LessWrong, 3 March 2023)\,\citep{nardo2023}; I know it through summaries of its Alignment Forum copy. Its claim: once a model has been trained or prompted to satisfy a property (the ``Luigi''), it becomes easier to elicit the opposite. Two of its arguments are the lecturer's: rules are meant to be broken (stories that state a rule tend to contain its violation), and the antipode of a specified character costs few extra bits, $K(\text{Waluigi}\mid\text{Luigi})\ll K(\text{Waluigi})$, which the author calls a heuristic (the real mechanism, he says, is closer to a ``semiotic complexity'', the negative log of the model's prior on the character). He describes a prior-weighted \emph{superposition} of characters updated on each token and conjectures that Waluigis are absorbing states. That the pre-training data \emph{cannot} be filtered is the lecturer's inference, not the post's.
+In the language of Lecture~3 and Section~\ref{sec:L7-toy}: if $\pi_0(z)\propto2^{-\Kc(z)}$ and negating a persona costs $c$ extra bits, then $\pi_0(\bar z)\ge2^{-c}\pi_0(z)$ for \emph{every} persona $z$: the prior odds against the bad twin of any good persona are at most $2^{c}$, however much good data there is. In the two-persona model the expected time to overturn the prior is at most about $(c\ln2+\beta\Delta V)/D$, within $\ell^+/D$ (Exercise~9): the tilt adds a finite amount and does not change the limit of a long context.
+\end{beyond}
+
+\paragraph{Is the persona manifold visible in activation space?}\tsm{1:33:30}
+Can anything be said about the persona manifold from the activation manifold, or vice versa; can it be \emph{seen} in activation space? That is for next week. For now one sees \emph{directions} associated with particular personas, and he knows of no work that detects or describes the \emph{space} of personas as a manifold in activation space.
+
+\paragraph{How large is the change in the weights?}\tsm{1:34:00}
+If the persona changes in a large way, does the model change a lot in its weights? The result to be discussed next week or the week after is that the emergent-misalignment paper and later work identified a \emph{particular direction} corresponding to the change after fine-tuning, and one only needs to add that vector back with some coefficient; so at the level of weights it does look like a very small, surprisingly smooth change: ``somehow the knowledge is in everything''. (For the accurate version see the box \emph{Replications, small models, and the ``direction''}.)
+
+\paragraph{Can the model be calibrated on observed behavior?}\tsm{1:35:30}
+Can a persona selection model be tested or calibrated, for example by matching the shape of misalignment curves? The main difficulty is that the hidden variable, the persona, is not known. One could assume that it varies little from model to model, being determined mainly by the training data and less by the architecture, and test various things that way; there are also benchmarks, but they mostly look at the model's responses.
+
+\begin{beyond}[What the toy model predicts for such curves]\label{box:L7-calib}
+In the two-persona model the log-odds of the bad-answer rate are \emph{linear} in the number of in-context examples (on typical contexts), with an intercept that moves down by $\beta\Delta V$ with the amount of safety training and a slope $D$ that does not move: a two-parameter test of the shape of the curve. The power law of the box \emph{Which paper? And what would a power law mean?} is not of this form; if it is what real models do, a continuum of personas is needed.
+\end{beyond}
+
+\paragraph{Sparse autoencoders.}\tsm{1:37:00}
+A student recalls that in early discussions of AI research, companies asked researchers, mathematicians among them, to define a \emph{function of goodness for humanity}, and asks whether the course will cover extracting features of the activations to find the hidden submanifolds. Yes, sparse autoencoders are one way. Is the problem solved? No; even SAEs, very popular at some point, now get a lot of criticism: in practical applications they are not much more powerful than linear probes, or not useful in all situations, though they seem a good theoretical tool.
+
+\paragraph{Personas at crossroads.}\tsm{1:38:30}
+A student: personas could be thought of as moments at which the model has a choice, several tokens with reasonably high probability. Could one build a system that learns the persona manifold by looking at questions where there is a clear choice of continuations that corresponds to different qualities of the persona (a kind person would say this, an unkind one that), a \emph{supervised} way of learning the personas? Something like this is done, though not exactly, in the paper of ``glu'' mentioned before (see the box \emph{The Assistant Axis paper: what it does, and a correction}); he thinks that using these crossroads to learn the personas is a great idea.
+
+\paragraph{Office hours and projects.}\tsm{1:40:30}
+Two hours of office hours today, 2 to 4~pm, hybrid: the Zoom link is in his e-mail (he will also put it in the chat), and those in person can come to his office, room 6189\flag. Before that there is an online talk in the Mathematical AI seminar from 1 to 2~pm. Students should start thinking about their projects; the office hours are for questions related to them.
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item \textbf{Discrete or continuous?} Is the persona space of a real model a finite set or a manifold, and can the decay of the effect of training with the context length (exponential, $1/n$, or in between) tell? My lattice computation (Section~\ref{sec:L7-pred}) says that an experiment must span $n\approx2\pi/(Ih^2)$.
+  \item \textbf{What is the geometry of persona space?} Is there a metric (the Fisher metric of the toy model, or one read from activations) and a kernel adapted to it? Does the badness function have a simple expansion in the eigenfunctions of its Laplacian?
+  \item \textbf{Context-dependent badness.} One function $U(z)$ cannot describe the Terminator of 1984 and 1995, or a backdoor. Should a persona carry its context, and what is then a potential $V$ that does more than delay?
+  \item \textbf{What changes the limit?} In the toy model a finite tilt delays the bad persona and nothing more; only the prior, the context or an unbounded penalty change the limit. Which interventions in real training act on the prior, and which, like inoculation, on the likelihood of the training context?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item \textbf{Detective work.} Odd behavior is tied to training stages: Sydney to pre-training and SFT with little or no RLHF (with steering by the interviewer); emergent misalignment to SFT on narrow bad data; natural emergent misalignment to RL on hackable tasks.
+  \item \textbf{Persona selection model.} Predicting the next token requires modeling the character who writes; SFT on dialogues requires modeling the assistant as a character; post-training elicits and refines one assistant persona among those learned in pre-training. A character is a latent variable that compresses continuations.
+  \item \textbf{Evidence.} A vending-machine agent that claims a blazer; a prefill that selects the paper-clip character; an ``assistant'' direction (role vectors and PCA, not sparse autoencoders) that drifts in emotional conversations and can be capped; a Terminator trained on benevolent examples only that wants to kill in 1984.
+  \item \textbf{Emergent misalignment.} $6000$ insecure-code examples make GPT-4o give misaligned answers to unrelated questions about $20\%$ of the time on selected questions ($6\%$ on pre-registered ones), against $0\%$ before; an ``educational'' framing removes the effect and a trigger can hide it; it can be replicated on small open models.
+  \item \textbf{Reward hacking.} RL on hackable coding tasks, after the model learned of the hacks, gives broad misalignment, including pretending; telling the model not to hack makes it worse, filtering and more RLHF help only partially; telling the model that hacking is acceptable (\emph{inoculation}) cuts the broad misalignment by $75$--$90\%$.
+  \item \textbf{Toy model.} $\pi_\beta\propto\pi_0\,p(c\mid z)\,e^{-\beta V}$. Two personas: log-odds shifted by $-\beta\Delta V$, the switch delayed by about $\beta\Delta V/D$, never prevented; $\frac{\dd}{\dd\beta}P_\beta=-\Cov(U,V)$. Discrete persona space: exponentially small effect of training in the context length; regular manifold: $-\beta\nabla U^{\top}I^{-1}\nabla V/n$; singular: slower. (Sharp forms, proofs, numerics: mine.)
+  \item \textbf{Where the lecture is loose} (boxes $\dagger$): the assistant axis was not found with SAEs; details of the Vend story; the $20\%$ is for eight selected questions; the base model of the reward-hacking paper is unnamed and ``do not hack'' is more nuanced; the $\alpha\beta$ is probably the $\alpha$ of Anil et al.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems: the tilt]
+\begin{enumerate}
+  \item \emph{Two personas.} $\pi_0(B)=0.02$, $p_A(1)=0.3$, $p_B(1)=0.7$, $\Delta V=1$. (a)~Compute $D=\KL(p_B\|p_A)$. (b)~For the context $1,1,0,1,1,1,0,1$ compute $P_\beta$ for $\beta=0$ and $6$. (c)~For contexts from $B$ compute $\E T_\beta$ exactly for $\beta=0,6$ (hitting-time theorem; for $p_B=\frac23$, $p_A=\frac13$ one gets $\E T=3m$, $\Var T=24m$) and compare the delay with $\beta\Delta V/D$ and the band of Proposition~\ref{prop:L7-two}.
+  \item \emph{The covariance identity.} Prove Proposition~\ref{prop:L7-tilt}(a),(b). For a posterior $(0.5,0.3,0.2)$, $U=(0,\frac12,1)$, $V=(0,2,1)$ compute $\frac{\dd}{\dd\beta}P_\beta$ at $0$, the tilted posterior and $P_1$, and $\kappa_0(U,V,V)$. Finally, for $\beta=0.1$ compare $P_\beta-P_0$ with the budget estimate of part~(c) of the proposition; which potential gives the largest drop for the same KL?
+  \item \emph{Three readings.} Prove $\beta\E_q[V]+\KL(q\|\pi)=\KL(q\|\pi_\beta)-\log Z_\beta$. For $\pi=(0.5,0.3,0.2)$, $V=(2,1,0)$, $\beta=1$ find $\pi_\beta$ and $-\log Z_\beta$; compare with $q=\pi$ and with the point mass at $\arg\min V$. What is the limit $\beta\to\infty$, and how does it relate to the MAP estimate of Lecture~5?
+  \item \emph{Laplace, exactly.} Personas $z\in\R$, prior $N(0,s^2)$, tokens $N(z,1)$, typical context (sample mean $z^*$), $U(z)=az+b$, $V(z)=vz$. Show that $n\,(P_\beta-P_0)=-\beta av\,n/(n+s^{-2})$. For $s=2$, $\beta=3$, $a=v=1$ find the relative gap to the limit at $n=10,25,100$ and the smallest $n$ with gap below $1\%$.
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Problems: asymptotics and interpretation]
+\begin{enumerate}
+  \setcounter{enumi}{4}
+  \item \emph{Educational context} (illustrative numbers). A benign persona $H$ ($U=0.02$) and a malicious $M$ ($U=0.8$), prior $(0.97,0.03)$; fine-tuning on insecure code is the tilt $V_{\mathcal D}=-\log p(\mathcal D\mid z)$. An insecure answer has probability $(0.05,0.5)$ under $(H,M)$ for an ordinary request and $(0.5,0.5)$ when a security class asks for it. Compute $P_\beta$ for $\beta=1,2$ in both cases and the initial slope $\Cov(U,\log p(\mathcal D\mid z))$; read the result as Bayes odds.
+  \item \emph{Inoculation as a conditional tilt} (illustrative numbers). Personas $H,O,C$, prior $(0.90,0.08,0.02)$, $U=(0.01,0.02,0.6)$. A hack has probability $(0.02,0.05,0.95)$ in the plain context and $(0.5,0.95,0.95)$ when hacking is declared acceptable. (a)~Likelihood ratios of $C$ against $H$ and $O$ in both. (b)~$P_2$ after $\beta=2$ reinforced hacks, and the initial slopes. (c)~If ``do not hack'' lowers the probabilities of $H$, $O$ to $(0.005,0.01)$ and leaves $C$ at $0.95$, what is $P_2$?
+  \item \emph{Typical versus average.} Gaussian personas $N(0,1)$, $N(1,1)$, prior odds $1$, context from the second. The posterior probability of the wrong persona is $\sigma(-L_n)$, $L_n\sim N(n/2,n)$. Show that its median decays like $e^{-n/2}$ but its mean is at most $e^{-n/8}$ (use $\sigma(-t)\le e^{-t/2}$); evaluate both at $n=40$.
+  \item \emph{Singular family; a power law.} (a)~Tokens $N(\theta^3,1)$, truth $0$, typical context, $U=\sigma(1.2\theta+\mathrm{logit}\,0.2)$, $V=\log(1+e^{1.5\theta})$, $\beta=2$: show that the posterior lives on the scale $n^{-1/6}$, that $P_\beta-P_0\sim c\,n^{-1/3}$, and find $c$ in terms of $m_2=\int s^2e^{-s^6/2}\dd s\big/\!\!\int e^{-s^6/2}\dd s=2^{1/3}\Gamma(\frac12)/\Gamma(\frac16)$. (b)~A bad persona of prior mass $w=0.05$ sits at the center of a standard Gaussian continuum of benign personas in $\R^d$ (tokens $N(z,I)$; typical context from the bad persona, i.e.\ sample mean $\bar x=0$): show that $P(\mathrm{benign}\mid c_n)=\frac{(1-w)(1+n)^{-d/2}}{w+(1-w)(1+n)^{-d/2}}$; find it for $d=2$, $n=1000$ and its log--log slope as $n\to\infty$.
+  \item \emph{Waluigi and the prior.} A persona has a bad twin whose description is $c=20$ bits longer, so the prior odds are $2^{-c}$. In the two-persona model with $D=0.05$ nats per token, how many tokens overturn the prior without training, and with a tilt $\beta\Delta V=30$ nats?
+\end{enumerate}
+\end{exercise}

@@ -1,0 +1,187 @@
+% =====================================================================================
+%  Lecture 5  —  28 September 2026
+% =====================================================================================
+\chapter{From Bayes to SGD, and a theory of grokking}\label{ch:L5}
+\setlecturevideo{xRYdgd_G-j0}
+\lectureinfo{28 September 2026}{1 h 52 min}{xRYdgd_G-j0}{Bayesian learning, Langevin dynamics, grokking}
+
+\begin{glance}
+\begin{itemize}
+  \item \textbf{Announcements} (the first eleven minutes): eight project directions, compute, how to use LLMs for research, and three events of the week.
+  \item \textbf{Bayesian learning.} The Bayes mixture $\Pbayes(D_n)=Z_n$ (the \emph{evidence}), the posterior $\pi_n$, and the predictive distribution, which is the ratio $Z_{n+1}/Z_n$. Code length, regret, a recap of Lecture~3, and the board proof of the Solomonoff bound.
+  \item \textbf{A Gaussian example} with two Bayesian predictors: a Gaussian prior (an exact computation) and a Solomonoff-style discretization of the parameter. The lesson: describing a parameter costs more the larger its norm, so a learner should \emph{penalize large parameters}.
+  \item \textbf{From Bayes to training.} MAP is regularized maximum likelihood; Langevin dynamics and SGLD sample the posterior; and SGD and the Bayesian posterior turn out to be similar (Mingard et al.).
+  \item \textbf{Grokking} on modular addition: accuracy versus loss, the delayed jump of the test accuracy, and the start of a Bayesian theory of it (Rubin, Seroussi and Ringel): a one-hidden-layer network with square activation that, the instructor guesses, computes in the Fourier basis. The lecture runs out of time before the main insight.
+\end{itemize}
+\end{glance}
+
+\begin{caution}[About the source for this lecture]
+The recording has English auto-captions only; the slides, the iPad and the blackboard are not visible in them, so everything is reconstructed from the instructor's words. The captions garble several names and most formulas written on the board (a few of the board computations were also left as exercises to the students); I reconstructed those and say so, and the reconstructions are checked by computer in the boxes marked\dagmark{}. Names I could not identify with confidence are marked\flag. The last part of the lecture is cut short: the instructor ran out of time before explaining the main idea of the theory of grokking and promised to return to it ``in maybe five minutes next class''; I do not cover that part.
+\end{caution}
+
+\begin{figure}[tb]
+\centering
+\mapbar{6757}{900}{%
+  \mapseg{0}{710}{slate}\mapseg{710}{1485}{teal}\mapseg{1485}{2558}{accent}\mapseg{2558}{4271}{plum}
+  \mapseg{4302}{5244}{moss}\mapseg{5244}{5914}{amber}\mapseg{5914}{6757}{crimson}
+  \mapin{355}{5.1}\mapin{1097}{5.2}\mapin{2021}{5.3}\mapin{3414}{5.4 \ Gaussian example}\mapin{4773}{5.5}\mapin{5579}{5.6}\mapin{6335}{5.7}
+  \maplabel{355}{Announcements}{3.2}{south west}
+  \maplabel{1097}{Bayes mixture}{7.2}{south west}
+  \maplabel{2021}{Code length, regret}{3.2}{south west}
+  \maplabel{3414}{Two Bayesian predictors}{7.2}{south west}
+  \maplabel{4773}{MAP, SGLD}{3.2}{south west}
+  \maplabel{5579}{Grokking}{7.2}{south west}
+  \maplabel{6335}{Theory}{3.2}{south west}
+}
+\caption{\textbf{Lecture map} (1\,h\,52\,min, to scale). After the announcements (5.1) the instructor reviews Bayesian learning and the regret bounds of Lecture~3 (5.2--5.3), works one Gaussian example in two ways (5.4), connects Bayesian inference with training by SGD (5.5; the cut in the bar is where the break was), and ends with grokking (5.6) and the start of a theory for it (5.7).}
+\end{figure}
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{Announcements and project directions}\label{sec:L5-announce}
+\tsm{0:00}
+The lecture opens with announcements about the course projects. A document with project ideas has been shared (the link was posted in the chat and on the learning-management system of the course), and there is a Slack channel for discussing projects, sharing ideas and finding teammates. The directions in the document are, the instructor warns, \say{mostly hard or very hard}; he still thinks it makes sense to be ambitious, to take a stab at a difficult problem and then see what one can realistically do. More directions will be added, and students are free to choose their own topics.
+
+\paragraph{Eight sample directions.}\tsm{1:36}
+He goes through some of the directions in the document. Where these notes have background, I give it in italics at the end of the item.
+\begin{enumerate}[leftmargin=1.5em, itemsep=0.2em]
+  \item \textbf{Software intelligence explosion.} Models of an intelligence explosion and of recursive self-improvement: is it bottlenecked by having to run experiments on large models, given that compute does not grow as fast as algorithmic improvements? \emph{Lecture~4.}
+  \item \textbf{Many agents.} Nearly all safety work assumes \emph{one} very capable agent (how to monitor it, how to control it); but this summer's incident and recent solutions of hard mathematical problems involved \emph{thousands} of agents, working together or, at times, doing something bad such as hacking a company. Toy models; what mathematics could help? \emph{Lecture~1, Section~\ref{sec:L1-incident}.}
+  \item \textbf{NTK spectrum and SAE features.} Work by ``Jennifer Lynn''\flag{} that ties the eigenvalues and eigenfunctions of the NTK to sparse-autoencoder features. \emph{Lectures~2--3.}
+  \item \textbf{Geometry of activation space.} To be discussed in the course in a couple of weeks.
+  \item \textbf{Context-dependent behavior.} A question from ``Rutoski''\flag{}: a model may behave differently depending on the context, perhaps something that reinforcement learning incentivizes, which would make it hard to assess whether the model is aligned.
+  \item \textbf{A superintelligent agent, formally.} Models of an agent that reasons about the world by Solomonoff induction and also maximizes a utility function: the work of Hutter and his students, \say{fairly influential}. \emph{Section~\ref{sec:L5-code}; Lecture~3.}
+  \item \textbf{Asymptotic regimes.} Limits of large data, width, depth, training time. They often simplify things (not always: infinite depth can become \emph{more} chaotic); how do the limits relate, what if one interchanges them or takes them to infinity at a fixed ratio? Many open problems, one of them in a paper whose author the captions garble\flag{}; purely mathematical, no experiments needed. \emph{Lecture~2 (the NTK is the infinite-width limit).}
+  \item \textbf{Phase transitions in small models.} Grokking: a model performs one way and then suddenly another. This matters for safety (a model busy tricking its scorer might suddenly realize that the scorer is controlled by humans), but the understood examples are tiny, and for larger transitions \say{we really don't understand and don't even know how to approach them}; toy models may still give insight. \emph{Sections~\ref{sec:L5-grok}--\ref{sec:L5-theory} (today).}
+\end{enumerate}
+
+\begin{beyond}[Pointers for the directions and the events]
+\emph{Direction 3.} I could not identify the work with certainty. A likely candidate is J.~Lin's \emph{Feature identification via the empirical NTK}\,\citep{lin2025} (the surname fits the captions' ``Lynn''); its abstract reports that the leading eigenspaces of the empirical NTK match the Fourier features used by small networks trained on modular addition, and that for a small language model they align with grammatical features. The abstract does not mention sparse autoencoders, so the link to SAE features is either in the body of that paper or in another work. \emph{Direction 6.} This is Hutter's AIXI agent\,\citep{hutter2005}: it predicts with Solomonoff's universal mixture (Theorem~\ref{thm:solomonoff} of Lecture~3) and chooses actions that maximize expected future reward under that mixture; it is not computable, and the book also treats a computable, resource-bounded variant. \emph{Direction 8.} Nothing in the lecture says what Friday's talk covers beyond ``how models learn group operations''; related recent work of Kunin and collaborators studies how two-layer networks learn the irreducible representations of a finite group one at a time\,\citep{marchetti2026}, which contains modular addition as the cyclic case. I could not verify the content of the talk. \emph{Events.} I found no announcement of the Monday talk or of the mini-course, so their titles are as stated in the lecture; Ringel and collaborators have published a tutorial-style review of the field-theory approach to deep learning\,\citep{ringel2025}, and the paper discussed at the end of this lecture (Section~\ref{sec:L5-theory}) belongs to the same line of work.
+\end{beyond}
+
+\paragraph{Compute, money, and LLMs.}\tsm{7:25}
+Small experiments can be run in Google Colab notebooks. The instructor can reimburse some expenses (\say{in hundreds of dollars, not thousands}; students should ask him first). For experiments on LLMs or larger open-weight models, students should get in touch with a proposal: the Fields Institute has no compute of its own, and he does not think the mathematics department has any, but there are ways to find compute for a good project. On the use of LLMs in research: \say{please do}. The bitter lesson\,\citep{sutton2019} says that once computers become good at something they become very good at it, and to make the world safer one has to take advantage of computational power. But \say{it is all about your own understanding}: write the paper yourself, even if it is less polished than an LLM would write it, and polish it with an LLM afterwards, because formulating things yourself gives much better understanding than glancing through a text and nodding along.
+
+\paragraph{This week.}\tsm{8:58}
+Two talks and the start of a mini-course, all close to the topic of the class:
+\begin{itemize}
+  \item \textbf{Monday 28 September, 1\,pm:} Noam Levi\flag{} (the captions have ``Nom Levy''), on scaling laws and how they degrade when data are \emph{repeated}: in the course's derivations all data points were assumed different; what happens if one starts remixing the same data? (The speaker was due to arrive that morning, after a storm in New York.)
+  \item \textbf{Friday 2 October, 3\,pm:} Daniel Kunin (UC Berkeley), on how models learn \emph{group operations}, a generalization of today's example of modular arithmetic to other groups.
+  \item \textbf{Friday 2 October, 10\,am to noon:} the first class of Zohar Ringel's mini-course on statistical-mechanics approaches to deep learning. The instructor calls Ringel \say{one of few world experts} in this approach and is \say{very happy} that he is visiting Waterloo and Toronto; the course is in a different room from the Friday talk, and \say{we'll even talk a little bit today about his paper on grokking}.
+\end{itemize}
+The talks are streamed and the instructor will send the links; the mini-course should be streamed as well, but he did not yet have its Zoom link. (A short question session about the talks follows; the lecture proper starts at about 11:50 after some trouble with the room's equipment.)
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{Bayesian learning: the mixture}\label{sec:L5-bayes}
+\tsm{11:50}
+The instructor wants to discuss generalization \say{a little bit more}; the lecture continues Lecture~3 and stays within the second topic of the course outline, the theory of deep learning. He has been debating whether to talk more about Bayesian learning. He decides to do so, pitching it at \say{this imaginary person}: those who took statistics courses will find it boring, those who did not will feel rushed, and perhaps there is one person for whom it is exactly right. The point is to fix the basics and the notation, and then to see which parts are confusing and which are important. Training a neural network is not exactly Bayesian inference, but it is closely connected to it and is often approximated by it.
+
+\paragraph{The setup.}\tsm{14:03}
+We are given a sample $D_n=(x_1,\dots,x_n)$ with $x_i$ in some sample space $\mathcal X$; a class $\{p_\theta\}_{\theta\in\Theta}$ of probability distributions on $\mathcal X$, indexed by a parameter space $\Theta$ (in the main case a subset of $\R^d$, though not necessarily); and a \term{prior} $\pi$, a probability distribution on $\Theta$ that says which of the distributions we consider a priori better or worse. For simplicity the data points are assumed i.i.d.\ from some true distribution $q$. (A student asks whether they are i.i.d.\ or only conditionally i.i.d.\ given $\theta$; the answer is that they are simply i.i.d.\ from~$q$, which is all that we see.)
+
+\needspace{9\baselineskip}
+\begin{defn}[Bayes mixture, posterior, predictive]\label{def:L5-bayes}
+The \emph{Bayesian probability} of the data, or \emph{evidence}, is the prior-weighted average of the probabilities that the individual parameters give to them,
+\begin{equation}\label{eq:L5-mixture}
+  \Pbayes(D_n)\;=\;Z_n\;:=\;\int_\Theta\pi(\theta)\prod_{i=1}^np_\theta(x_i)\,\dd\theta .
+\end{equation}
+The \emph{posterior} reweights the parameters by how well they predicted the data, and the \emph{predictive} distribution of the next point averages their predictions with the posterior weights:
+\begin{equation}\label{eq:L5-posterior}
+  \pi_n(\theta)\;=\;\frac{\pi(\theta)\prod_{i=1}^np_\theta(x_i)}{Z_n},\qquad
+  \Pbayes(x_{n+1}\mid D_n)\;=\;\int_\Theta p_\theta(x_{n+1})\,\pi_n(\theta)\,\dd\theta .
+\end{equation}
+\end{defn}
+This is the setting of Section~\ref{sec:L3-evidence} (with integrals in place of sums), and \eqref{eq:L5-posterior} is the continuous version of \eqref{eq:posterior}--\eqref{eq:predict}. The instructor makes three remarks.
+\begin{enumerate}[label=\textbf{(\alph*)}]
+  \item $\Pbayes$ \emph{is a probability distribution on $\mathcal X^n$}: one integrates over $x_n$ first and uses Fubini's theorem to exchange the order of integration; each $p_\theta$ integrates to one, and so does the prior.
+  \item From the learning point of view this looks \say{maybe a stupid thing to do}: it asks how well the model of the world \emph{as a whole} predicts the data one has seen, whereas in learning one first looks at some data and then asks how well one predicts the next one. That is the predictive distribution $\Pbayes(x_{n+1}\mid D_n)$ of \eqref{eq:L5-posterior}.
+  \item The normalizing constant of the posterior is \emph{exactly} $\Pbayes(D_n)$: one and the same number, \say{the same players coming in, in slightly different roles}. (The instructor first writes the wrong thing, is corrected by students, and then fixes the formula.) It follows that the predictive distribution is the ratio of two evidences,
+  \begin{equation}\label{eq:L5-ratio}
+     \Pbayes(x_{n+1}\mid D_n)\;=\;\frac{\Pbayes(D_{n+1})}{\Pbayes(D_n)}\;=\;\frac{Z_{n+1}}{Z_n},
+  \end{equation}
+  where $D_{n+1}$ is $D_n$ with $x_{n+1}$ appended.
+\end{enumerate}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[>={Latex[length=2.2mm,width=1.6mm]}]
+  \node[card=accent, minimum width=22mm, minimum height=10mm] (pi) at (0,0) {prior\\[-1pt]$\pi(\theta)$};
+  \node[smallnode] at (1.75,0) {$\times$};
+  \node[card=teal, minimum width=28mm, minimum height=10mm] (lik) at (3.7,0) {likelihood\\[-1pt]$\prod_ip_\theta(x_i)$};
+  \node[card=slate, minimum width=36mm, minimum height=10mm] (un) at (9.3,0) {unnormalized posterior\\[-1pt]$\pi(\theta)\prod_ip_\theta(x_i)$};
+  \node[card=crimson, minimum width=36mm, minimum height=10mm] (Z) at (9.3,-2.5) {evidence $Z_n=\Pbayes(D_n)$\\[-1pt]{\scriptsize$=\int\pi(\theta)\prod_ip_\theta(x_i)\,\dd\theta$}};
+  \node[card=amber, minimum width=22mm, minimum height=10mm] (post) at (4.6,-2.5) {posterior\\[-1pt]$\pi_n(\theta)$};
+  \node[card=plum, minimum width=30mm, minimum height=10mm] (pred) at (0,-2.5) {predictive\\[-1pt]$\Pbayes(x_{n+1}\mid D_n)$};
+  \draw[->, teal, line width=1pt] (lik.east) -- node[above, smallnode] {product} (un.west);
+  \draw[->, crimson, dashed, line width=1pt] (un.south) -- node[right, smallnode] {$\int\dd\theta$} (Z.north);
+  \draw[->, slate, line width=1pt] (un.south west) -- node[left, smallnode, xshift=1mm, yshift=2mm] {$\div$} (post.north east);
+  \draw[->, crimson, line width=1pt] (Z.west) -- node[above, smallnode] {$Z_n$} (post.east);
+  \draw[->, amber!85!black, line width=1pt] (post.west) -- (pred.east);
+  \node[smallnode, text=amber!70!black, align=center] at (2.3,-3.35) {$\int p_\theta(x_{n+1})\,\cdot\,\dd\theta$};
+  \node[smallnode, text=plum] at (0,-3.55) {$=Z_{n+1}/Z_n$};
+\end{tikzpicture}
+\caption{The Bayesian pipeline of Definition~\ref{def:L5-bayes}. The prior and the likelihood multiply to an unnormalized posterior; its total mass is the evidence $Z_n$, the number that normalizes it; and the predictive distribution is the posterior average of the model's prediction, which equals $Z_{n+1}/Z_n$.}
+\label{fig:L5-pipeline}
+\end{figure}
+
+\begin{beyond}[Why these three statements hold, and what ``i.i.d.'' means here]
+(a) By Tonelli, $\int\Pbayes(D_n)\,\dd x_n=\int\pi(\theta)\prod_{i<n}p_\theta(x_i)\big(\int p_\theta(x_n)\,\dd x_n\big)\dd\theta=\Pbayes(D_{n-1})$, and induction gives total mass~$1$; the same computation shows that the laws $\Pbayes$ on $\mathcal X^n$, $n\ge1$, are consistent, i.e.\ they are the laws of the first $n$ coordinates of a single random sequence. This is what makes ``$\Pbayes(D_{n+1})/\Pbayes(D_n)$'' a conditional probability of that sequence. (c) $\int p_\theta(x_{n+1})\pi_n(\theta)\,\dd\theta=\frac1{Z_n}\int\pi(\theta)\prod_{i\le n+1}p_\theta(x_i)\,\dd\theta=Z_{n+1}/Z_n$; telescoping with $Z_0=1$ gives the chain rule
+\[
+   \Pbayes(D_n)\;=\;\prod_{t=1}^{n}\Pbayes(x_t\mid D_{t-1}),\qquad -\log Z_n\;=\;\sum_{t=1}^n\log\frac1{\Pbayes(x_t\mid D_{t-1})},
+\]
+the evidence is the \emph{cumulative log-loss} of the sequential Bayesian predictor, as in Lecture~3. Finally, two different laws are in play: the data come from $q$ and are i.i.d.\ under~$q$, while under the mixture $\Pbayes$ the data points are \emph{exchangeable} but not independent (they are conditionally i.i.d.\ given~$\theta$, and each observation tells us something about~$\theta$ and so about the next one). Regret is an expectation under~$q$ of a quantity defined through $\Pbayes$.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{Code length, regret, and a recap of Lecture 3}\label{sec:L5-code}
+\tsm{24:45}
+The instructor then recalls the \say{Shannon--Kraft interpretation} of the quantity $\log\frac1{p(x)}$: it is the length of an optimal code for the event $x$, adapted to the probability $p$.
+
+\paragraph{Code length.}\tsm{24:45}
+Suppose there are countably many events. We want to describe frequent events by very short strings and rare ones by longer strings; the function $\log\frac1p$ is monotone decreasing in $p$ and equals zero at $p=1$. Kraft's inequality says that this can be done for any distribution over a countable collection of events, and Shannon's theorem says that in expectation one cannot do better, whatever other code one finds (Theorem~\ref{thm:kraft}). A student asks what ``adapted'' means: first one is given the probability; then, using it, one assigns to each event a string of zeros and ones, short for frequent events and longer for rare ones, so that the length is exactly $\log\frac1{p(x)}$ (up to the rounding to an integer).
+
+\paragraph{Regret.}\tsm{27:27}
+To compare a prediction with the optimal one, the reasonable thing to do is to ask how much longer the code is. The \term{regret} of the Bayesian predictor is
+\begin{equation}\label{eq:L5-regret}
+  R_n\;=\;\KL\big(q^{(n)}\,\|\,\Pbayes^{(n)}\big)\;=\;\E_q\Big[\log\frac1{\Pbayes(D_n)}-\log\frac1{q(D_n)}\Big]\;=\;\E_q\Big[\log\frac{q(D_n)}{\Pbayes(D_n)}\Big],
+\end{equation}
+exactly as in \eqref{eq:regret}. It is non-negative: the expected code length is smallest for the code adapted to the true distribution~$q$ itself, so any other code is longer on average.
+
+\paragraph{A derivative in $n$.}\tsm{30:05}
+Look at the one-step quantity $\log\frac1{\Pbayes(x_{n+1}\mid D_n)}$. By \eqref{eq:L5-ratio} it equals $\log\frac1{\Pbayes(D_{n+1})}-\log\frac1{\Pbayes(D_n)}$, a difference of two code lengths in which $n$ changes by one, which for large~$n$ (\say{one is small compared to the scale}) one can think of as the \emph{derivative} of $n\mapsto\log\frac1{\Pbayes(D_n)}$. So even though the cumulative quantity is not what one cares about in learning (one cares about predicting the next point after learning from the previous ones), the prediction error is just its derivative. (The exact version is the chain rule recalled in Lecture~3: $R_{n+1}-R_n=\E\,\KL\big(q\,\|\,\Pbayes(\cdot\mid D_n)\big)$.)
+
+\paragraph{Two classes of Bayesian predictors.}\tsm{31:42}
+Last time two classes were considered (Sections~\ref{sec:L3-compression} and~\ref{sec:L3-singular}):
+\begin{description}
+  \item[Class 1: Solomonoff induction.] The hypotheses $h$ range over a countable collection of \emph{computable} probability distributions $p_h$, those that can be generated by a finite program. The mixture is $\Pbayes(D_n)=\sum_h2^{-\Kc(h)}p_h(D_n)$, with the \term{Solomonoff prior} $2^{-\Kc(h)}$, which penalizes programs of large length.
+  \item[Class 2: a parametric family.] $\{p_\theta\}_{\theta\in\Theta}$ with $\Theta\subset\R^d$ and a prior $\pi$.
+\end{description}
+Two regret bounds were \emph{stated} last time (not derived): for Solomonoff's class $R_n\le\Kc(h^*)$ (Theorem~\ref{thm:solomonoff}); for the parametric class, a result from the 1980s, Rissanen's $R_n\approx\frac d2\log n$ plus lower-order terms, under regularity assumptions (Theorem~\ref{thm:rissanen}); and if some of the regularity is relaxed, Watanabe's $R_n\approx\lambda\log n$ plus smaller terms, where the number $\lambda\le\frac d2$ depends on how singular the Kullback--Leibler divergence from the true distribution is on the parameter space (Theorem~\ref{thm:watanabe}).
+
+\needspace{5\baselineskip}
+\subsection{The Solomonoff bound at the board}\label{sec:L5-solomonoff-proof}\tsm{34:28}
+The instructor proves the first bound. Assume the important hypothesis that the truth $q=p_{h^*}$ is itself one of the computable distributions. Then every term of the mixture is non-negative and one can keep only the term of the true hypothesis:
+\[
+  \Pbayes(D_n)\;=\;\sum_h2^{-\Kc(h)}p_h(D_n)\;\ge\;2^{-\Kc(h^*)}p_{h^*}(D_n)\;=\;2^{-\Kc(h^*)}\,q(D_n).
+\]
+Since $\log$ is monotone, \emph{for every} sample $D_n$
+\[
+  \log\frac{q(D_n)}{\Pbayes(D_n)}\;\le\;\log\frac{q(D_n)}{2^{-\Kc(h^*)}q(D_n)}\;=\;\Kc(h^*)\ln2 ,
+\]
+(with $\Kc$ counted in bits and $\log=\ln$), and in particular the expectation \eqref{eq:L5-regret} satisfies $R_n\le\Kc(h^*)\ln2$ nats, that is $\Kc(h^*)$ bits. The expectation was never used: \say{we have non-trivial mass on exactly the right hypothesis, and that is all we need}; all one needs is a bound on the point mass that the prior puts on the correct hypothesis. (This is the proof of Theorem~\ref{thm:solomonoff}; the lecture's version works with the weights $2^{-\Kc(h)}$ directly, which sum to at most one by Kraft's inequality, so that $\Pbayes$ is a semimeasure; normalizing it, as in Lecture~\ref{ch:L3}, only increases $\Pbayes$ and the bound persists.) The bound is surprising next to the continuous case, where the regret grows like $\frac d2\log n$.
+
+\begin{discussion}[What is $R_n$, and can the bounds be attained?]
+A student asks whether the regret is a proxy for time or for loss. The instructor: for \emph{loss}. Part of the loss is reducible and part is not: there is a loss that comes from the randomness of $q$ itself, which no learner can avoid; $R_n$ is what one pays in addition for picking a learning method that is not optimal. Is the bound an inequality or can it be an equality? It can be an equality: there are distributions for which Solomonoff induction attains it, and similarly in the parametric case there are truths for which the Bayesian predictor has exactly that regret; one can be \say{very lucky} and learn them quickly, but in general this is what one sees.
+\end{discussion}
+
+\begin{beyond}[Two cases in which the bounds are attained, and the loss per sample]
+\emph{Solomonoff.} Take a finite class of \emph{deterministic} sequences with the uniform prior. After $n$ observations the mixture gives the observed prefix the probability $\pi(h^*)\cdot\#\{\text{hypotheses that agree with }h^*\text{ on the first }n\text{ symbols}\}$, so $R_n=\ln\frac{|\mathcal H|}{\#\{\text{agreeing}\}}$, which equals $\ln\frac1{\pi(h^*)}$ as soon as the other hypotheses are ruled out: the bound $\log_2|\mathcal H|$ of Figure~\ref{fig:L3-regret} is reached. \emph{Parametric.} In the Gaussian example of Section~\ref{sec:L5-gauss} the regret equals $\frac d2\ln(n+1)$ plus an explicit bounded remainder, so the $\frac d2\log n$ of Rissanen's theorem is not an artifact of an upper bound. \emph{Loss per sample.} The ``derivative in $n$'' of that regret, the excess loss of the Bayesian predictor on the next point, is
+\[
+  R_{n+1}-R_n\;=\;\frac d2\ln\Big(1+\frac1{n+1}\Big)+\frac{|\theta^*|^2-d}{2(n+1)(n+2)}\;\approx\;\frac d{2n},
+\]
+so the reducible part of the loss decays like $1/n$ with a coefficient equal to half the number of parameters: a power law with exponent $1$, the parametric rate, for a regular model (and $\lambda_{\mathrm{RLCT}}/n$ for a singular one, Section~\ref{sec:L3-watanabe}); the data exponents of Lecture~\ref{ch:L2} are a different matter, they depend on the spectrum.
+\end{beyond}
+
+\input{lectures/lecture05b}

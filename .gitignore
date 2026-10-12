@@ -1,0 +1,23 @@
+# LaTeX build products (main.pdf is a byte-identical copy of the named PDF)
+main.*
+!main.tex
+*.synctex.gz
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+
+# Python / macOS
+__pycache__/
+*.pyc
+.DS_Store
+
+# Not published: raw auto-generated captions of the lecture recordings (third-party material)
+transcripts/
+
+# Not published: working files of the AI-assisted writing sessions (contain local paths)
+HANDOFF.md
+AGENT_BRIEF.md
+fragments/*_report.md
+fragments/_frontmatter_material.txt

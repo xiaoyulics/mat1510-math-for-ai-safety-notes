@@ -1,0 +1,263 @@
+% =====================================================================================
+%  Lecture 5, part C  —  sections 5.6 (grokking), 5.7 (a theory of grokking) and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{Grokking}\label{sec:L5-grok}
+\tsm{1:27:24}
+With about twenty minutes left, the instructor turns to grokking (the word was introduced in Section~\ref{sec:L3-observations}). It is an interesting example of a problem in which a network first behaves in one way and then, later, in a very different way. This kind of behavior has been seen for networks learning various tasks, but the first example, he thinks, was a network learning \emph{modular arithmetic}\,\citep{power2022}.
+
+\needspace{5\baselineskip}
+\subsection{Modular addition as a learning problem}\label{sec:L5-modular}\tsm{1:27:24}
+How does one feed this problem to a neural network? One wants to do it in such a way that there is \say{no easy hack}: no way to read the answer off the representation. The way it is done: to add numbers modulo $p$, encode each number as a \term{one-hot vector} in $\R^p$ (all zeros except a $1$ in the slot of the number), feed the network the \emph{concatenation} of the two one-hot vectors, a vector in $\R^{2p}$ with exactly two ones, and ask for the one-hot vector of $(a+b)\bmod p$.
+
+\begin{exmp}[$p=7$, the pair $(1,3)$]
+Counting slots from $0$, the input has a one in slot $1$ of the first block and in slot $3$ of the second, and the desired output has a one in slot $4=1+3$:
+\begin{align*}
+  x&=(0,1,0,0,0,0,0\;|\;0,0,0,1,0,0,0)\in\R^{14},\\
+  y&=(0,0,0,0,1,0,0)\in\R^{7}.
+\end{align*}
+\end{exmp}
+
+The model is trained on a collection of pairs $(a,b)$, but \emph{not on all of them}: a collection of pairs is held out, because one wants to test later how well it learned what it was given (the instructor mentions something like $80\%$ for training and $20\%$ held out).
+
+\needspace{5\baselineskip}
+\subsection{Two ways to measure: accuracy and loss}\label{sec:L5-accloss}\tsm{1:30:38}
+The output of the network is a vector of numbers, which will most likely not look like a one-hot vector. There are two ways to evaluate it. One can take the answer with the highest score (the dot product of the output with each possible one-hot answer is just a coordinate) and call it the model's answer: this gives the \term{accuracy}. Or one can turn the scores into probabilities, $\Pr(\text{answer }j)\propto e^{\,\text{score}_j}$ (the softmax): a perfect network would put probability one on the correct answer and zero elsewhere, which does not happen in practice, so one also measures the error through the \term{loss}, the negative log-likelihood $-\log\Pr(\text{correct answer})$ over all training (or held-out) pairs.
+
+The two behave very differently. If the correct answer has probability $51\%$, the accuracy is perfect but the loss is not: $-\ln0.51=0.67$, since the other answers share $49\%$. If the probability of the correct answer goes up to $99\%$, the accuracy does not change at all and the loss drops to $-\ln0.99=0.010$.
+
+\begin{beyond}[A perfect accuracy leaves the loss almost unconstrained]
+With $p$ classes, a vector of probabilities whose largest entry is the correct one has $\Pr(\text{correct})>1/p$ (the others share exactly $1-\Pr(\text{correct})$, so one of them has at least $(1-\Pr(\text{correct}))/(p-1)$, and when the correct class is the strict maximum this must be smaller than $\Pr(\text{correct})$). Conversely probability just above $1/p$ is enough. So the loss of a classifier with $100\%$ accuracy (strict maximum) can be anywhere in $(0,\ln p)$, as close to the loss $\ln p$ of uniform guessing as one likes: for $p=97$, $\ln97=4.57$ against $0.67$ and $0.010$ above. This is why the \emph{loss} of the held-out set is the more informative curve of grokking.
+\end{beyond}
+
+\needspace{5\baselineskip}
+\subsection{The grokking observation}\label{sec:L5-grok-obs}\tsm{1:33:46}
+Now the grokking observation, as the instructor describes it: the statement about the accuracy is attributed to Power et al.\,\citep{power2022}; for the plot of the loss that he shows next he does not say where it comes from. At around $10^2$ training steps the \emph{training} accuracy goes to $100\%$: the model gives the top probability to all the correct answers of the pairs it trained on. On the pairs that were held out it does terribly. One keeps training: the training loss keeps decreasing, while the held-out loss keeps \emph{increasing} for a long time, from about $10^2$ to $10^5$ steps. Only then does the accuracy on the held-out pairs suddenly, within a very short time, shoot up and reach $100\%$ again. In the plot of the loss, the blue line is the loss of random outputs ($\ln p$), and the green line is the held-out loss: at first it is about random; then it starts to go up (\say{something interesting is happening, the model is kind of rotating something}); and then, quite late in training, it drops all the way to the same level as the training set, to zero loss.
+
+\begin{discussion}[Questions from the class]
+\emph{Why would anyone keep the experiment running?} The instructor: that is part of the deep-learning intuition, that if one trains for longer, things do eventually get better. A student adds that, as he has heard, the person who found the effect had simply left the computer running by accident, and that it was not a planned experiment (hearsay; see the box below).
+\emph{What is the green curve?} The accuracy (or loss) on pairs the network did \emph{not} train on: one uses, say, $80\%$ of the pairs for training and tests on the remainder.
+\emph{On the size of the models.} Grokking is observed when the models are quite small (few parameters). The instructor does not know an example with a very large amount of data and a small model, and asks the class whether anyone has experimented with this; all the examples he can think of use $p$ around $100$ and a width comparable to that. The effect does occur with very large networks (the theory below takes the width to infinity, with width very large compared to the number of data points), but whether it can occur with a small model and very large data, \say{I'm suspicious of that}.
+\end{discussion}
+
+\begin{beyond}[What the original paper reports]
+In \citet{power2022} the task is $a\circ b=c$ for a binary operation $\circ$ (modular addition, subtraction and division, several polynomial operations, and products in the permutation group $S_5$), each element being a separate token; the model is a small decoder-only transformer (2 layers, width 128, 4 heads, about $4\cdot10^5$ non-embedding parameters), trained mostly with AdamW (learning rate $10^{-3}$, weight decay~$1$). I believe the plot of the lecture is their Figure~1: division modulo $97$ with $50\%$ of the equations in the training set. Its caption says that the training accuracy is close to perfect before $10^3$ optimization steps, that \say{very little evidence of any generalization} appears until $10^5$ steps, and that it takes close to $10^6$ steps for the validation accuracy to get there (that run used Adam \emph{without} weight decay, to show how late generalization can begin; I did not see the plot). So ``$10^2$ to $10^5$'' of the lecture is right in order of magnitude for the onset, while the jump itself completes later in that figure. Two other findings of the paper bear on what was said: the number of steps needed to generalize grows rapidly as the fraction of training data shrinks (for $S_5$, around $25$--$30\%$ of the data, a $1\%$ decrease in data raises the median time by $40$--$50\%$); and weight decay is the most effective intervention they tried, which they attribute in part to a prior that weights close to zero are suitable. The validation \emph{loss} shows a double descent: it rises first and then falls. The story that the effect was found because a run was left going by accident is repeated in popular accounts with different details (a vacation, a weekend, a week); I found no primary source, and the paper does not mention it.
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=13mm}, width=0.5\linewidth, height=0.42\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.4pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm},
+    xmode=log, xmin=20, xmax=10000, xlabel={training step}]
+\nextgroupplot[title={(a) accuracy}, ymin=-0.02, ymax=1.04, ylabel={accuracy},
+   legend style={at={(0.97,0.55)}, anchor=east, font=\sffamily\fontsize{6.2}{7}\selectfont, draw=none, fill=white, fill opacity=0.85, text opacity=1}]
+  \addplot[crimson] table[x=step, y=train_acc] {figures/data/grokking_curves.dat};   \addlegendentry{training pairs}
+  \addplot[accent] table[x=step, y=test_acc] {figures/data/grokking_curves.dat};   \addlegendentry{held-out pairs}
+\nextgroupplot[title={(b) loss}, ymin=-0.1, ymax=6.8, ylabel={cross-entropy},
+   legend style={at={(0.03,0.03)}, anchor=south west, font=\sffamily\fontsize{6.2}{7}\selectfont, draw=none, fill=white, fill opacity=0.85, text opacity=1}]
+  \addplot[crimson] table[x=step, y=train_loss] {figures/data/grokking_curves.dat};   \addlegendentry{training pairs}
+  \addplot[accent] table[x=step, y=test_loss] {figures/data/grokking_curves.dat};   \addlegendentry{held-out pairs}
+  \draw[slate, dashed, line width=0.8pt] (axis cs:20,4.5747) -- (axis cs:10000,4.5747);
+  \node[font=\sffamily\fontsize{6.0}{6.8}\selectfont, text=slate, anchor=south east] at (axis cs:9500,4.62) {random guessing, $\ln97$};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Grokking in an experiment of my own (not the lecture's, not Power et al.'s transformer): modular addition mod $97$, $25\%$ of the $9409$ pairs for training, a network with one hidden layer of $256$ square-activation units (the architecture of Section~\ref{sec:L5-theory}), full-batch AdamW with decoupled weight decay~$1$, seed~0. The training pairs are fitted (accuracy $\ge99\%$) at step $240$; the held-out accuracy then stays near the chance level ($1\%$) until about step $1000$, is $9\%$ at step $2000$, reaches $50\%$ at step $3280$ and $99\%$ at step $5540$, while the held-out loss first \emph{rises} from $4.57$ to $6.31$ (step $1100$) before it falls to $1.8\cdot10^{-3}$. Script \kbd{figures/grokking.py}.}
+\label{fig:L5-grok}
+\end{figure}
+
+\begin{beyond}[A grokking experiment of my own]
+To have the phenomenon at hand in the setting of the theory of Section~\ref{sec:L5-theory}, I trained the network of that section on modular addition (script \kbd{figures/grokking.py}): $p=97$, the one-hidden-layer network $f(x)=A\,(Wx)^2$ with $H=256$ square-activation units and no biases, inputs two concatenated one-hot vectors, $25\%$ of the pairs ($2352$) for training and the other $7057$ held out, cross-entropy loss (the negative log-likelihood of the softmax probabilities of the lecture), full-batch AdamW with learning rate $10^{-3}$, decoupled weight decay $1$, $\beta=(0.9,0.98)$, $10^4$ steps, initial weights uniform with twice the PyTorch default width. Figure~\ref{fig:L5-grok} shows seed~$0$. The training accuracy reaches $99\%$ at step $240$ in all four seeds I ran; the held-out accuracy reaches $99\%$ at steps $5540$, $5600$, $6320$ and $5840$ (seeds $0$--$3$), about $23$--$26$ times later. The held-out loss shows the lecture's ``green curve'': it first goes \emph{up} (from $\ln97=4.57$ at initialization to $6.31$) while the training loss goes down, and then falls to the level of the training loss. The norm of the weights grows from $21.7$ to a maximum of about $119$ (step $1660$) and then decays under the weight decay to $89.0$. The held-out loss peaks at step $1100$ and is back below $\ln97$ at step $2140$, well before the accuracy reaches $50\%$ (step $3280$; the other seeds are similar): in these runs the loss turns long before the jump. These are my own runs of one architecture and one optimizer, with the large weight decay ($1$) customary in the grokking literature; they illustrate the lecture's description, they do not test it.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\needspace{7\baselineskip}
+\section{A theory of grokking}\label{sec:L5-theory}
+\tsm{1:38:34}
+With about ten minutes left the instructor describes a theory of grokking by Rubin, Seroussi and Ringel\,\citep{rubin2024}; Zohar Ringel is the teacher of the mini-course announced in Section~\ref{sec:L5-announce}. The theory goes back to the Bayesian picture: one assumes that Langevin dynamics has reached its stationary distribution, so that the network has learned the true Bayesian posterior, and that there is a Gaussian prior that acts as regularization. (In such a model there is no training time; see the questions at the end.)
+
+\needspace{5\baselineskip}
+\subsection{The network}\label{sec:L5-net}\tsm{1:39:06}
+The instructor realizes that \say{maybe it's actually not the worst time to see what the neural network looks like}: after weeks of talking about neural networks he has not defined one. The network of the theory is a simple one with a single hidden layer. The input is a vector $x\in\R^{2p}$ (two one-hot blocks). Neuron~$i$ of the hidden layer is connected to every input coordinate with strength $w_{ik}$, and the output components are connected to the hidden neurons with strengths $a_{ji}$. The first layer is linear, but the hidden neurons then apply a nonlinearity, which here is the \emph{square}:
+\begin{equation}\label{eq:L5-net}
+  h_i(x)\;=\;\Big(\sum_{k=1}^{2p}w_{ik}\,x_k\Big)^{2},\qquad f_j(x)\;=\;\sum_{i=1}^{N}a_{ji}\,h_i(x).
+\end{equation}
+Grokking happens for many nonlinearities (the typical one is the ReLU), but a polynomial is easier to work with. \say{We have a vector, we multiply it by the matrix $W$, we apply the nonlinearity, and we apply another matrix $A$}: a deceptively simple object, known as a network with one hidden layer.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\scriptsize]
+  \foreach \i in {0,...,6} {
+    \node[circle, draw=accent, fill=white, minimum size=3.4mm, inner sep=0pt] (a\i) at (0,{26-4.4*\i}) {};
+    \node[circle, draw=teal, fill=white, minimum size=3.4mm, inner sep=0pt] (b\i) at (0,{-6-4.4*\i}) {};
+    \node[circle, draw=slate, fill=white, minimum size=3.4mm, inner sep=0pt] (o\i) at (96,{26-4.4*\i}) {};
+  }
+  \foreach \i in {0,...,4} {
+    \node[rounded corners=1pt, draw=amber!85!black, fill=amber!10, minimum width=9mm, minimum height=4.6mm, inner sep=0pt] (h\i) at (50,{26-9*\i}) {$(\cdot)^2$};
+  }
+  \foreach \i in {0,...,4} {
+    \draw[accent!55, line width=0.4pt] (a1) -- (h\i);
+    \draw[teal!55, line width=0.4pt] (b3) -- (h\i);
+    \foreach \j in {0,...,6} { \draw[slate!25, line width=0.25pt] (h\i) -- (o\j); }
+    \draw[amber!70, line width=0.55pt] (h\i) -- (o4);
+  }
+  \fill[accent] (a1) circle (1.45mm); \fill[teal] (b3) circle (1.45mm); \fill[slate] (o4) circle (1.45mm);
+  \node[font=\sffamily\tiny, text=white] at (a1) {1}; \node[font=\sffamily\tiny, text=white] at (b3) {1}; \node[font=\sffamily\tiny, text=white] at (o4) {1};
+  \node[anchor=south, text=accent, align=center] at (0,31) {first number\\$m=1$};
+  \node[anchor=north, text=teal, align=center] at (0,-37.5) {second number\\$n=3$};
+  \node[anchor=south, text=amber!70!black, align=center] at (50,31) {hidden units\\$h_i=(u_i(m)+v_i(n))^2$};
+  \node[anchor=south, text=slate, align=center] at (96,31) {output $f_j$\\target $\delta_{j,m+n}-\frac1p$};
+  \node[text=accent, anchor=east, align=right, font=\sffamily\tiny] at (-3,9) {$u_i\in\R^p$};
+  \node[text=teal, anchor=east, align=right, font=\sffamily\tiny] at (-3,-21) {$v_i\in\R^p$};
+  \node[text=amber!70!black, anchor=west, font=\sffamily\tiny, align=left] at (56,-14) {$w_i=(u_i,v_i)$,\\ $x=(e_m,e_n)$ is\\ two-hot};
+  \node[text=slate, anchor=west, font=\sffamily\tiny, align=left] at (101,3) {$A=(a_{ji})$};
+\end{tikzpicture}
+\caption{The network of \eqref{eq:L5-net} for $p=7$ (schematic; only $5$ of the $N$ hidden units are drawn), with the input $(1,3)$ of the example above: a two-hot vector, so that $h_i=(u_i(m)+v_i(n))^2$ involves one entry of $u_i$ and one of $v_i$. The output weights to the correct answer $j=4$ are highlighted.}
+\label{fig:L5-network}
+\end{figure}
+
+How can such a model solve the problem? It is convenient to split each row $w_i$ into two parts, $w_i=(u_i,v_i)$ with $u_i,v_i\in\R^p$: the part $u_i$ that sees the first number and the part $v_i$ that sees the second; on the input of the pair $(m,n)$ the unit computes $h_i=(u_i(m)+v_i(n))^2$. It is also convenient to renormalize the output: instead of the one-hot vector the target is
+\begin{equation}\label{eq:L5-target}
+  y_j(m,n)\;=\;\delta_{j,\,(m+n)\bmod p}-\frac1p,
+\end{equation}
+that is $1-\frac1p$ in the correct slot and $-\frac1p$ in every other slot, so that the entries of the target sum to zero.
+
+\needspace{5\baselineskip}
+\subsection{The guess: Fourier multiplication}\label{sec:L5-fourier}\tsm{1:44:59}
+Which algorithm might the model be learning? Associate with each number $m$ and each frequency $k$ an element of the Fourier basis, $\omega^{km}$ with $\omega=e^{2\pi i/p}$ (an angle of $2\pi/p$ per step). Take two of these, one for $m$ and one for $n$ with the same $k$, \emph{multiply} them to get $\omega^{k(m+n)}$, compare with the output slot $j$ through the factor $\omega^{-kj}$, and sum over all frequencies: $\sum_k\omega^{k(m+n-j)}$ is exactly what is wanted, a spike at the slot $j\equiv m+n$ and nothing elsewhere, \say{because then you end up summing over all the vectors on the circle}. (With the sum over $k=1,\dots,p-1$ and the normalizing factor $\frac1p$ the spike is $1-\frac1p=\frac{p-1}p$ and the rest $-\frac1p$, which is the zero-sum target \eqref{eq:L5-target}; the captions give ``$p$ minus one over $p$'' and ``zero otherwise'', the latter for the sum including $k=0$. The computation is in the box below.)
+
+The instructor's guess for the model is therefore this. The neurons compute the \emph{same frequencies} for the two numbers; then the nonlinear function, the square, turns these same frequencies into the \emph{product} of the two Fourier elements. Once $u(m)$ and $v(n)$ both pick out the Fourier element of the same frequency, the square of their sum contains the product, and a linear combination in the last layer computes exactly the target.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.9\linewidth, height=0.38\linewidth, xmin=-11.5, xmax=11.5, ymin=-0.3, ymax=1.04, xlabel={$t=m+n-j$}, ylabel={partial sum},
+   legend style={at={(0.98,0.97)}, anchor=north east, font=\sffamily\fontsize{6.2}{7}\selectfont, legend columns=2}]
+  \addplot[plum, line width=1.1pt] table[x=t, y=K1] {figures/data/fourier_partial.dat};   \addlegendentry{$K=1$}
+  \addplot[moss, line width=1.1pt] table[x=t, y=K2] {figures/data/fourier_partial.dat};   \addlegendentry{$K=2$}
+  \addplot[teal, line width=1.1pt] table[x=t, y=K4] {figures/data/fourier_partial.dat};   \addlegendentry{$K=4$}
+  \addplot[crimson, line width=1.5pt] table[x=t, y=K11] {figures/data/fourier_partial.dat};   \addlegendentry{$K=11$}
+  \addplot[only marks, mark=*, mark size=1.9pt, ink] table[x=t, y=delta] {figures/data/fourier_exact.dat};   \addlegendentry{$[t\equiv0]-\frac1{23}$}
+\end{axis}
+\end{tikzpicture}
+\caption{Why a sum over frequencies is a spike: the partial sums $\frac2p\sum_{k=1}^K\cos\frac{2\pi kt}p$ for $p=23$ and $K=1,2,4,11$, as functions of the real variable $t$, against the target values $[t\equiv0]-\frac1p$ at the integers (dots). For $K=\frac{p-1}2=11$ the curve passes exactly through all the dots (the identity in the box below); fewer frequencies give a blurred spike. Script \kbd{figures/gen\_data.py}.}
+\label{fig:L5-fourier}
+\end{figure}
+
+\needspace{5\baselineskip}
+\subsection{The method, and where the lecture stops}\label{sec:L5-method}\tsm{1:48:08}
+Running out of time, the instructor says one last thing about how such a problem is attacked: by adding one difficulty at a time. First think only about the last layer, the coefficients $a_{ji}$, and imagine that the first-layer weights $w_{ik}$ are all fixed: how would one then compute the optimal last layer? That is a \emph{linear regression}, whose solution can be written explicitly. The next step is a trick from mean-field theory, which lets one go back and ask: if the first layer had been fixed, this is the solution one would have obtained, and it would have this error; so how can one find the kernel, the solution, for which this error is minimized (consistently with the first layer)? That leads to the idea of a \emph{deterministic kernel}. The instructor will think about how to state \say{the main insight from this approach} in maybe five minutes next class and then talk about LLM training, a more practical matter. The captions end shortly after; so does this account, and I do not know whether he returned to it. He nevertheless finds it \say{a really interesting method and approach for trying to understand phase transitions in neural networks}, recommends it as a project to those who like this kind of mathematics (can the method be pushed to other phase transitions?), and recommends Ringel's course.
+
+\needspace{5\baselineskip}
+\subsection{Questions}\label{sec:L5-theory-q}\tsm{1:50:15}
+\begin{discussion}[How does this relate to the NTK eigenvalues of last time?]
+A student asks whether the eigenvalue picture of Lectures~\ref{ch:L2}--\ref{ch:L3} can be recognized here. Yes, the instructor says, it is very similar: again one looks at a decomposition, and one wants to understand how changes of the middle layer \emph{rotate the network into the correct basis}, giving the correct Fourier modes large coefficients. After some simplifications one can treat different neurons, different components of the hidden vector, as independent, and the question becomes what \emph{incentivizes a particular neuron to have its $u$ and its $v$ pick the same frequency}; once they do, that neuron contributes to the correct solution.
+\end{discussion}
+
+\begin{discussion}[Is there a ``time'' in this model?]
+Another student imagines an experiment in which the frequencies appear in several stages (the captions are garbled here). The instructor: that would be very interesting. In the end the authors have, after many simplifications, some nice pictures. Because they look at the Bayesian posterior, there is no time in their model; there is a parameter that trades the prior regularization against the \emph{intensity of learning}, how much one pushes the model to fit the actual values. As one increases the intensity one sees transitions that force the neurons to develop frequencies: at first these are quite small, then they become large and pronounced and start giving the correct solution, which goes through the Fourier transform and gives exactly the multiplication.
+\end{discussion}
+
+\begin{beyond}[The identity behind the guess, and an exact network of width $4(p-1)$]
+\emph{The identity.} For an integer $t$ and $\omega=e^{2\pi i/p}$, the geometric sum gives $\sum_{k=0}^{p-1}\omega^{kt}=p$ if $p\mid t$ and $0$ otherwise. Dropping the term $k=0$, and pairing $k$ with $p-k$ for odd $p$,
+\[
+  \frac1p\sum_{k=1}^{p-1}\omega^{kt}\;=\;\frac2p\sum_{k=1}^{(p-1)/2}\cos\frac{2\pi kt}p\;=\;[\,t\equiv0\bmod p\,]-\frac1p .
+\]
+With $t=m+n-j$ the right-hand side is the target \eqref{eq:L5-target}: the renormalization of the lecture removes exactly the constant (frequency $0$) component of the one-hot vector, which is the $\frac1p\mathbf1$ that was subtracted (Figure~\ref{fig:L5-fourier}).
+
+\emph{A network that computes it.} Write $c_m=\cos\frac{2\pi km}p$ and $s_m=\sin\frac{2\pi km}p$. From $\cos\frac{2\pi k(m+n-j)}p=\cos\frac{2\pi k(m+n)}p\cos\frac{2\pi kj}p+\sin\frac{2\pi k(m+n)}p\sin\frac{2\pi kj}p$, $\cos\frac{2\pi k(m+n)}p=c_mc_n-s_ms_n$ and $\sin\frac{2\pi k(m+n)}p=s_mc_n+c_ms_n$, the target is, for each $j$, a linear combination of the four products $c_mc_n,\,s_ms_n,\,s_mc_n,\,c_ms_n$, $k=1,\dots,\frac{p-1}2$. A product of a function of $m$ and a function of $n$ is a difference of two squares, $a(m)b(n)=\frac14\big[(a(m)+b(n))^2-(a(m)-b(n))^2\big]$, and the square of $a(m)+b(n)$ is exactly the activation $(u(m)+v(n))^2$ of a hidden unit with $u=a$ and $v=\pm b$. Hence eight hidden units per frequency, $4(p-1)$ in total, in each of which $u$ and $v$ are each a cosine or a sine of the \emph{same} frequency, and output weights $a_{ji}=\pm\frac2p\cdot\frac14\cos\frac{2\pi kj}p$ or $\pm\frac2p\cdot\frac14\sin\frac{2\pi kj}p$ give $f_j(m,n)=[\,j\equiv m+n\,]-\frac1p$ \emph{exactly}. I checked this to $10^{-12}$ for $p=5,7,11,13,23$ (all pairs $(m,n)$ and all $j$; the $\arg\max$ is the correct class); for $p=97$ it has $384$ hidden units. So a square-activation network of width $4(p-1)$ solves the task exactly by the algorithm that the instructor guessed; I do not claim that this width is the smallest possible, and the construction is mine. (For the $\arg\max$ alone a single frequency would suffice: for prime $p$ and $1\le k<p$, $\cos\frac{2\pi kt}p=1$ only for $t\equiv0$. The sum over all frequencies is what makes the output the exact zero-sum target, whereas trained networks may use only a few ``key'' frequencies, see below.)
+
+\emph{Literature.} \citet{gromov2023} gives an analytic solution for the same architecture (two layers, quadratic activation, no biases, one-hot inputs) with first-layer weights $\cos(2\pi kn/p+\varphi_k)$ of the same frequency for the two numbers and random phases (tied by one constraint to the phase of the read-out weights); there the cross terms cancel only approximately, with an error that decreases as the width grows, and he finds evidence that gradient descent, also with AdamW, arrives at weights of this form. \citet{nanda2023} reverse-engineered one-layer transformers trained on modular addition ($p=113$) and found the same algorithm: embeddings of sines and cosines at a few \emph{key frequencies} (five in their main model), trigonometric identities in the attention and MLP layers that produce $\cos(w(a+b))$ and $\sin(w(a+b))$, and a read-out $\cos(w(a+b-c))$ that is largest at $c\equiv a+b$.
+\end{beyond}
+
+\begin{beyond}[What the paper of Rubin, Seroussi and Ringel does]
+I read the arXiv text of the paper (v3, ICLR 2024). This is my summary of what it states; I did not re-derive its analysis, and the lecture covers only the beginning.
+\begin{enumerate}[label=(\roman*), itemsep=0.1em, topsep=0.2em]
+  \item \emph{Equilibrium, not dynamics.} Networks are trained with the mean-squared error by Langevin dynamics with weight decay until equilibrium, so the weights are distributed according to the Bayesian posterior for a Gaussian prior and a noise level $\sigma^2$. Grokking is studied as a phenomenon of this equilibrium as one varies the sample size, the noise or the width; in the modular model the control parameter is $\sigma^2$ (lowering it plays the role of more data: the ``intensity of learning'' of the lecture), and there is no time.
+  \item \emph{The model.} For modular addition it is exactly \eqref{eq:L5-net}--\eqref{eq:L5-target}: two-hot input in $\R^{2P}$, $f_p(x)=\sum_ia_{pi}(w_i\!\cdot\!x)^2$, target $\delta_{p,(n+m)\bmod P}-1/P$ (the setting of Gromov).
+  \item \emph{Adaptive kernel.} In the limit of large width with mean-field scaling, the posterior of the last layer decouples from that of the first layer, and the first-layer weights of different neurons become independent and identically distributed. The coupling is through two non-fluctuating quantities: the kernel $Q_{\mu\nu}=\sigma_a^2\langle\phi(w\!\cdot\!x_\mu)\phi(w\!\cdot\!x_\nu)\rangle$, an average over the weight distribution of a neuron, and the discrepancy $\bar t=(y-\bar f)/\sigma^2$, where $\bar f=Q(Q+\sigma^2)^{-1}y$ is the ridge-regression prediction of the last layer for that kernel (the ``explicit solution'' of the lecture). The weight distribution of a neuron depends in turn on $\bar t$, so the kernel must be determined \emph{self-consistently}: this is the ``deterministic kernel'' of the lecture. The approach is that of \citet{seroussi2023}.
+  \item \emph{Fourier modes.} The symmetries of $\mathbb Z_P$ (translations, multiplications by units) make the kernel diagonal in the Fourier basis and degenerate on the modes $\phi_{k,k}$, $k\ge1$, whose span contains the target (their Eq.~15 is the Fourier series above). The action of one neuron then decouples into the Fourier components $(w_k,v_k)$ of its two halves, with a term proportional to $-|w_k|^2|v_k|^2$ (their Eq.~16) that \emph{rewards neurons whose two halves have weight on the same frequency}; as far as I can tell this is the paper's answer to the question that the instructor leaves open in the first discussion above.
+  \item \emph{Result.} As $\sigma^2$ decreases there is a first-order phase transition: first a phase in which the weights fluctuate around zero (``Gaussian feature learning'', a smooth continuation of the infinite-width Gaussian-process limit), then a mixed phase in which a finite fraction of the neurons sit at non-zero Fourier weights (``droplets''; the weight distribution is a mixture of Gaussians), then a phase dominated by the specialized neurons. For their parameters ($P=401$, width $1000$) the mixed phase begins near $\sigma^2\approx0.227$ and ends near $0.175$, while the quantity that measures the test error goes from $-1$ to $-0.7$; they relate the weights of the mixed phase to the cosines of Gromov's solution.
+  \item \emph{Simplifications to keep in mind.} The paper replaces sums over data by integrals (the ``equivalent kernel'' approximation), which \emph{washes out} the finite-data generalization gap, so that grokking is read from the discrepancy; and for the modular model it adds a non-Gaussian, sixth-order weight-decay term for simplicity.
+\end{enumerate}
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=3 by 1, horizontal sep=12mm}, width=0.27\linewidth, height=0.27\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.2pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) held-out profile}, xmode=log, xmin=100, xmax=10000, ymin=0, ymax=1.02, xlabel={training step}, ylabel={share, accuracy}]
+  \addplot[crimson!45, line width=0.7pt] table[x=step, y=share1] {figures/data/L5_grok_profile.dat};
+  \addplot[crimson!45, line width=0.7pt] table[x=step, y=share2] {figures/data/L5_grok_profile.dat};
+  \addplot[crimson!45, line width=0.7pt] table[x=step, y=share3] {figures/data/L5_grok_profile.dat};
+  \addplot[crimson, line width=1.5pt] table[x=step, y=share0] {figures/data/L5_grok_profile.dat};
+  \addplot[accent, dashed, line width=1.2pt] table[x=step, y=test0] {figures/data/L5_grok_profile.dat};
+\nextgroupplot[title={(b) units, step 240}, xmin=0, xmax=49, ymin=0, ymax=49, xtick={1,12,24,36,48}, ytick={1,12,24,36,48}, xlabel={$k(u_i)$}, ylabel={$k(v_i)$}]
+  \addplot[only marks, mark=*, mark size=0.9pt, accent, opacity=0.55] table[x=early_ku, y=early_kv] {figures/data/grokking_neurons.dat};
+  \draw[slate, dashed, line width=0.6pt] (axis cs:0,0) -- (axis cs:49,49);
+\nextgroupplot[title={(c) units, step $10^4$}, xmin=0, xmax=49, ymin=0, ymax=49, xtick={1,12,24,36,48}, ytick={1,12,24,36,48}, xlabel={$k(u_i)$}]
+  \addplot[only marks, mark=*, mark size=0.9pt, crimson, opacity=0.55] table[x=final_ku, y=final_kv] {figures/data/grokking_neurons.dat};
+  \draw[slate, dashed, line width=0.6pt] (axis cs:0,0) -- (axis cs:49,49);
+\end{groupplot}
+\end{tikzpicture}
+\caption{Inside the network of Figure~\ref{fig:L5-grok} (seed~0 unless stated). \textbf{(b, c)} Dominant frequency $k(u_i)$ of the first-number weights against $k(v_i)$ of the second-number weights, for each of the $256$ hidden units; dashed: the diagonal $k(u_i)=k(v_i)$ that the lecture's guess predicts. Early (step $240$, training pairs just fitted) $36\%$ of the units lie on the diagonal, at the end $86\%$ (about $2\%$ if the two were independent). \textbf{(a)} Held-out pairs ($7057$ of them): the share of the centered logit energy that is a function of $m+n-j$ alone, that is, that equals the offset profile $g(t)$ (thick: seed~$0$; thin: seeds $1$--$3$; the exact network of the box above has share~$1$), and the held-out accuracy of seed~$0$ (dashed). The share is $0.0008$ when the training set is first fitted and $0.45$ at step $10^4$ ($0.41$, $0.40$, $0.41$ for seeds $1$--$3$); the box below defines it. In (b, c), $k(\cdot)$ is the dominant frequency in the discrete Fourier transform of a weight vector, with $k$ and $p-k$ identified and $k=0$ dropped. Scripts \kbd{figures/grokking.py} (units) and \kbd{figures/gen\_data\_L5.py}.}
+\label{fig:L5-inside}
+\end{figure}
+
+\begin{beyond}[A smooth quantity behind the jump (my own measurement)]
+\emph{What the network computes on held-out pairs.} Let $F_j(m,n)$ be the logits of the network of Figure~\ref{fig:L5-grok}, centered over $j$. For a set $S$ of pairs define the \term{offset profile}
+\[
+  g_S(t)\;=\;\frac1{|S|}\sum_{(m,n)\in S}F_{m+n-t}(m,n)\qquad(t\in\mathbb Z_p),
+\]
+the average logit of the class that lies $t$ steps away from the correct one, and the \term{share} of $S$: the fraction of the logit energy on $S$ that is explained by this profile alone, $|S|\sum_tg_S(t)^2\big/\sum_{S}\sum_jF_j(m,n)^2$. The idealized network above has $F_j(m,n)=g(m+n-j)$ with $g(0)=1-\frac1p$ and $g(t)=-\frac1p$ otherwise, so its share is $1$ on every set of pairs (checked); independent noise has a share of about $1/|S|$, that is $1.5\times10^{-4}$ on the $7057$ held-out pairs (measured). I compute the share on the \emph{held-out} pairs, because a network that only memorized the training pairs would score about $0$ there. Define also the margin $g(0)\,p/(p-1)$ (the average amount by which the correct logit exceeds the mean of the others), the noise (the root-mean-square of $F_j(m,n)-g(m+n-j)$) and the ratio $\mathrm{snr}=\mathrm{margin}/\mathrm{noise}$.
+
+\emph{What it shows.} In the run of Figure~\ref{fig:L5-grok} (seed~$0$) the held-out share rises smoothly: $0.0008$ at the step where the training set is first fitted, $0.005$ at step $1000$, $0.03$ at $2000$, $0.10$ at $3000$, $0.28$ at $5000$ and $0.45$ at step $10^4$ (seeds $1$--$3$: $0.41$, $0.40$, $0.41$), while the held-out accuracy is still $1.7\%$ at step $1000$ and $9\%$ at step $2000$. The snr rises from $0.3$ at step $1000$ to $2.3$ at step $3000$ and $7.7$ at the end. The accuracy is a steep function of the snr, because the correct logit has to beat $p-1=96$ competitors: if the correct logit were $\mathrm{snr}+N(0,1)$ and the other $96$ were independent $N(0,1)$, the probability of a correct answer would follow a curve that, computed from the measured snr alone, stays within $0.045$ of the observed held-out accuracy at every step (within $0.03$--$0.04$ for the other seeds). So in this run the ``sudden'' rise of the accuracy is a smoothly growing signal passing the threshold at which it beats the noise of the competing classes. The held-out \emph{loss}, which sees the whole distribution, turns earlier: it peaks at step $1100$ ($6.31$), is back below $\ln97$ at step $2140$ and falls steadily while the accuracy is still below $50\%$ (reached at step $3280$); in this run the loss does not rise ``until the jump'' as in the picture of the lecture, whose slide was not visible.
+
+\emph{What it does not show.} (i) The functions of the offset $m+n-j$ alone are all the functions that respect the symmetry of the task (shifting $m$, $n$ and $j$ together); a network need not use Fourier modes to have a large share, and the Fourier content is the spectrum of $g$: in the final profile of seed~$0$ the five strongest of the $48$ frequencies carry $0.36$ of its energy and $26$ are needed for $90\%$, whereas the idealized network has $1/48$ each. (ii) Even at the end more than half of the held-out logit energy ($55$--$60\%$ over the four seeds) lies outside the profile: the trained network is not the idealized one, and the lecture's guess is supported only to the extent described here and by the unit statistic of panels (b, c). (iii) It is an observation about one architecture, one data fraction and four seeds, not an explanation of why the transition happens when it does. Scripts: \kbd{figures/gen\_data\_L5.py} (part G2) and the data files \kbd{L5\_grok\_profile.dat}, \kbd{L5\_profile\_spectrum.dat}.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item \textbf{SGD versus the posterior.} When, and why, does SGD sample something like the Bayesian posterior? In the quadratic toy model the answer depends on the size of the gradient noise; for real networks, and for the function-space posterior of Mingard et al., what controls the second-order differences?
+  \item \textbf{Which prior?} Can one say what prior over functions (a soft version of $2^{-\Kc}$) is induced by a network architecture, and does the regret bound of Lecture~3 then apply to the SGD-trained network?
+  \item \textbf{Grokking beyond toy models.} The theory covers a two-layer network at equilibrium; does anything similar describe transitions in larger networks, or in time rather than in a noise parameter, and could such a transition be \emph{predicted} (for example from the kernel's outlier eigenvalues) before it happens?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item \textbf{Bayes mixture.} $\Pbayes(D_n)=Z_n=\int\pi(\theta)\prod_ip_\theta(x_i)\,\dd\theta$ is at once the probability of the data under the mixture and the normalizer of the posterior $\pi_n$; the predictive distribution is $Z_{n+1}/Z_n$, and $-\log Z_n$ is the cumulative log-loss.
+  \item \textbf{Regret.} $R_n=\KL(q^{(n)}\|\Pbayes^{(n)})$; the Solomonoff bound $R_n\le\Kc(h^*)$ follows from keeping one term of the mixture, a point mass on the truth.
+  \item \textbf{Gaussian example.} Exactly, $R_n=\frac d2\ln(n+1)+\frac n{2(n+1)}(|\theta^*|^2-d)$; a Solomonoff-style discretization gives $R_n\lesssim\frac d2\ln n+d\ln\|\theta^*\|_\infty$. Either way a prior is a penalty on large parameters, and the cost of a parameter grows with its norm.
+  \item \textbf{From Bayes to training.} MAP is minimization of the loss plus $-\log\pi$ (weight decay for a Gaussian prior). The posterior $e^{-U}/Z$ is the stationary law of Langevin dynamics; SGLD is SGD plus Gaussian noise; and SGD and the Bayesian posterior look similar to first order (Mingard et al.), while much theory studies the latter.
+  \item \textbf{Grokking.} Perfect training accuracy with chance-level test accuracy, then a late jump of the accuracy; the loss, which can stay high at $100\%$ accuracy, is the more informative curve. A one-hidden-layer square-activation network \emph{can} compute $(a+b)\bmod p$ in the Fourier basis (the instructor's guess), and the Bayesian theory of Rubin, Seroussi and Ringel starts from it; the lecture stops before the main insight (in the paper, as I read it: a first-order phase transition of the posterior, through a self-consistent kernel).
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems]
+\begin{enumerate}
+  \item \emph{Completing the square.} Show \eqref{eq:L5-gauss-evidence}. What are the mean and covariance of the posterior $\pi_n$?
+  \item \emph{The exact regret.} Derive \eqref{eq:L5-gauss-regret}. Compute $R_{10}$ for $d=1$, $|\theta^*|=2$, and $R_{100}$ for $d=3$, $|\theta^*|=5$. By how much does $R_n$ differ from the Clarke--Barron value as $n\to\infty$?
+  \item \emph{The price of a wrong center.} Prove \eqref{eq:L5-wrong-center} and, with $\Kc(\tilde\theta)$ for the Solomonoff-style mixture, the oracle inequality \eqref{eq:L5-oracle}.
+  \item \emph{Optimal precision.} Minimize $f(\delta)=\frac{nd}2\delta^2+d\ln\frac c\delta$. Evaluate the minimum for $n=100$, $d=1$, $c=3$.
+  \item \emph{The scale of the prior.} For the prior $N(0,s^2I_d)$ derive \eqref{eq:L5-gauss-regret-s}, show that $R_n-\frac d2\ln n\to d\ln s+\frac{|\theta^*|^2}{2s^2}-\frac d2$, and find the best $s$. For $d=1$, $|\theta^*|=10$, compare $s=1$, $s=3$ and the best $s$.
+  \item \emph{MAP as a sequential predictor.} Show that the MAP estimate in the Gaussian example is $\frac n{n+1}\bar x$, that the expected extra code length of $N(\hat\theta_{t-1},I_d)$ at step $t$ is $\frac12\frac{(t-1)d+|\theta^*|^2}{t^2}$, and that the sum over $t\le n$ is $\frac d2\ln n+O(1)$.
+  \item \emph{Langevin.} Check that $e^{-U}$ makes the probability current of the Fokker--Planck equation vanish. For $U=\frac a2\theta^2$ find the stationary variance of the Euler--Maruyama chain; for $a=21$ compute it for $\varepsilon=0.01$, and the step for which it exceeds $1/a$ by exactly $1\%$.
+  \item \emph{Accuracy versus loss.} For $p=97$ classes compute the loss when the correct class has probability $0.51$ and the rest is spread equally, and when it has $0.99$. What is the loss of the uniform prediction, and what is the largest loss that is compatible with perfect accuracy?
+  \item \emph{Fourier delta.} Prove $\frac1p\sum_{k=1}^{p-1}\cos\frac{2\pi kt}p=[\,t\equiv0\,]-\frac1p$. For $p=7$ write down the $24$ hidden units $(u_i,v_i)$ and the output weights of the exact network of the box above, or explain why $4(p-1)$ units suffice.
+  \item \emph{Do the neurons pick the same frequency?} A network as in \eqref{eq:L5-net} has been trained. Design a test of the guess that $u_i$ and $v_i$ share their dominant frequency. What would be your null model, which quantity do you report, and what could you \emph{not} conclude from a positive result?
+\end{enumerate}
+\end{exercise}

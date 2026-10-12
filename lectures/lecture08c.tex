@@ -1,0 +1,199 @@
+% =====================================================================================
+%  Lecture 8, part C  —  section 8.6 (geometry of activations: first steps) and closing material
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{The geometry of activations: first steps}\label{sec:L8-geometry}
+\tsm{46:30}
+The next topic is the \emph{geometry of activations}. There is a connection with jailbreaking: one of the monitors above looks at the activation vectors of the model and classifies the response as harmful or safe depending on them. Logistics: there is no class on Monday (Thanksgiving), so the next class is on Wednesday\flag{} (the course page lists Lecture~9 on Monday 19 October, after a mid-semester break of 12--16 October), and a reading week comes at the end of the month. He urges everyone to use the extra time to think about their projects and to do some hands-on work.
+
+\subsection{Which spaces?}\label{sec:L8-spaces}\tsm{47:30}
+What kind of spaces are meant? The speaker shows a list of models that he took from the models used in the experiments of the Principles of Intelligence postdocs. Their sizes range from ``close to $10$ billion'' parameters to ``close to $3$ trillion''. ``Kim K3''\flag{} (Kimi~K3) is a very capable model, ``probably GPT-5 level, maybe'', quite close to the frontier. The architectures differ somewhat. The models treated so far are \term{dense}: each layer has one block of causal attention and one MLP. Another architecture, the \term{mixture of experts}, is a clever trick for when one does not have a lot of compute: it puts several MLP blocks into each layer. But the vector spaces that one wants to understand are the same. Tokens are turned into vectors; the vectors go through the layers one after the other; at the end there is a collection of vectors, one for each output token (the rows of the unembedding matrix); one takes projections on these vectors, and the projections give the probability of each token being the output. The dimension of these spaces is between about $1000$ and $20{,}000$; ``I think the smallest is $2880$ and the largest is $12{,}000$''\flag. The number of tokens is around $200{,}000$ (restricted to English words it would be much smaller, but with Chinese characters, emoji and so on it is about $200{,}000$). So the object is a space of dimension about $2000$ or $5000$ populated by $200{,}000$ vectors.
+
+\begin{beyond}[Checking the list: Kimi K3, 2880, 200,000]\label{box:L8-models}
+\emph{Kimi K3} is the open-weight model of Moonshot AI released in July 2026; according to its Hugging Face model card\,\citep{moonshot2026} it has $2.8$ trillion parameters in total, $104$ billion active per token (a mixture of $896$ experts, $16$ selected per token, plus $2$ shared), $93$ layers, an attention hidden dimension of $7168$ and a vocabulary of $160$K tokens; this fits ``close to three trillion''. The figure $2880$ is the hidden size of OpenAI's gpt-oss models\,\citep{openai2025oss} (default configuration in the Transformers documentation; vocabulary $201{,}088$, which fits ``around $200{,}000$''); gpt-oss-20b has about $21$ billion parameters, more than the ``close to $10$ billion'' of the smallest model, so I cannot tell whether it was on the speaker's list. I could not identify a model with a residual dimension near $12{,}000$. For comparison, from the configuration files: Qwen2.5-0.5B has dimension $896$ and a vocabulary of $151{,}936$ rows; Llama-3.2-1B has $2048$ and $128{,}256$. The ``Principles of Intelligence'' of the lecture is, I believe, PrincInt (formerly PIBBSS), which, according to a December 2025 posting, co-funds postdoctoral positions at the Fields Institute on mathematical foundations of interpretability.
+\end{beyond}
+
+\subsection{Two observations about high dimensions}\label{sec:L8-obs}\tsm{50:30}
+Let us think about this a little, the speaker says. He gives ``two very simple observations'', which are still useful as a start, because we usually think in three dimensions and $2000$-dimensional spaces are different.
+
+\paragraph{A random point of the ball.}
+Where does a random point of the unit ball of a $2000$-dimensional space lie? ``Very close to the boundary'' (a student, correctly). The ball of radius $1-\eps$ has $(1-\eps)^{d}$ times the volume of the unit ball: for $1\%$, already $0.99^{2000}$ (the captions say ``$0.99^{200}$'') is a very small number. So if one goes just a tiny bit inside, the volume is much smaller; in particular, with probability $86\%$ the point lies within $0.1\%$ of the boundary. ``A random point here really does lie on the boundary.''
+
+\begin{claim}[Observation 1 of the lecture]\label{cl:L8-ball}
+If $X$ is uniform in the unit ball of $\R^{d}$, then $\Pr(\norm{X}\le1-\eps)=(1-\eps)^{d}$. For $d=2000$, $\Pr(\norm{X}>1-10^{-3})\approx0.86$.
+\end{claim}
+
+\paragraph{Two random directions.}\tsm{51:30}
+Now take a unit vector, and a second random unit vector. What angle should one expect between them? For the same reason (the volume of a spherical cap drops dramatically as soon as one moves a little away from the equator) all the volume of the sphere is concentrated very close to the equator; so two random vectors are at an angle very close to $90\eightdeg$. How close? He computes the spread of the cosine. Let $u,v$ be independent and uniform. By symmetry $\E\langle u,v\rangle=0$, so the expected angle is $90\eightdeg$. For the second moment, $\E\langle u,v\rangle^2=\sum_{i,j}\E[u_iu_j]\,\E[v_iv_j]$ by independence; the cross terms vanish, so only $\sum_i\E[u_i^2]\,\E[v_i^2]$ is left; since $\sum_iu_i^2=1$, each $\E[u_i^2]$ is $1/d$, and the result is $d\cdot d^{-2}=1/d$. Hence $\cos\theta$ has mean $0$ and standard deviation $1/\sqrt d\approx0.022$, i.e.\ the angle is $90\eightdeg\pm1.3\eightdeg$ (the captions read ``one over root of $200$''\flag; the number he quotes, $1.3\eightdeg$, is $1/\sqrt{2000}$ radians).
+
+\begin{claim}[Observation 2 of the lecture]\label{cl:L8-orth}
+If $u,v\in\R^{d}$ are independent and uniform on the unit sphere, then $\E\langle u,v\rangle=0$ and $\E\langle u,v\rangle^{2}=1/d$. For $d=2000$ the angle between them is $90\eightdeg\pm1.3\eightdeg$.
+\end{claim}
+
+\paragraph{The smallest angle among $200{,}000$ vectors.}\tsm{55:30}
+Now the vocabulary: $200{,}000$ directions in a space of dimension about $2000$, two orders of magnitude more vectors than dimensions. What is the \emph{smallest} angle between any two of them, not the typical one? Without loss of generality one of the vectors points to the north pole. Another vector is, with very high probability, close to the equator, since that is where most of the volume is; and even if one does this $200{,}000$ times, ``the probability decays exponentially''. So for the closest pair the expected angle is still large, ``around $81\eightdeg$''.
+
+\begin{claim}[Observation 3 of the lecture]\label{cl:L8-min}
+Among $N=2\cdot10^{5}$ independent uniform unit vectors in $\R^{2000}$ the smallest pairwise angle is about $81\eightdeg$.
+\end{claim}
+
+\paragraph{The moral.}\tsm{56:30}
+So the rough landscape is a vector space of dimension about $2000$ with directions corresponding to tokens, two orders of magnitude more of them; and yet, because of the high dimension, the angles between them \emph{should} be large if one assumes a random distribution. Hence when one sees an angle below $80\eightdeg$ between two vectors, ``that is very special'': it means that they are very close, which may be a little surprising, since $80\eightdeg$ seems like a large angle. ``Okay, so we'll continue next [time].''
+
+\begin{beyond}[Proofs for the three observations]\label{box:L8-proofs}
+\emph{Observation 1.} The ball of radius $r$ has volume $r^d$ times that of the unit ball, so $\Pr(\norm X>1-\eps)=1-(1-\eps)^d\ge1-e^{-\eps d}$; for $d=2000$, $\eps=10^{-3}$ it is $0.8648$ (the bound gives $0.8647$). The median radius is $2^{-1/d}=1-3.5\cdot10^{-4}$, and $d\,(1-\norm X)$ is asymptotically exponential with mean $1$, since $(1-s/d)^d\to e^{-s}$: a typical point is at distance of order $1/d$ from the boundary. I checked this by simulation with a sampler that does not use the radius law (the first $d$ coordinates of a uniform point of $S^{d+1}$ are uniform in the ball $B^d$).
+\emph{Observation 2.} Let $T=\langle U,V\rangle$ for independent uniform $U,V$ on $S^{d-1}$, $d\ge3$. By rotation invariance $T$ has the law of one coordinate of a uniform point of the sphere: its density is $c_d(1-t^2)^{(d-3)/2}$ on $[-1,1]$, with $c_d=\Gamma(d/2)/(\sqrt\pi\,\Gamma(\frac{d-1}2))$ (for $d=3$ it is uniform: Archimedes), equivalently $T^2\sim\mathrm{Beta}(\tfrac12,\tfrac{d-1}2)$ (write $U=G/\norm G$ with $G$ Gaussian). The angle $\theta$ has density $c_d\sin^{d-2}\theta$. The moments are $\E T^{2k}=\prod_{j<k}\frac{2j+1}{d+2j}$; $k=1$ is the lecture's $1/d$. Since $d+2j\ge d$ we get $\E T^{2k}\le(2k-1)!!/d^k$, so, as $(2k-1)!!/(2k)!=1/(2^kk!)$,
+\[
+   \E e^{\lambda T}=\sum_k\frac{\lambda^{2k}\E T^{2k}}{(2k)!}\le\sum_k\frac{(\lambda^2/2d)^k}{k!}=e^{\lambda^2/2d},
+\]
+and Chernoff's bound gives $\Pr(T\ge t)\le e^{-dt^2/2}$ for $t\ge0$ (the cap estimate of \citealp[Lemma~2.2]{ball1997}). So $T$ is sub-Gaussian with variance proxy $1/d$, and $\sqrt d\,T\to N(0,1)$ (Figure~\ref{fig:L8-density}b). The exact tail is $\Pr(T\ge t)=\tfrac12I_{1-t^2}(\frac{d-1}2,\frac12)$ for $t\ge0$, with $I$ the regularized incomplete beta function. The standard deviation of the angle is about $1/\sqrt d$ radians for large $d$; from the exact law it is $39.2\eightdeg$ for $d=3$, $5.76\eightdeg$ for $d=100$, $1.28\eightdeg$ for $d=2000$ and $0.52\eightdeg$ for $d=12{,}000$ (Table~\ref{tab:L8-dim}; $1/\sqrt d$ radians gives $33.1$, $5.73$, $1.28$ and $0.52\eightdeg$). All of this is asserted against Monte Carlo and quadrature in the script \kbd{figures/gen\_data\_L8.py}.
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=13mm}, width=0.5\linewidth, height=0.47\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.3pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) angle $\theta$}, xmin=0, xmax=180, ymin=0, ymax=1.05, xtick={0,45,90,135,180}, xlabel={angle $\theta$ (degrees)}, ylabel={density, relative to its peak},
+   legend to name=angleleg, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=3.5mm}}]
+  \addplot[slate] table[x=theta, y=d3] {figures/data/L8_angle_density.dat};      \addlegendentry{$d=3$}
+  \addplot[teal] table[x=theta, y=d10] {figures/data/L8_angle_density.dat};      \addlegendentry{$d=10$}
+  \addplot[amber] table[x=theta, y=d100] {figures/data/L8_angle_density.dat};    \addlegendentry{$d=100$}
+  \addplot[crimson] table[x=theta, y=d2000] {figures/data/L8_angle_density.dat}; \addlegendentry{$d=2000$}
+\nextgroupplot[title={(b) standardized $\sqrt d\cos\theta$}, xmin=-4, xmax=4, ymin=0, ymax=0.45, xlabel={$z$}, ylabel={density}]
+  \addplot[slate] table[x=z, y=d3] {figures/data/L8_angle_std.dat};
+  \addplot[teal] table[x=z, y=d10] {figures/data/L8_angle_std.dat};
+  \addplot[amber] table[x=z, y=d100] {figures/data/L8_angle_std.dat};
+  \addplot[crimson] table[x=z, y=d2000] {figures/data/L8_angle_std.dat};
+  \addplot[ink, dashed, line width=0.9pt] table[x=z, y=gauss] {figures/data/L8_angle_std.dat};
+\end{groupplot}
+\end{tikzpicture}\par\smallskip\ref{angleleg}
+\caption{The angle between two independent uniform directions in $\R^d$ (exact densities, script \kbd{figures/gen\_data\_L8.py}). \textbf{(a)} The density $\propto\sin^{d-2}\theta$, scaled to peak $1$ at $90\eightdeg$: for $d=2000$ it is a spike of width $1.3\eightdeg$. \textbf{(b)} The same laws for $\sqrt d\cos\theta$; the dashed curve is the standard normal density. For $d=3$ the law is uniform (Archimedes); for $d=2000$ it is indistinguishable from the Gaussian (largest difference $1.5\cdot10^{-4}$).}
+\label{fig:L8-density}
+\end{figure}
+
+\begin{beyond}[The smallest angle: what the lecture's argument gives, and what the exact answer is]\label{box:L8-minangle}
+Let $\Theta_{\min}$ be the smallest angle among $N$ independent uniform vectors, $Q=\binom N2$ the number of pairs, and $p_d(\theta)=\Pr(\text{angle}\le\theta)=\tfrac12I_{\sin^2\theta}(\frac{d-1}2,\frac12)$ for $\theta\le90\eightdeg$. \emph{Union bound:} $\Pr(\Theta_{\min}\le\theta)\le Qp_d(\theta)$, valid for all $N,d$. For $N=2\cdot10^5$, $d=2000$ one has $Q=2\cdot10^{10}$ and $Qp_d(80\eightdeg)=5.2\cdot10^{-5}$: an angle below $80\eightdeg$ occurs with probability at most $5\cdot10^{-5}$ ( ``very special'' made precise); with probability $\ge99\%$ all angles exceed $80.88\eightdeg$ (the sub-Gaussian bound alone gives $80.31\eightdeg$). \emph{Sharper:} the number of pairs below $\theta$ is approximately Poisson with mean $Qp_d(\theta)$ (the pairs are only weakly dependent: two pairs that share a vertex are independent, and a pair is independent of all pairs disjoint from it, so that the Chen--Stein method \citep{arratia1989} bounds the error by about $8\lambda/N$ with $\lambda=Qp_d(\theta)$, of the order $10^{-5}$ at the median for $N=2\cdot10^5$; see also \citealp{cai2013}), so $\Pr(\Theta_{\min}>\theta)\approx e^{-Qp_d(\theta)}$. The median solves $Qp_d(\theta)=\ln2$ and equals $81.66\eightdeg$, the mean $81.62\eightdeg$; the back-of-the-envelope version $e^{-dc^2/2}=1/Q$, $c=\sqrt{2\ln Q/d}=0.154$, gives $81.1\eightdeg$. I compared the Poisson prediction with direct simulation in $13$ cases ($d=10$ to $10^4$, $N=10^3$ to $2\cdot10^4$): all simulated means lie within $2.1$ standard errors and $0.15\eightdeg$ of the prediction (the points of Figure~\ref{fig:L8-minangle}b).
+
+\emph{A correction.} The lecture's argument, ``fix one vector at the pole, the others are independent and near the equator'', bounds the angle from a \emph{given} vector to its nearest neighbor among the other $N-1$; its median is $84.24\eightdeg$ (solve $(N-1)p_d(\theta)=\ln2$). The closest pair among \emph{all} pairs has $\approx N/2$ times more chances, which lowers the angle to $81.7\eightdeg$; the quoted ``$81\eightdeg$'' is presumably this all-pairs value. The qualitative conclusion is unchanged. The dimension matters strongly (Table~\ref{tab:L8-dim}): the typical smallest angle among $2\cdot10^5$ random vectors reaches $80\eightdeg$ only for $d\ge1391$, and in $d=100$ it is $53.7\eightdeg$.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$d$ & sd of angle & $\Pr(\norm x>0.999)$ & $\Pr(\text{angle}<80\eightdeg)$ & smallest angle, $N=2\cdot10^5$\\
+\midrule
+$3$ & $39.2\eightdeg$ & $0.003$ & $0.41$ & $0.0007\eightdeg$\\
+$10$ & $19.1\eightdeg$ & $0.010$ & $0.30$ & $5.0\eightdeg$\\
+$100$ & $5.76\eightdeg$ & $0.095$ & $4.1\cdot10^{-2}$ & $53.7\eightdeg$\\
+$768$ & $2.07\eightdeg$ & $0.54$ & $6.3\cdot10^{-7}$ & $76.6\eightdeg$\\
+$2000$ & $1.28\eightdeg$ & $0.865$ & $2.6\cdot10^{-15}$ & $81.7\eightdeg$\\
+$2880$ & $1.07\eightdeg$ & $0.944$ & $3.1\cdot10^{-21}$ & $83.0\eightdeg$\\
+$7168$ & $0.68\eightdeg$ & $0.9992$ & $6.0\cdot10^{-50}$ & $85.6\eightdeg$\\
+$12000$ & $0.52\eightdeg$ & $1-6\cdot10^{-6}$ & $3.5\cdot10^{-82}$ & $86.6\eightdeg$\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Random directions in $\R^d$ (exact laws; script \kbd{figures/gen\_data\_L8.py}). The last column is the median smallest angle among $N=2\cdot10^5$ independent directions (Poisson approximation).}\label{tab:L8-dim}
+\end{center}
+\emph{The lecture's own example, simulated directly.} Six independent draws of $N=2\cdot10^5$ random unit vectors in $\R^{2000}$ (about two minutes each on a GPU; script option \kbd{--full}) gave smallest angles $81.27\eightdeg$, $81.68\eightdeg$, $81.68\eightdeg$, $81.80\eightdeg$, $81.82\eightdeg$ and $81.85\eightdeg$: mean $81.68\eightdeg$ with standard error $0.09\eightdeg$, against the Poisson prediction of $81.62\eightdeg$ for the mean (standard deviation of a single draw $0.24\eightdeg$).
+\end{beyond}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=13mm}, width=0.5\linewidth, height=0.5\linewidth,
+    axis lines=left, axis line style={-{Latex[length=2mm,width=1.4mm]}, ink!70, line width=0.5pt},
+    tick style={ink!70, line width=0.4pt}, every tick label/.append style={font=\sffamily\scriptsize, text=ink!85},
+    label style={font=\sffamily\small, text=ink}, grid=major, major grid style={rule!70, line width=0.3pt},
+    every axis plot/.append style={line width=1.3pt}, unbounded coords=jump, table/col sep=space,
+    title style={font=\sffamily\small\bfseries, text=ink, yshift=-1mm}]
+\nextgroupplot[title={(a) $\Pr(\text{angle}\le\theta)$}, xmin=45, xmax=90, ymode=log, ymin=1e-40, ymax=1, xtick={50,60,70,80,90}, ytick={1e-40,1e-30,1e-20,1e-10,1}, xlabel={$\theta$ (degrees)},
+   legend to name=tailleg, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=2.5mm}}]
+  \addplot[accent] table[x=theta, y=d100] {figures/data/L8_angle_tail.dat};    \addlegendentry{$d=100$}
+  \addplot[teal] table[x=theta, y=d300] {figures/data/L8_angle_tail.dat};      \addlegendentry{$300$}
+  \addplot[amber] table[x=theta, y=d1000] {figures/data/L8_angle_tail.dat};    \addlegendentry{$1000$}
+  \addplot[crimson] table[x=theta, y=d2000] {figures/data/L8_angle_tail.dat};  \addlegendentry{$2000$}
+  \addplot[plum] table[x=theta, y=d5000] {figures/data/L8_angle_tail.dat};     \addlegendentry{$5000$}
+  \draw[ink, dashed, line width=0.7pt] (axis cs:45,5e-11) -- (axis cs:90,5e-11);
+  \draw[ink!70, dotted, line width=0.8pt] (axis cs:80,1e-40) -- (axis cs:80,1);
+  \node[font=\sffamily\fontsize{6.4}{7}\selectfont, text=ink, anchor=south east, inner sep=1pt] at (axis cs:89.5,1.2e-10) {$1/\binom N2$};
+\nextgroupplot[title={(b) smallest angle among $N$}, xmode=log, xmin=8, xmax=20000, ymin=0, ymax=90, ytick={0,20,40,60,80}, xlabel={dimension $d$}, ylabel={degrees},
+   legend to name=minleg, legend columns=-1, legend style={font=\sffamily\fontsize{6.4}{7}\selectfont, draw=none, /tikz/every even column/.append style={column sep=2.5mm}}]
+  \addplot[accent] table[x=d, y=N1000] {figures/data/L8_minangle.dat};      \addlegendentry{$N=10^3$}
+  \addplot[teal] table[x=d, y=N10000] {figures/data/L8_minangle.dat};       \addlegendentry{$10^4$}
+  \addplot[amber] table[x=d, y=N100000] {figures/data/L8_minangle.dat};     \addlegendentry{$10^5$}
+  \addplot[crimson] table[x=d, y=N200000] {figures/data/L8_minangle.dat};   \addlegendentry{$2\cdot10^5$}
+  \addplot[accent, only marks, mark=*, mark size=1.5pt, forget plot] table[x=d, y=sim_mean, restrict expr to domain={\thisrow{N}}{1000:1000}] {figures/data/L8_minangle_mc.dat};
+  \addplot[teal, only marks, mark=*, mark size=1.5pt, forget plot] table[x=d, y=sim_mean, restrict expr to domain={\thisrow{N}}{10000:10000}] {figures/data/L8_minangle_mc.dat};
+  \draw[ink!70, dashed, line width=0.7pt] (axis cs:8,80) -- (axis cs:20000,80);
+  \node[font=\sffamily\fontsize{6.2}{7}\selectfont, text=ink, anchor=north west, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt] at (axis cs:9,79) {$80\eightdeg$};
+\end{groupplot}
+\end{tikzpicture}\par\smallskip\ref{tailleg}\par\smallskip\ref{minleg}
+\caption{\textbf{(a)} The exact probability that the angle between two independent uniform directions is at most $\theta$, for several dimensions (log scale). The dashed line is $1/\binom N2$ for $N=2\cdot10^5$: a curve crosses it at the angle below which one expects about one pair among $N$ vectors (here $81.7\eightdeg$ for $d=2000$). \textbf{(b)} The median smallest angle among $N$ random directions as a function of $d$ (Poisson approximation, lines) and simulated means (dots, for $N=10^3$ and $10^4$). Computed by the script \kbd{figures/gen\_data\_L8.py}.}
+\label{fig:L8-minangle}
+\end{figure}
+
+\begin{beyond}[How many almost orthogonal directions fit into $\R^{d}$?]\label{box:L8-packing}
+Many more than $d$. If $N^2e^{-d\eps^2/2}<1$ then, by the union bound and the sub-Gaussian estimate, $N$ independent uniform vectors have all pairwise $|\cos|\le\eps$ with positive probability, so such systems exist for every $N<e^{d\eps^2/4}$: the number of $\eps$-almost orthogonal directions is exponential in $d\eps^2$. For $d=2000$ and angles in $[80\eightdeg,100\eightdeg]$ ($\eps=\cos80\eightdeg=0.174$) this gives $3.5\cdot10^6$ directions, and the exact tail gives $2.0\cdot10^7$, about a hundred times the vocabulary. The \emph{Welch bound} is the limit in the other direction: $N>d$ unit vectors always have a pair with $|\langle v_i,v_j\rangle|\ge\sqrt{(N-d)/(d(N-1))}$\,\citep{welch1974}, i.e.\ $0.022$ (an angle outside $(88.7\eightdeg,91.3\eightdeg)$) for $N=2\cdot10^5$ and $d=2000$, against about $0.145$ for random vectors; so one cannot have \emph{all} angles near $90\eightdeg$, but exponentially many can be $\ge80\eightdeg$. The same concentration is behind the Johnson--Lindenstrauss lemma, which embeds $N$ points in dimension $O(\eps^{-2}\log N)$ with distortion $1\pm\eps$ (see \citealp{dasgupta2003} for an elementary proof). It is also the arithmetic of \emph{superposition}\,\citep{elhage2022}: a network can store more sparse features than it has dimensions if their directions are almost orthogonal. Whether and how trained models do so is the subject of the coming weeks; this box only says that geometry permits it.
+\end{beyond}
+
+\begin{beyond}[Real embedding matrices are not random]\label{box:L8-real}
+The lecture's last sentence is a statement about a \emph{null model}. How well does the null describe trained token vectors? I read, from the Hugging Face cache on my machine, five token-embedding matrices of four open models (Pythia contributes its input and its output matrix; read-only; script \kbd{figures/gen\_data\_L8.py --embeddings}; the Qwen matrices are tied, so input and output vectors coincide; rows that coincide with another row, about $1.3\%$ of the Qwen vocabulary, were dropped). A general fact explains what to look for: for independent unit vectors $X,Y$ from the same distribution with second-moment matrix $M=\E XX^{\!\top}$ (trace $1$), one has $\E\langle X,Y\rangle^2=\operatorname{tr}(M^2)=:1/d_{\mathrm{eff}}$, because $\E\langle X,Y\rangle^2=\E[Y^{\!\top}MY]=\operatorname{tr}(M\,\E YY^{\!\top})$; and $d_{\mathrm{eff}}\le d$ with equality iff $M=I/d$. So the lecture's $1/\sqrt d$ is really $1/\sqrt{d_{\mathrm{eff}}}$, and a shared direction (a nonzero mean $\bar x$, which adds $\norm{\bar x}^2$ to the mean cosine) lowers $d_{\mathrm{eff}}$ further. For a Gaussian with covariance spectrum $\lambda_k=k^{-1/2}$ in $\R^{400}$ a sample of $6000$ points gives $d_{\mathrm{eff}}=220$ (an unbiased pair estimate on $2\cdot10^4$ points gives $231$) against $226$ from $(\operatorname{tr}\Sigma)^2/\operatorname{tr}\Sigma^2$, and the measured spread of the cosine, $0.066$, matches $1/\sqrt{d_{\mathrm{eff}}}$, not $1/\sqrt{400}=0.05$.
+\begin{center}\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{raw vectors} & \multicolumn{2}{c}{mean removed} & random null\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+matrix ($d$) & $d_{\mathrm{eff}}$ & pairs $<80\eightdeg$ & $d_{\mathrm{eff}}$ & pairs $<80\eightdeg$ & pairs $<80\eightdeg$\\
+\midrule
+GPT-2, \kbd{wte} ($768$) & $13$ & $97\%$ & $405$ & $0.41\%$ & $6\cdot10^{-7}$\\
+Pythia-410m, input ($1024$) & $665$ & $0.12\%$ & $673$ & $0.11\%$ & $1\cdot10^{-8}$\\
+Pythia-410m, output ($1024$) & $75$ & $10\%$ & $540$ & $0.29\%$ & $1\cdot10^{-8}$\\
+Qwen2.5-Coder-1.5B ($1536$) & $27$ & $42\%$ & $519$ & $0.42\%$ & $4\cdot10^{-12}$\\
+Qwen2.5-Coder-3B ($2048$) & $101$ & $5.5\%$ & $1081$ & $0.17\%$ & $1\cdot10^{-15}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+So trained vectors depart from the null in two ways. A \emph{common component} makes raw cosines positive (mean cosine $0.27$ for GPT-2) and collapses $d_{\mathrm{eff}}$ to $13$--$101$ in four of the five matrices, far below $d$ (the Pythia input matrix has no common component: $665$ of $1024$); this is the anisotropy that\,\citet{ethayarajh2019} reported for contextual representations. After removing the mean, $d_{\mathrm{eff}}$ is between a third and two thirds of $d$ (e.g.\ $1081$ of $2048$), but the \emph{tail} is heavy: $0.1$--$0.4\%$ of all pairs are within $80\eightdeg$, which is $6\cdot10^{3}$ to $10^{12}$ times the random null, and at least $99\%$ of the tokens have a neighbor within $80\eightdeg$ (the median nearest-neighbor angle is $55$--$58\eightdeg$). For the $1.5\cdot10^{5}$ Qwen tokens that is $2$--$5\cdot10^{7}$ pairs. So in a real model an angle below $80\eightdeg$ is ``very special'' only relative to the null; the pairs are numerous, and the interesting question for the coming weeks is what they mean (shared spelling, case, meaning) and which low-dimensional structure the vectors have. The row \emph{norms} are not constant either (the ratio of the $95$th to the $5$th percentile is between $1.04$ and $1.54$ in these matrices), so the first observation of the lecture, about points of a ball, does not apply to them. I did this only for five matrices of small models, and for \emph{embedding} matrices; I make no claim about the activations in the middle of a network.
+\end{beyond}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and exercises}
+\begin{openq}[Questions this lecture leaves open]
+\begin{itemize}
+  \item Is there a \emph{theory} of classifier-based defenses against adaptive attackers: a query-complexity bound for an attacker who sees one bit per query, and what do batch-level monitors cost honest users?
+  \item Can prompt injection be eliminated by design, by separating instructions from data in the architecture of an agent, without losing the capabilities that make agents useful?
+  \item How do the geometries of real activation spaces depart from the random null (shared directions, low effective dimension, heavy tails), and how many \emph{features} can a model store in $\R^{d}$ with $d$ far smaller than the number of features?
+\end{itemize}
+\end{openq}
+
+\begin{takeaways}
+\begin{itemize}
+  \item \textbf{Emergent misalignment can be replicated on a laptop} with a small model and \emph{LoRA}, which trains only a low-rank correction $W+\tfrac{\alpha}{r}BA$ of the frozen weights.
+  \item A \textbf{jailbreak} is a prompt that makes a model do what its developers want it not to do; like ``a picture of a dog'', the concept is recognized, not defined, and success rates are relative to a judge. Examples: instructions in an obscure script, long persona prompts (DAN), nested fiction (DeepInception); newer models resist the older ones.
+  \item \textbf{Prompt injection:} an agent receives instructions and data as one stream of text, so text on a web page can be taken for a command. Attempts are documented on the web; a successful real-world case was not.
+  \item \textbf{Defense in layers:} refusal training, input and output classifiers, probes on activations, all traded against false positives. \textbf{Boundary point jailbreaking} (UK AISI, February 2026) needs only the flag/no-flag bit: it corrupts the bad question, searches at the boundary and reduces the corruption step by step; a prefix found for one question transfers. The defense is to judge \emph{many} prompts together, at the price of occasionally flagging innocent follow-ups.
+  \item Much of this is experimental and lacks a theory and guarantees; companies worry that progress in language models helps offense more than defense (if capability is set by the number of attacking agents, a small group with much compute gains power); the endgame is unclear.
+  \item \textbf{High dimensions:} in $\R^{2000}$ a random point of the ball is within $0.1\%$ of the boundary with probability $86\%$; random directions are $90\eightdeg\pm1.3\eightdeg$ apart ($\E\langle u,v\rangle^2=1/d$); among $2\cdot10^5$ the smallest angle is $\approx81\eightdeg$, so $80\eightdeg$ is ``special'' against the null. Trained embedding matrices are far from the null (my measurement, on five small-model matrices).
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Problems]
+\begin{enumerate}
+  \item \emph{The shell.} Prove $\Pr(\norm X>1-\eps)=1-(1-\eps)^d$ for $X$ uniform in the unit ball of $\R^d$. For $d=2000$ find the $\eps$ for which the probability is $50\%$ and $90\%$, and the median radius.
+  \item \emph{The spread of the angle.} Prove $\E\langle u,v\rangle^2=1/d$ for independent uniform unit vectors. Give the standard deviation of the angle in degrees for $d=100,\,2000,\,12000$, and the smallest $d$ for which it is below $1\eightdeg$ (use $1/\sqrt d$ radians).
+  \item \emph{A tail bound.} Using $\E T^{2k}=\prod_{j<k}\frac{2j+1}{d+2j}$ prove $\Pr(T\ge t)\le e^{-dt^2/2}$. For $N=2\cdot10^5$, $d=2000$ use the union bound to find an angle exceeded by all pairs with probability $\ge99\%$; compare with the exact value.
+  \item \emph{All pairs against one pair.} Explain why the argument ``fix one vector at the pole'' gives a different angle from the closest pair among all pairs. Compute both medians for $N=2\cdot10^5$, $d=2000$ from $Qp_d(\theta)=\ln2$ with $Q=N-1$ and $Q=\binom N2$.
+  \item \emph{Packing.} Show that $\R^{2000}$ contains $N\ge3.5\cdot10^6$ unit vectors with all pairwise angles in $[80\eightdeg,100\eightdeg]$. Evaluate the Welch bound for $N=2\cdot10^5$, $d=2000$.
+  \item \emph{Effective dimension.} Prove $\E\langle X,Y\rangle^2=\operatorname{tr}(M^2)$ and $\operatorname{tr}(M^2)\ge1/d$ for unit vectors with $M=\E XX^{\!\top}$. A set of vectors has cosines with root mean square $0.0388$; what is $d_{\mathrm{eff}}$?
+  \item \emph{LoRA.} Show that $\operatorname{rank}\frac{\alpha}{r}BA\le r$. Count the trainable parameters of rank $16$ adapters on the $7$ linear maps of each of the $16$ layers of Llama-3.2-1B (hidden size $2048$, MLP size $8192$, $32$ heads of size $64$, $8$ key--value heads) and give the fraction of the $1{,}235{,}814{,}400$ parameters.
+  \item \emph{Base rates.} A classifier has detection rate $0.99$ and false-positive rate $10^{-3}$; $1$ prompt in $10^4$ is malicious. What fraction of flagged prompts is malicious? Which false-positive rate gives $50\%$?
+  \item \emph{Blind search against a curriculum.} A set of density $\rho=10^{-12}$ must be found by queries. Show that blind search needs $1/\rho$ queries in expectation; for $K$ nested levels with conditional probability $p$ each ($\rho=p^K$) show that the expected cost is $K/p$, minimal at $p=1/e$ with cost $e\ln(1/\rho)$; evaluate. If an account may produce only $5$ flags, how many accounts does an attack with $3.3\cdot10^5$ flags need?
+\end{enumerate}
+\end{exercise}

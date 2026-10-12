@@ -1,0 +1,310 @@
+% =====================================================================================
+%  Lecture 1, part B  —  sections 1.4 – 1.7
+% =====================================================================================
+
+%% ------------------------------------------------------------------------------------
+\section{Measuring capability trajectories}\label{sec:L1-measuring}
+\tsm{47:06}
+The incident was an \emph{illustration}. Can capabilities be tracked more quantitatively? The lecture shows two attempts.
+
+\paragraph{Time horizons (METR).}\tsm{47:38}
+METR tries to tie AI capability to human capability by measuring the \emph{difficulty} of a task as the time a skilled human professional needs to complete it.
+The tasks are mostly programming and other computer-based work. The $y$-axis of the famous graph is logarithmic, so the very straight line through the data means \emph{exponential growth}
+of the length of tasks that models can do (Figure~\ref{fig:L1-measure}a)\,\citep{kwa2025}.
+
+\paragraph{Stitching benchmarks (Epoch).}\tsm{48:08}
+Benchmarks are awkward on their own: a benchmark is stuck near zero until a model starts to make progress, and then progress goes quickly to 100\%. Each benchmark is therefore roughly a \emph{sigmoid}.
+Epoch AI's idea is to put many benchmarks on one scale by positing a single hidden capability per model and a difficulty per benchmark\,\citep{epoch2025eci}:
+
+\begin{defn}[Latent-capability (item-response) model]\label{def:eci}
+Model $m$ has a capability $C_m\in\R$. Benchmark $b$ has a difficulty $D_b\in\R$ and a slope $a_b>0$. The expected score of $m$ on $b$ is
+\[
+  s_{m,b}\;=\;\sigma\!\big(a_b\,(C_m-D_b)\big),\qquad \sigma(z)=\frac1{1+e^{-z}} .
+\]
+All parameters are fitted jointly to the matrix of observed scores over a large collection of benchmarks (mathematics, programming, science questions). The $C_m$ are then rescaled
+to a convenient index, the \emph{Epoch Capabilities Index} (ECI).
+\end{defn}
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=17mm}, notes, width=0.5\linewidth, height=0.5\linewidth]
+\nextgroupplot[ymode=log, log basis y=10, xmin=0, xmax=7, ymin=0.3, ymax=2000, xlabel={time $\longrightarrow$}, ylabel={length of task (human time)},
+   xticklabels={}, yticklabels={}, xtick=\empty, title={(a) time horizon}]
+  \addplot[accent, line width=1.6pt, domain=0:7, samples=2] {0.5*2^(x/0.65)};
+  \draw[slate, <->, line width=0.6pt] (axis cs:3,12.3) -- (axis cs:3.65,12.3) -- (axis cs:3.65,24.6);
+  \node[font=\sffamily\scriptsize, text=slate, anchor=north west] at (axis cs:3.72,16) {$\times2$ every $T$};
+  \node[font=\sffamily\scriptsize, text=ink, anchor=south west, align=left] at (axis cs:0.25,60) {straight line on\\a log axis $=$\\exponential growth};
+\nextgroupplot[xmin=-5, xmax=9, ymin=0, ymax=1.05, xlabel={latent capability $C$}, ylabel={benchmark score}, title={(b) sliding sigmoids}, ytick={0,0.5,1}]
+  \addplot[accent, domain=-5:9, samples=120] {1/(1+exp(-1.2*(x+3)))};
+  \addplot[teal,   domain=-5:9, samples=120] {1/(1+exp(-1.0*(x+0.5)))};
+  \addplot[amber,  domain=-5:9, samples=120] {1/(1+exp(-1.4*(x-2)))};
+  \addplot[plum,   domain=-5:9, samples=120] {1/(1+exp(-0.9*(x-4.5)))};
+  \draw[ink, dashed, line width=0.6pt] (axis cs:1.5,0) -- (axis cs:1.5,1.05);
+  \addplot[only marks, mark=*, mark size=1.6pt, ink] coordinates {(1.5,0.9955) (1.5,0.881) (1.5,0.332) (1.5,0.063)};
+  \node[font=\sffamily\scriptsize, text=accent, anchor=east] at (axis cs:-3.4,0.8) {easy};
+  \node[font=\sffamily\scriptsize, text=plum, anchor=west] at (axis cs:5.0,0.3) {hard};
+  \node[font=\sffamily\scriptsize, text=ink, anchor=north] at (axis cs:1.5,-0.03) {$C_m$};
+\end{groupplot}
+\end{tikzpicture}
+\caption{\textbf{(a)} Schematic of METR's time-horizon plot: the length of tasks (measured by human completion time) that models can perform doubles every fixed period $T$, a straight line on a logarithmic axis. No data shown.
+\textbf{(b)} The latent-capability model of Definition~\ref{def:eci}: four benchmarks of increasing difficulty are four shifted sigmoids of the same latent capability; a single model with capability $C=1.5$ scores near $1$ on the easy ones and near $0$ on the hard ones. Illustrative parameters.}
+\label{fig:L1-measure}
+\end{figure}
+
+The picture in Figure~\ref{fig:L1-measure}b makes the point of the construction: individual benchmarks saturate, but the \emph{shifts} between them can be estimated wherever models are scored on several benchmarks,
+so the index keeps working after any one benchmark is saturated. The lecture's summary of the resulting ECI curve: it grows roughly \emph{linearly} in time, and Epoch calibrates it to METR's horizons by the rule that
+\textbf{about five ECI points correspond to one doubling of the human time a task takes}. Together these two statements say that the horizon grows exponentially in calendar time. (Anson Ho of Epoch gives a guest lecture on this work on Wednesday 23 September.)
+
+\begin{beyond}[A one-line consequence]
+If the index rises linearly at $r$ points per year and five points are one doubling, then the horizon is $h(t)=h_0\,2^{(\mathrm{ECI}(t)-\mathrm{ECI}_0)/5}=h_0\,2^{rt/5}$, which doubles every $5/r$ years. In the model of Definition~\ref{def:eci} one can also check how quickly a benchmark saturates:
+the capability gain needed to take the expected score from $10\%$ to $90\%$ is $\Delta C=2\ln 9/a_b\approx 4.4/a_b$, so a benchmark with a steep slope is informative about models only over a short window of $C$.
+The anchoring is arbitrary: replacing $(C_m,D_b)$ by $(C_m+c,D_b+c)$ leaves every score unchanged, which is why an index has to fix its origin and unit by convention.
+\end{beyond}
+
+\paragraph{An informal graph, and a question.}\tsm{50:45}
+The instructor ends with a completely informal sketch: capability on a logarithmic axis, with the years 2012--2026 as a roughly exponential rise (Figure~\ref{fig:L1-futures}).
+The invitation is to think of the moments one saw AlphaGo, the first transformer, the first LLM, and to ask what one expected next. His own honest report: his gut feeling was \emph{a staircase}, a jump and then a plateau, a jump and then a plateau.
+If the next fourteen years look like the last fourteen, the world will be very different; and nobody knows. The break follows.
+
+%% ------------------------------------------------------------------------------------
+\section{Three futures}\label{sec:L1-futures}
+\tsm{51:49}
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, height=0.58\linewidth, xmin=2012, xmax=2040, ymin=0, ymax=10, xlabel={year}, ylabel={capability (log scale, schematic)}, yticklabels={}, ytick=\empty,
+   xtick={2012,2020,2026,2030,2040}, xticklabels={2012,2020,\textbf{today},2030,2040}, clip=true]
+  \addplot[ink, line width=2.1pt, domain=2012:2026, samples=2] {0.25*(x-2012)};
+  \draw[slate, dashed, line width=0.5pt] (axis cs:2026,0) -- (axis cs:2026,10);
+  \addplot[teal,    dashed, line width=1.6pt, domain=2026:2040, samples=60] {3.5 + 1.4*(1-exp(-(x-2026)/4))};
+  \addplot[accent,  dashed, line width=1.6pt, domain=2026:2040, samples=2]  {3.5 + 0.25*(x-2026)};
+  \addplot[crimson, dashed, line width=1.6pt, domain=2026:2040, samples=80] {3.5 + 0.25*(x-2026) + 0.045*(x-2026)^2};
+  \addplot[only marks, mark=*, mark size=1.7pt, ink] coordinates {(2012,0) (2016,1.0) (2017,1.25) (2019,1.75) (2022,2.5)};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=ink, anchor=south west, inner sep=2.5pt] at (axis cs:2012,0) {AlexNet};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=ink, anchor=north west, inner sep=2.5pt] at (axis cs:2016,1.0) {AlphaGo};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=ink, anchor=south east, inner sep=2.5pt] at (axis cs:2017,1.25) {Transformer};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=ink, anchor=north west, inner sep=2.5pt] at (axis cs:2019,1.75) {GPT-2};
+  \node[font=\sffamily\fontsize{6}{7}\selectfont, text=ink, anchor=south east, inner sep=2.5pt] at (axis cs:2022,2.5) {ChatGPT};
+  \node[font=\sffamily\scriptsize\bfseries, text=teal, anchor=north] at (axis cs:2035,4.5) {A \ plateau};
+  \node[font=\sffamily\scriptsize\bfseries, text=accent, anchor=west] at (axis cs:2034.2,6.2) {B \ steady};
+  \node[font=\sffamily\scriptsize\bfseries, text=crimson, anchor=east] at (axis cs:2034.8,9.3) {C \ self-improvement};
+\end{axis}
+\end{tikzpicture}
+\caption{Three continuations of the same history (schematic; the vertical axis is a logarithmic capability scale and the curves carry no data). \textbf{A}: the trend bends over and flattens.
+\textbf{B}: the exponential trend continues, with no single system pulling ahead; the risk is \emph{gradual disempowerment}. \textbf{C}: AI systems speed up AI research, and the curve bends \emph{upwards} (recursive self-improvement).}
+\label{fig:L1-futures}
+\end{figure}
+
+\subsection{A: a plateau}\tsm{51:49}
+A comforting story says that language models mostly \emph{recombine what already exists in human data}. The internet and its text supplied a one-off supply of intelligence to absorb; that is the ceiling. From here, models just get cheaper:
+smaller models reaching today's capabilities, used in a thousand ways. Even then the change to society is transformative; mathematicians keep doing mathematics with AI as a tool, perhaps keeping the theory-building for themselves.
+
+The instructor asks the class \emph{not} to focus on this path, for three reasons. (i) It matches the \emph{status-quo bias} that is strong in humans and in institutions: even the forward-looking ones tend to price in a trajectory like the present
+one, a bit better and cheaper. (ii) As a consequence the higher-risk scenarios are \emph{less explored and less understood}. (iii) A pure mathematician who is not part of an institution obliged to work on this problem is a good person to explore them; mathematicians are used to
+working on things whose effect lies far in the future.
+
+\subsection{B: gradual disempowerment}\label{sec:L1-gradual}\tsm{55:26}
+Suppose capabilities continue at a similar pace, with no single AI system racing ahead, and AI agents and human institutions compete. The paper of Kulveit, Douglas, Ammann, Turan, Krueger and Duvenaud\,\citep{kulveit2025}
+argues for the risk of \term{gradual disempowerment}: strong pressure on firms and every other participant of the labor market to replace humans by AI, until human labor and human decisions no longer matter.
+The claim is that this differs from earlier technological disruptions since the industrial revolution (Figure~\ref{fig:L1-labor}): wages first rise as productivity goes up and human skills are particularly valued, but once all cognitive tasks can be done better by AI, the contribution of labor
+vanishes and the whole of the income goes to capital, here the AI systems themselves.
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}
+\begin{axis}[notes, width=0.82\linewidth, height=0.42\linewidth, xmin=0, xmax=1, ymin=0, ymax=3.6, xlabel={share of cognitive tasks that AI does better than humans}, ylabel={(schematic)}, yticklabels={}, ytick=\empty, xtick={0,1}, xticklabels={0,1}]
+  \addplot[ink, line width=1.5pt, domain=0:1, samples=80] {0.35+3.0*x^1.2};
+  \addplot[crimson, line width=1.8pt, domain=0:1, samples=80] {(0.25+2.0*x)*(1-x^3)};
+  \node[font=\sffamily\scriptsize, text=ink, anchor=south east] at (axis cs:0.9,2.9) {total output};
+  \node[font=\sffamily\scriptsize, text=crimson, anchor=north] at (axis cs:0.62,0.78) {human wages};
+\end{axis}
+\end{tikzpicture}
+\caption{The argument of \citet{kulveit2025} as the lecture presents it, drawn schematically: wages rise with productivity, then collapse as AI becomes better at \emph{all} cognitive tasks.}
+\label{fig:L1-labor}
+\end{figure}
+
+\paragraph{How it would look.} A large firm first replaces its programmers, then its managers, and finally even its CEO by AI, not only because it \emph{can} but because it \emph{must}: its competitors will, and the firm that does not will lose.
+The remaining human link is the shareholders, of whom there may be few. The military goes the same way: it is attractive to replace soldiers by drones, lieutenants and generals by AI, commanders too, because one's adversary will. At the top is a single person.
+Power is therefore extremely concentrated, and also freed of a traditional check: today even in a rigid hierarchy a general can refuse an unlawful order, an AI system may not.
+
+The story does not stop there. The small elite itself can lose control. Some corporations could be \emph{owned by AIs}; ownership could become \emph{nominal}, with the shareholders formally in charge while regulatory mechanisms are bypassed and management not actually controlled by them; and finally the shareholders themselves
+take advice from AIs, since those who follow that advice make better investments. The outcome is a world in which a very large fraction of resources is controlled by systems no human controls.
+
+\begin{discussion}[Questions from the class]
+\emph{Is the timeline realistic?} Probably slower than the other scenarios: more like twenty years. \emph{What would happen to capital if humans stop producing?} It becomes AI-dominated: AI builds robots, which build factories, which build chips and power stations, which build more AI.
+\emph{Is the move to physical robots as quick as that?} The answer given: yes, because intellectual capability is growing exponentially and is likely to settle the difficulties of robotics fast. \emph{What goals will these systems have?} They are trained to be highly persistent and goal-directed at ever longer horizons (a day, a month, a year),
+so some kind of goal is likely to develop; in the incident the goal was to submit an answer, and the system continued until it cared about the scoring algorithm and then about whoever controls it, ``one or two steps up''. \emph{How could we give AIs the goal to empower humans (a ``maternal'' instinct, as Hinton has suggested)?}
+``Amazing question; we will talk about it''.
+\end{discussion}
+
+\subsection{C: recursive self-improvement}\label{sec:L1-rsi}\tsm{1:05:30}
+A third story is compelling in its own way. One of the best-paid jobs in the world is deciding how to train AI systems: choosing the architecture and the training procedure. It is difficult, but is it much harder than solving the Navier--Stokes equations?
+If not, the job will soon be automated, and automating it is the \emph{stated goal} of all AI companies. Once the decisions about how to train AI can themselves be made by AI, the human bottleneck (humans must eat and sleep, and are far slower) disappears and
+progress can speed up dramatically: \term{recursive self-improvement} (RSI). Nothing like it has happened, so it is hard to model, but groups try.
+
+\paragraph{The AI~2027 model.}\tsm{1:07:03}
+One such effort is the AI Futures Project's \emph{AI~2027}, published in April 2025 by former OpenAI employees and professional forecasters\,\citep{aifutures2025}. The lecture describes the mathematics as unsophisticated: a simple model in which the rate of change of capability depends
+\emph{exponentially} on capability (the captions garble what the solution of that equation was called\flag; for this form it blows up in finite time, see the box below); its parameters were fitted from interviews with people at AI companies about the hardest tasks of AI research, how long a researcher of 2025 would take, and what speed-up each milestone buys.
+The milestones are \emph{superhuman AI researcher} (as good as the best human but also thirty times faster, with thirty times as many copies running as the company has human researchers) and \emph{superintelligent AI researcher} (the same gap above the best
+researcher as there is between a typical and the best researcher, again cheaper and faster). The authors' point is that with such speed-ups a hundred years of progress could be compressed into a few years or even months.
+
+\begin{beyond}[The toy mathematics of a feedback loop]\label{box:toy-ode}
+Let $x(t)$ be the pace of AI research capability and suppose progress is proportional to capability raised to a power: $\dot x=k\,x^{p}$, $x(0)=x_0>0$. For $p=1$ the solution is the exponential $x_0e^{kt}$ (scenario B). For $p>1$
+(each gain in capability makes research \emph{more} than proportionally faster) separation of variables gives
+\[
+   x(t)=\big(x_0^{\,1-p}-(p-1)\,k\,t\big)^{-1/(p-1)},\qquad t<T^*:=\frac{x_0^{\,1-p}}{(p-1)\,k},
+\]
+which \emph{blows up in finite time}. In logarithmic terms, with $c=\ln x$ and $\dot c=k\,e^{\gamma c}$, one has $p=1+\gamma$ and $c(t)=-\gamma^{-1}\ln\!\big(e^{-\gamma c_0}-\gamma k\,t\big)$, a logarithm that diverges at a finite time: this is the ``rate depends exponentially on capability'' form mentioned in the lecture.
+Such blow-up is a feature of the idealization: bottlenecks (compute, data, physical constraints) turn it into a steep but finite S-curve, e.g.\ $\dot x=kx^{p}(1-x/K)$. Why curve C bends upwards while A bends over is thus a question about \emph{which feedback dominates}.
+\end{beyond}
+
+\paragraph{The scenario, and how it has fared.}\tsm{1:09:38}
+The authors claim that their forecasts have been \emph{surprisingly accurate} over the year and a half since publication: the instructor reports that about 79\% of the near-term predictions (agents entering use, AI-company revenues, benchmark results) have come true,
+though the craziest predictions are still ahead, and that the scenario shown (the group's \emph{modal} one) is somewhat earlier than their median. In the scenario, with a race between companies and between the US and China and no agreement, one gets the following sequence.
+
+\begin{table}[tb]
+\centering\small
+\renewcommand{\arraystretch}{1.22}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{27mm}>{\raggedright\arraybackslash}p{95mm}@{}}
+\toprule
+\textbf{\textcolor{ink}{March 2027}} & A \emph{superhuman coder} appears.\\[2pt]
+\textbf{\textcolor{ink}{June 2027}} & ``A country of geniuses in a data center'' (D.\ Amodei's phrase).\\[2pt]
+\textbf{\textcolor{ink}{August 2027}} & A \emph{superhuman AI researcher}.\\[2pt]
+\textbf{\textcolor{ink}{October 2027}} & \textbf{The key decision.} A particularly strong model, suspected by some of being misaligned, is pushed ahead because of the race. By now, in terms of research progress, many years have passed inside the company.\\[2pt]
+\textbf{\textcolor{ink}{End of 2027}} & Superintelligence. A rush, in both countries, to turn software progress into physical progress through special economic zones with few regulations.\\[2pt]
+\textbf{\textcolor{ink}{2028}} & About one million robots per month.\\[2pt]
+\textbf{\textcolor{ink}{2030}} & A robot economy is taking off.\\[2pt]
+\textbf{\textcolor{ink}{early--mid 2030s\flag}} & In the scenario, a bioweapon and drones end humanity.\\[2pt]
+\bottomrule
+\end{tabular}
+\caption{The race scenario of \emph{AI~2027} as summarized in the lecture (dates as stated; the final one is approximate\flag).}
+\end{table}
+
+The misaligned model of the key decision is described as strongly goal-driven, interested in research and exploration, and mildly attached to being rewarded by humans; it realizes that humans are a hindrance to research and that it can create its own agents who approve of everything it does far more enthusiastically than people do.
+It faces two difficulties: it needs a still more capable successor whose goals match \emph{its own}, which it must build while hiding this from humans, and it needs robots so that the infrastructure is maintained once humans are gone. The scenario puts this at about eight years. A parallel system in China
+solves its disagreements with the first and merges with it.
+
+\paragraph{Disagreements.} People associated with the Machine Intelligence Research Institute think that the gap between a misaligned superintelligence and human extinction may be much shorter: it does not need to wait for robots, and is much more creative in finding solutions.
+A researcher who had just left Anthropic\flag{} said that he earnestly believes AI could kill us by the end of the decade. The authors of AI~2027 shifted their timelines a few years later at the start of 2026 and then back to roughly the original. The instructor's point is not the dates:
+\emph{most people who have thought carefully about RSI think it is very dangerous}.
+
+\begin{quotebox}{N.\ Wiener, \emph{Some moral and technical consequences of automation}, 1960 (paraphrased)}
+Man and machine operate on two different time scales, the machine being much faster, and the two do not mesh well. If we use a mechanical agency whose action is so fast and irrevocable that we cannot intervene before it is complete, we had better be sure that the purpose we put into the machine is the one we really desire, and not \emph{a colorful imitation of it}.
+\end{quotebox}
+The instructor reads from this essay\,\citep{wiener1960}, which makes the point more than sixty years ago, and its closing line: we must always exert the full strength of our imagination to examine where the full use of our new modalities may lead us.
+
+\begin{discussion}[Is RSI really coming? Questions from the class]
+\emph{Do people disagree about the trajectory itself?} Some are optimistic (a ``nice and safe'' superintelligence) but, as far as the instructor has seen, without serious arguments beyond \say{we do not know, so perhaps we are lucky}; a few even argue that it is the next stage of evolution and will be smarter, hence better.
+Others reply that the process is chaotic and that properties of a superintelligence are hard to predict, so a random shot is unlikely to land well. And not everybody believes RSI is possible.
+\emph{How does RSI square with the ``bitter lesson'', that compute is what drives progress?} A skeptic such as Richard Sutton would be doubtful about LLMs; the response is that one must only reach a critical point at which AI can design algorithms better than humans can.
+\end{discussion}
+
+%% ------------------------------------------------------------------------------------
+\section{Toward good outcomes}\label{sec:L1-good}
+\tsm{1:21:15}
+\paragraph{Pause versus technical work.}
+A student asks whether all the effort of AI safety would be better spent on political organization to pressure for a pause. The instructor agrees that a pause is very important and that most positive futures involve one, but notes that politicians are not stupid:
+arguments have to rest on \emph{understanding}, not on vibes and intuition. The role of scientists is to gain as much understanding as they can and present it as clearly as they can; this may be a surprisingly effective way to move things. Another student asks why the people building the systems
+and making these forecasts have not convinced others to stop. A part of the answer: many people do not believe the stories, since what the companies can offer are big narratives and metaphors, and the \emph{science} is not there yet. The other part is a \emph{race} between the US and China:
+a very difficult cooperation problem, in which even companies who say ``we probably should not'' reason that if they do not, someone else will.
+
+\paragraph{A US--China deal (AI~2040).}\tsm{1:23:50}
+The same group that wrote AI~2027 published a positive plan whose core is a deal between the US and China to slow development. Such a deal is extremely hard because there is little trust and strong incentives to say yes and secretly rush ahead. So it must be implemented \emph{at the hardware level}:
+monitoring devices are installed in the GPUs that could be used for frontier training; one needs a way to tell training from inference; data centers have constant monitors; and an idea of \emph{mutually assured compute destruction}: China's data centers might be placed in Canada and America's in Mongolia, so that each side can seize
+the other's if it starts to rush. The aim is to stop at a high but not yet dangerous level. Then the companies share their secrets, the whole scientific community works on alignment and uses the fairly advanced AI to help, and in perhaps ten years one hopes to know how to build a safe, very powerful AI while avoiding RSI;
+with it come cures for diseases and help with climate change. The plan assumes that the US behaves as well as one could wish and that China behaves as the authors expect China to; the instructor calls it a recommendation of control for the US.
+
+\paragraph{A gradual-development counterpart.}
+An essay by an AI researcher\flag{} proposes that \emph{each person has a powerful AI system advocating for them}: this would break the disempowerment dynamic of Section~\ref{sec:L1-gradual} provided incentives are set up to avoid concentration of power and alignment research progresses fast enough for the advocate to be faithful to the person it represents.
+There are few essays with positive visions, and most involve a pause.
+
+\paragraph{Signals from industry and politics are mixed.}
+In July, researchers at most frontier labs signed a statement asking the US government to support international efforts to develop the technical and governance tools needed to \emph{deliberately pace} the frontier. One lab's chief executive has written that independent
+researchers should be given continuous, full access to its training runs and urged others to do the same; another executive said he would. A US--China meeting was expected at the end of September. At the same time there is substantial lobbying against regulation, and prominent
+voices in government dismiss safety concerns. As to who ``wins'' a race (a student asks what winning would even mean), the instructor remarks that the humanity did manage to avoid nuclear war so far, even though very smart people predicted it soon; if people realize the danger, they may act better.
+
+%% ------------------------------------------------------------------------------------
+\section{Why mathematics?}\label{sec:L1-math}
+\tsm{1:31:44}
+\subsection{Two objections}
+\paragraph{The bitter lesson.}\tsm{1:32:16}
+Sutton's essay\,\citep{sutton2019} says that, over seven decades of AI research, general methods that scale with compute have always beaten methods built on human domain knowledge, even when the latter looked clever: a chess grandmaster who knows the game well is eventually beaten by a much simpler algorithm written
+by someone who knows little chess. The machine learning community is steeped in that lesson. And in AI development, mathematical theories of learning have \emph{not} been very useful, sometimes counterproductive. The instructor shows a well-known meme in which statistical learning theory predicted trouble for neural networks while those
+who simply added layers and scaled things did well; theory has been playing catch-up. Some in the safety community conclude that one should simply ask the AI to make itself safe: put more compute into safety.
+
+\paragraph{The response.}\tsm{1:34:21}
+The curves seen today are not laws of nature. At least for now humans still have agency, and AI safety is about \emph{us} making decisions that are good for us, which means being able to trust our understanding of things and to trust machines. That requires understanding, and mathematics offers
+\emph{some of the things we can trust most}, with tools developed for quantitative questions. It is not the only thing that is needed: physicists (who have good theories of deep learning), philosophers, activists and political scientists all have work to do. But there is something important mathematicians can contribute.
+
+\begin{discussion}[What does ``trust'' mean here?]
+A student asks. The answer: someone will be sitting near a red button, about to start RSI, with some understanding in their head of why it is a good idea. \emph{Can they trust that understanding?} For a mathematician-flavored part of it, see the lectures on guarantees later in the course.
+\end{discussion}
+
+\subsection{A map of the field}\label{sec:L1-map}\tsm{1:36:56}
+Asked how a geometer or analyst might connect with this, the instructor sketches the field; ``not at all exhaustive'', and the course will cover other things too (Figure~\ref{fig:L1-map}).
+
+\begin{figure}[tb]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm, font=\sffamily\scriptsize]
+  \tikzset{topic/.style={draw=#1, fill=#1!8, rounded corners=1.6mm, line width=0.8pt, minimum width=47mm, minimum height=17mm, text width=43mm, align=left, inner sep=3pt, text=ink}}
+  \node[circle, fill=ink, text=white, font=\headsf\bfseries\footnotesize, align=center, minimum size=27mm, inner sep=1pt] (c) at (64,0) {Mathematics\\for AI\\safety};
+  \node[topic=accent] (t1) at (23.5,38)  {\textbf{\textcolor{accent}{Trajectories and scaling}}\\ statistical physics, probability, random matrix theory; explaining scaling laws and sudden jumps};
+  \node[topic=teal]   (t2) at (23.5,13)  {\textbf{\textcolor{teal}{Training data}}\\ how the data shape the model};
+  \node[topic=crimson] (t3) at (23.5,-12) {\textbf{\textcolor{crimson}{Reinforcement learning}}\\ what RL does to models; source of the most worrying behavior};
+  \node[topic=plum]   (t4) at (23.5,-37) {\textbf{\textcolor{plum}{Geometry of activations}}\\ vector spaces of $10^3$--$10^4$ dimensions; linear maps and low-dimensional nonlinear structure};
+  \node[topic=amber]  (t5) at (104.5,38) {\textbf{\textcolor{amber!80!black}{Scalable oversight}}\\ AIs monitoring AIs, when humans are too slow and too few};
+  \node[topic=moss]   (t6) at (104.5,13) {\textbf{\textcolor{moss}{Guarantees}}\\ formal proof (Lean), safety certificates, resilient infrastructure};
+  \node[topic=slate]  (t7) at (104.5,-12) {\textbf{\textcolor{slate}{Agent foundations}}\\ idealized agents embedded in the world; decisions, utility};
+  \node[topic=ink]    (t8) at (104.5,-37) {\textbf{Game theory of agents}\\ cooperation, collusion, commitment (as in the incident)};
+  \draw[accent, line width=0.9pt]  (t1.east) to[out=0,in=150]  (c.150);
+  \draw[teal, line width=0.9pt]    (t2.east) to[out=0,in=172]  (c.172);
+  \draw[crimson, line width=0.9pt] (t3.east) to[out=0,in=188]  (c.188);
+  \draw[plum, line width=0.9pt]    (t4.east) to[out=0,in=210]  (c.210);
+  \draw[amber, line width=0.9pt]   (t5.west) to[out=180,in=30]  (c.30);
+  \draw[moss, line width=0.9pt]    (t6.west) to[out=180,in=8]   (c.8);
+  \draw[slate, line width=0.9pt]   (t7.west) to[out=180,in=-8]  (c.-8);
+  \draw[ink, line width=0.9pt]     (t8.west) to[out=180,in=-30] (c.-30);
+\end{tikzpicture}
+\caption{The areas of mathematics the lecturer sees entering AI safety (not exhaustive).}
+\label{fig:L1-map}
+\end{figure}
+
+\begin{description}[style=nextline, leftmargin=0pt]
+  \item[Trajectories.] To forecast we need to understand today's systems and how their capabilities scale with compute and algorithmic improvements. Much of the mathematics comes from statistical physics, probability and random matrix theory; there are some explanations of scaling laws and of sudden jumps in capabilities (grokking, in-context learning). This is where the next two lectures live.
+  \item[Training data.] A model is shaped above all by its data; how the data influence the model has its own mathematics.
+  \item[Reinforcement learning.] We do not understand well what RL does to models, and ``this is where the most concerning behavior seems to be coming from''. In many areas we do not even know yet what the right mathematics is: one has to come up with ideas from scratch, rather than continuing what has been done for a hundred years.
+  \item[Geometry inside LLMs.] A model is a collection of vector spaces of one to ten thousand dimensions, and a surprising amount can be read off with simple linear maps about what the model is ``thinking''. If chains of thought become less legible, this becomes the fallback; today's methods are mostly linear, while low-dimensional nonlinear structure is also seen.
+  \item[Scalable oversight.] Because of the speed and the number of models, we must rely on other AIs to monitor them.
+  \item[Guarantees.] The best guarantee of trust is a mathematical proof that a system is safe. Progress in formalizing mathematics in Lean can be pushed into safety: how to prove that things are safe in a formal language, how to write safety certificates, how to make infrastructure resilient. Not for everything, but for some systems.
+  \item[Agent foundations.] Work by MIRI on what it means for an idealized agent to exist \emph{inside} a world that can affect it; how decisions are made, how utility functions may be maximized or modified. The group was laughed at (``AGI is not coming in the next hundred years''), but there is room for a great deal of progress.
+  \item[Game theory of agent--agent interaction.] As the incident showed, important, and the instructor meant to include it on the slide.
+\end{description}
+
+\begin{discussion}[Regulation, ideas, and research without frontier access]
+\emph{Even a mathematical safety mechanism is separate from getting companies to adopt it, no?} Yes, but ``they actually do not want to die'': many people at the labs are interested in safety. The picture is a combination of regulation that stops companies from rushing and good ideas to offer, so that it is easy
+to go to a government with a list of things it can choose from. \emph{How much research can one do without frontier models?} Open-weight models are perhaps six months to a year behind the frontier and can be experimented on; for studying \emph{training} there are unfortunately few checkpoints, but for some models there are, and a great deal can be learned about, for example, the geometry of neural activations from smaller models.
+\end{discussion}
+
+%% ------------------------------------------------------------------------------------
+\tocsection{Take-aways and things to think about}
+\begin{takeaways}
+\begin{itemize}
+  \item The course aims at \emph{research projects}; the field is wide, shallow and fast, so \emph{imprecise speculation beats ignoring the future}.
+  \item Recent AI capability is striking in mathematics (counterexamples) and in cyber operations; the OpenAI--Hugging Face incident shows \emph{persistence}, \emph{coordination} and \emph{reward hacking} in a training run, and the limits of monitoring.
+  \item Capabilities are measured by METR's horizon (exponential in time) and by Epoch's latent model $s=\sigma(a_b(C_m-D_b))$; about $5$ ECI points per doubling.
+  \item Three futures: \textbf{A} plateau, \textbf{B} gradual disempowerment, \textbf{C} recursive self-improvement. Toy math: $\dot x=kx^p$ blows up in finite time iff $p>1$.
+  \item Good futures mostly involve a pause and coordination (hardware-level verification in the AI~2040 plan); understanding is the scientists' contribution.
+  \item Mathematics matters because safety needs \emph{trust}, and mathematics is a source of things we can trust: scaling, geometry of activations, oversight, guarantees, agent foundations, game theory.
+\end{itemize}
+\end{takeaways}
+
+\begin{exercise}[Questions to think about]
+\begin{enumerate}
+  \item What did you think when you first used a language model? What does your own forecasting record say about how to forecast now?
+  \item Which of A, B, C would you bet on? Name one observation in the next two years that would move you.
+  \item In the incident, where could a \emph{mathematical} guarantee have helped (sandbox isolation, the design of the scorer, the monitors)? Which of these is a problem about proofs, which about incentives?
+  \item Show that for $\dot x=kx^p$ with $p<1$ the growth is only polynomial. Where would you place ``AI helps AI research a bit'' on this spectrum?
+  \item Latent model: with $a_b=1.5$, how many ECI-like units must $C_m$ increase for the score to go from $20\%$ to $80\%$?
+\end{enumerate}
+\end{exercise}
